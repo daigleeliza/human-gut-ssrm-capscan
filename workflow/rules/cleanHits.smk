@@ -1,9 +1,9 @@
 rule scoreFilter:
     input:
-        bactCSV = join(config["compiledResultsDir"],"compiled_dsrAB_bact_hits.csv"),
-        archCSV = join(config["compiledResultsDir"],"compiled_dsrAB_arch_hits.csv"),
-        bactFASTA=join(config["compiledResultsDir"],"compiled_dsrAB_bact_hits.faa"),
-        archFASTA=join(config["compiledResultsDir"],"compiled_dsrAB_arch_hits.faa")
+        bactCSV = join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
+        archCSV = join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
+        bactFASTA=join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
+        archFASTA=join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa")
     output:
         bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
         archCSV = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.csv"),
@@ -82,10 +82,10 @@ rule trimGaps_identifySubunit:
 
 rule compileFinalMSA:
     input:
-        hitsMSA=join(config["cleanHitsDir"], "practice_hitmsa.faa"),
+        hitsMSA=join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),
         refMSA=config["refMSA"]
     output:
-        join(config["cleanHitsDir"], "practice_msa_withref.faa")
+        join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa")
     shell:
         """
         cat {input.hitsMSA} {input.refMSA} > {output}

@@ -1,12 +1,14 @@
 # Input file with WGS accession numbers downloaded in this study.
 accessionNumFile: "config/NCBI_WGS_accessionNumbers.txt"
+# Metadata associated with each Biosample from NCBI
+biosampleMetadata: "config/metadata/NCBI_biosample_metadata.json"
 
 # profile HMMs for dsrAB
-dsrAB_bact_HMMProfile: "config/profileHMM_bacteria_aminoacid.phmm"
-dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aminoacid.phmm"
+dsrAB_bact_HMMProfile: "config/profileHMM_bacteria_aa.phmm"
+dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
 
 # reference dsrAB files
-refMSA: "config/dsrAB_referenceSequences_nucleotide.fasta"
+refMSA: "config/dsrAB_referenceSequences_aa.faa"
 
 # reference leaves to select from tree
 refListToSelect: "config/ref_leaves_to_select.txt"
@@ -15,6 +17,7 @@ refListToSelect: "config/ref_leaves_to_select.txt"
 blastDB: "workflow/out/sequenceSimilarity/db"
 
 # raxml input files
+treeFileExtension: Christensen2024
 paramName: "[date]"
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
 refTree: "workflow/out/modelParams/RAxML_result."
@@ -26,7 +29,7 @@ scriptsDir: "workflow/scripts"
 # dependencies, so if you're not running on MacOS, please install SRA toolkit, Prodigal, and HMMER with anaconda.
 sraEnv: "../../workflow/envs/sra-tools.yml"
 prodigalEnv: "../../workflow/envs/prodigal_local.yml"
-hmmerEnv: "../../workflow/envs/hmmer_local.yml"
+hmmerEnv: "../../workflow/envs/hmmer.yml"
 
 # location of SRA repository -- where prefetch sends files to
 repositoryDir: "workflow/out/sra_repo/wgs"

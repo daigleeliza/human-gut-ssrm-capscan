@@ -67,8 +67,8 @@ rule combineCSV:
         bact=expand(join(config["summaryDir"],"{accession_num}_dsrAB_bact_hits.csv"),accession_num=ACCESSION_NUMBERS),
         arch=expand(join(config["summaryDir"],"{accession_num}_dsrAB_arch_hits.csv"),accession_num=ACCESSION_NUMBERS)
     output:
-        bact=join(config["summaryDir"],"0_compiled_dsrAB_bact_hits.csv"),
-        arch=join(config["summaryDir"],"0_compiled_dsrAB_arch_hits.csv")
+        bact=join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
+        arch=join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv")
     params:
         input_dir=config["summaryDir"]
     shell:
@@ -82,8 +82,8 @@ rule combineMSA:
         bact=expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_bact.faa"),accession_num=ACCESSION_NUMBERS),
         arch=expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_arch.faa"), accession_num=ACCESSION_NUMBERS)
     output:
-        bact=join(config["msaDir"],"faa/0_compiled_dsrAB_bact_hits.faa"),
-        arch=join(config["msaDir"],"faa/0_compiled_dsrAB_arch_hits.faa")
+        bact=join(config["msaDir"],"faa/compiled_dsrAB_bact_hits.faa"),
+        arch=join(config["msaDir"],"faa/compiled_dsrAB_arch_hits.faa")
     params:
         input_dir=join(config["msaDir"], "faa")
     shell:

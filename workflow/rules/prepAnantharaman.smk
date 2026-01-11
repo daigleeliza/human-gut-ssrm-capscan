@@ -5,7 +5,7 @@ rule prepAnantharaman:
 	output: join(config["cleanHitsDir"], "Anantharaman2018_dsrA_dsrB_noDups.faa")
 	threads: 1
 	resources:
-		time=60
+		time=60,
 		mem_mb=4000
 	shell:
 		"""

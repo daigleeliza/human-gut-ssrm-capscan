@@ -1,4 +1,4 @@
-rule RemoveDupsAnantharaman:
+rule prepAnantharaman:
 	input: 
 		Anantharaman2018="config/Anantharaman2018_dsrA_dsrB.faa",
 		Mueller2015="config/Mueller2015_dsrAB.faa"

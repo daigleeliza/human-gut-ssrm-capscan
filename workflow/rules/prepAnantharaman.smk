@@ -2,7 +2,8 @@ rule prepAnantharaman:
 	input: 
 		Anantharaman2018="config/Anantharaman2018_dsrA_dsrB.faa",
 		Mueller2015="config/Mueller2015_dsrAB.faa"
-	output: join(config["cleanHitsDir"], "Anantharaman2018_dsrA_dsrB_noDups.faa")
+	output: "config/Anantharaman2018_dsrA_dsrB_noDups.faa"
+	conda: "../envs/biopython.yml"
 	threads: 1
 	resources:
 		time=60,

@@ -1,0 +1,8 @@
+name: biopython
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython=1.78=py39h3811e60_2
+  - mafft=7.526

@@ -13,49 +13,50 @@ rule all:
 		"workflow/out/treeInfo/closestRefList.txt",
 		"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits.csv",
 		"workflow/out/treeInfo/queryDistanceInfo.csv",
-		"workflow/out/treeInfo/queryDistanceInfo.json"
-		#get query IDs
-		#"workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt"
+		"workflow/out/treeInfo/queryDistanceInfo.json",
+		# get query IDs
+		#"workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt",
 		
-		#remove bootstrap values
+		# remove bootstrap values
 		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick"),
-		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick")
-		#fragment insertion
+		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick"),
+		# fragment insertion
 		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_frag']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_frag']}")
-		#get model parameters (.Daigle2026)
+		#join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_frag']}"),
+		# get model parameters (.Daigle2026)
 		#join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtension']}"),
-		#join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}")
-		#MSA that includes Anantharaman sequences
-		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa")
+		#join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}"),
+		# MSA that includes Anantharaman sequences
+		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa"),
 		
-		#final MSA
+		# final MSA
 		#join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
-		#trim gaps
+		# trim gaps
 		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_gapPercentageInfo.csv"),
-		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa")
-		#run MAFFT
+		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),
+		# run MAFFT
 		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef.faa"),
-		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa")
-		#bit filtering
+		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
+		# bit filtering
 		#join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.csv"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.faa"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.faa"),
-		#compiling archaeal and bacterial hits
+		# compiling archaeal and bacterial hits
 		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.csv"),
-		#removing dups
+		# removing dups
 		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
 		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.json"),
-		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noEDups.faa")
+		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noEDups.faa"),
 		
-        # run HMMER search of dsrAB on human gut metagenomic data
+        # run Prodigal then run HMMER search of dsrAB on human gut metagenomic data
+		#expand(join(config["prodigalGeneCoordDir"],"{accession_num}_geneCoord.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["prodigalProteinSeqDir"], "{accession_num}.faa"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["hmmOutDir"],"{accession_num}_dsrAB_bact.hmm.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["domtblDir"],"{accession_num}_dsrAB_bact.domtblout"), accession_num=ACCESSION_NUMBERS),
@@ -67,12 +68,17 @@ rule all:
 		#expand(join(config["msaDir"],"sto/{accession_num}_dsrAB_arch.sto"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_bact.faa"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_arch.faa"), accession_num=ACCESSION_NUMBERS),
+		# get compiled files (THIS IS WHERE YOU CAN START)
+		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
+        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
+		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
+        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa"),
 
 		# download human gut metagenomic data from NCBI
 		#expand(join(config["repositoryDir"],"{accession_num}"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["dumpDir"],"{accession_num}.fa"),accession_num=ACCESSION_NUMBERS),
 
-		#get reference file without dups from Mueller 2015
+		# get reference file without dups from Mueller 2015
 		#"config/Anantharaman2018_dsrA_dsrB_noDups.faa",
 		#"config/Anantharaman2018_dsrA_dsrB_noEDups.faa",
 		#"config/Anantharaman2018_dsrA_dsrB_noDups.json"

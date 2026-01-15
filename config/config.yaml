@@ -59,7 +59,7 @@ modelParamsDir: "workflow/out/modelParams"
 
 # For capsule data
 geneReadsDir: "workflow/out/mapping/bam/CoAssembly_gene_reads"
-dsrHMMERDir: "workflow/out/dsr_HMMER"
+dsrHMMERDir: "workflow/out/dsrAB_hmmer"
 filterDir: "workflow/out/filtered/filtered"
 mapDir: "workflow/out/mapping"
 SAMDir: "workflow/out/mapping/sam"

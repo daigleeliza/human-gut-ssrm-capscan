@@ -17,7 +17,9 @@ refListToSelect: "config/ref_leaves_to_select.txt"
 blastDB: "workflow/out/sequenceSimilarity/db"
 
 # raxml input files
-treeFileExtension: Christensen2024
+#treeFileExtension: Christensen2024
+treeFileExtension: Daigle2026
+treeFileExtension_frag: Daigle2026_frag
 paramName: "[date]"
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
 refTree: "workflow/out/modelParams/RAxML_result."
@@ -54,3 +56,15 @@ cleanHitsDir: "workflow/out/cleanHits"
 # Tree files
 raxmlOutputDir: "workflow/out/raxmlOutput"
 modelParamsDir: "workflow/out/modelParams"
+
+# For capsule data
+geneReadsDir: "workflow/out/mapping/bam/CoAssembly_gene_reads"
+dsrHMMERDir: "workflow/out/dsr_HMMER"
+filterDir: "workflow/out/filtered/filtered"
+mapDir: "workflow/out/mapping"
+SAMDir: "workflow/out/mapping/sam"
+humanReadsDir: "workflow/out/humanReads"
+prodigalDir: "workflow/out/prodigal"
+coAssemblyDir: "workflow/out/biohub_assemblies/Becca/co_assemblies"
+sampleFileRaw: "config/sampleReadList.txt"
+

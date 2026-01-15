@@ -73,8 +73,8 @@ rule combineCSV:
         input_dir=config["summaryDir"]
     shell:
         """
-        xargs -0 cat {params.input_dir}/*bact_hits.csv  > {output.bact}
-        xargs -0 cat {params.input_dir}/*arch_hits.csv  > {output.arch}
+        cat {input.bact} > {output.bact}
+        cat {input.arch} > {output.arch}
         """
 
 rule combineMSA:
@@ -88,6 +88,6 @@ rule combineMSA:
         input_dir=join(config["msaDir"], "faa")
     shell:
         """
-        xargs -0 cat {params.input_dir}/*dsrAB_bact.faa  > {output.bact}
-        xargs -0 cat {params.input_dir}/*dsrAB_arch.faa  > {output.arch}
+        cat {input.bact} > {output.bact}
+        cat {input.arch} > {output.arch}
         """

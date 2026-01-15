@@ -16,7 +16,7 @@ rule makeGTF:
 		sed -i 's/transcript_id/gene_id/g' {output.gtf}
 		"""
 
-# The files from the following rules are in the GitHub. Prodigal output, GTF, and bam files can be accessed by contacting authors
+# The output files from the following rules are in the GitHub. Prodigal output, GTF, and bam files can be accessed by contacting authors.
 rule perGeneCounts:
 	input:
 		gtf=join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"),

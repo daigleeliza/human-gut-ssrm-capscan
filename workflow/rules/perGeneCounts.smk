@@ -16,6 +16,7 @@ rule makeGTF:
 		sed -i 's/transcript_id/gene_id/g' {output.gtf}
 		"""
 
+# The files from the following rules are in the GitHub. Prodigal output, GTF, and bam files can be accessed by contacting authors
 rule perGeneCounts:
 	input:
 		gtf=join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"),
@@ -33,7 +34,7 @@ rule perGeneCounts:
 		"""
 		featureCounts -f -p --countReadPairs -t CDS -B -a {input.gtf} -o {output.geneReads} {input.bam} --largestOverlap -T {threads}
 		"""
-# These files are in the GitHub, prodigal output, GTF, and bam files can be accessed by contacting authors
+
 rule RPKM:
 	input:
 		geneReads=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt")

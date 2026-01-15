@@ -60,6 +60,7 @@ rule mappedReadsBAM:
 		"""
 		#mkdir -p {params.mapDir}/bam/CoAssembly/{wildcards.coassembly}
 
+# These files are in the GitHub, sam and bam files can be accessed by contacting authors
 # get read counts per contig for each sample
 # set sample = samples, set coassembly = coassemblies
 rule contigReads:

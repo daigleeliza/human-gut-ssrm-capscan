@@ -10,17 +10,17 @@ with open(config["accessionNumFile"], 'r') as f:
 
 rule all:
 	input:
-		"workflow/out/treeInfo/closestRefList.txt",
-		"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits.csv",
-		"workflow/out/treeInfo/queryDistanceInfo.csv",
-		"workflow/out/treeInfo/queryDistanceInfo.json",
+		# get tree info
+		#"workflow/out/treeInfo/closestRefList.txt",
+		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits.csv",
+		#"workflow/out/treeInfo/queryDistanceInfo.csv",
+		#"workflow/out/treeInfo/queryDistanceInfo.json",
 		# get query IDs
 		#"workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt",
 		
 		# remove bootstrap values
 		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick"),
-		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick"),
-		# fragment insertion
+		# fragment insertion (.Daigle2026_frag)
 		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_frag']}"),
@@ -42,20 +42,25 @@ rule all:
 		# run MAFFT
 		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef.faa"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
+		# removing dups
+		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
+		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.json"),
+		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noEDups.faa"),
+		# compiling archaeal and bacterial hits
+		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa"),
+		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.csv"),
 		# bit filtering
 		#join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.csv"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.faa"),
 		#join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.faa"),
-		# compiling archaeal and bacterial hits
-		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa"),
-		#join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.csv"),
-		# removing dups
-		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
-		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.json"),
-		#join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noEDups.faa"),
 		
-        # run Prodigal then run HMMER search of dsrAB on human gut metagenomic data
+        # get compiled files (THIS IS WHERE YOU CAN START)
+		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
+        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
+		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
+        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa"),
+		# run Prodigal then run HMMER search of dsrAB on human gut metagenomic data
 		#expand(join(config["prodigalGeneCoordDir"],"{accession_num}_geneCoord.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["prodigalProteinSeqDir"], "{accession_num}.faa"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["hmmOutDir"],"{accession_num}_dsrAB_bact.hmm.out"), accession_num=ACCESSION_NUMBERS),
@@ -68,12 +73,7 @@ rule all:
 		#expand(join(config["msaDir"],"sto/{accession_num}_dsrAB_arch.sto"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_bact.faa"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_arch.faa"), accession_num=ACCESSION_NUMBERS),
-		# get compiled files (THIS IS WHERE YOU CAN START)
-		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
-        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
-		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
-        #join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa"),
-
+		
 		# download human gut metagenomic data from NCBI
 		#expand(join(config["repositoryDir"],"{accession_num}"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["dumpDir"],"{accession_num}.fa"),accession_num=ACCESSION_NUMBERS),

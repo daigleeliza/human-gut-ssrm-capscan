@@ -27,12 +27,6 @@ raxmlOutputFileExtension: "raxml"
 
 scriptsDir: "workflow/scripts"
 
-# conda environments -- requires anaconda. yaml files were extracted from MacOS. Other systems may require different
-# dependencies, so if you're not running on MacOS, please install SRA toolkit, Prodigal, and HMMER with anaconda.
-sraEnv: "../../workflow/envs/sra-tools.yml"
-prodigalEnv: "../../workflow/envs/prodigal_local.yml"
-hmmerEnv: "../../workflow/envs/hmmer.yml"
-
 # location of SRA repository -- where prefetch sends files to
 repositoryDir: "workflow/out/sra_repo/wgs"
 # output directory for dumped FASTA files from NCBI

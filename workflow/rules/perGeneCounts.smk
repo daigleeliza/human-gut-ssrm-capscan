@@ -33,7 +33,7 @@ rule perGeneCounts:
 		"""
 		featureCounts -f -p --countReadPairs -t CDS -B -a {input.gtf} -o {output.geneReads} {input.bam} --largestOverlap -T {threads}
 		"""
-
+# These files are in the GitHub, prodigal output, GTF, and bam files can be accessed by contacting authors
 rule RPKM:
 	input:
 		geneReads=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt")

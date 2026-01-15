@@ -33,7 +33,6 @@ rule countHMMinSamplesCapsule:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
 	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"
-			#"workflow/out/dsrAB_CapsuleStool_Abundances/{coassembly}/{sample}_dsrAB_RPKM.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
@@ -67,7 +66,6 @@ rule concatGeneHitsCapsule:
 			sample=[s for c in capsule for s in get_subject_sample_list_dropped(c)])
 	output:
 		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM.txt"
-		#"workflow/out/dsrAB_CapsuleStool_Abundances/concat_dsrAB_Capsule_Abundances_RPKM.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,
@@ -83,14 +81,11 @@ rule concatGeneHitsCapsule:
 		done >> {output}
 		"""
 
-		#for column 4 filtering echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKM\\tgeneLoc\\tgeneNum\\tbitScore" > {output}
-
 rule countHMMinSamplesStool:
 	input:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
 	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"
-			#"workflow/out/dsrAB_CapsuleStool_Abundances/{coassembly}/{sample}_dsrAB_RPKM.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
@@ -124,7 +119,6 @@ rule concatGeneHitsStool:
 			sample=[s for c in stool for s in get_subject_sample_list_dropped(c)])
 	output:
 		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM.txt"
-		#"workflow/out/dsrAB_CapsuleStool_Abundances/concat_dsrAB_Stool_Abundances_RPKM.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,

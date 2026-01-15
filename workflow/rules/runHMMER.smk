@@ -4,7 +4,7 @@ rule runProdigal:
         geneCoords=join(config["prodigalGeneCoordDir"],"{accession_num}_geneCoord.out"),
         proteinSeqs=join(config["prodigalProteinSeqDir"], "{accession_num}.faa")
     conda:
-        config["prodigalEnv"]
+        "../envs/prodigal.yml"
     shell:
         """
         prodigal -i {input} -o {output.geneCoords} -a {output.proteinSeqs}
@@ -24,7 +24,7 @@ rule runHMMER:
         hmm_profile_bact=config["dsrAB_bact_HMMProfile"],
         hmm_profile_arch=config["dsrAB_arch_HMMProfile"]
     conda:
-        config["hmmerEnv"]
+        "../envs/hmmer.yml"
     shell:
         """
         hmmsearch -o {output.hmmOut_bact} --domtblout {output.domOut_bact} -A {output.msa_bact} {params.hmm_profile_bact} {input}

@@ -3,6 +3,9 @@ accessionNumFile: "config/NCBI_WGS_accessionNumbers.txt"
 # Metadata associated with each Biosample from NCBI
 biosampleMetadata: "config/metadata/NCBI_biosample_metadata.json"
 
+# sample list for capsule/stool data
+sampleFileRaw: "config/sampleReadList.txt"
+
 # profile HMMs for dsrAB
 dsrAB_bact_HMMProfile: "config/profileHMM_bacteria_aa.phmm"
 dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
@@ -20,6 +23,8 @@ blastDB: "workflow/out/sequenceSimilarity/db"
 #treeFileExtension: Christensen2024
 treeFileExtension: Daigle2026
 treeFileExtension_frag: Daigle2026_frag
+treeFileExtension_frag_capsule: Daigle2026_frag_capsule
+
 paramName: "[date]"
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
 refTree: "workflow/out/modelParams/RAxML_result."
@@ -51,14 +56,12 @@ cleanHitsDir: "workflow/out/cleanHits"
 raxmlOutputDir: "workflow/out/raxmlOutput"
 modelParamsDir: "workflow/out/modelParams"
 
-# For capsule data
-geneReadsDir: "workflow/out/mapping/bam/CoAssembly_gene_reads"
-dsrHMMERDir: "workflow/out/dsrAB_hmmer"
+# Directories for capsule abundance rules
+tmpDir: "/scratch/ehd5113/capsule/meta/tmp"
+coAssemblyDir: "workflow/out/biohub_assemblies/Becca/co_assemblies"
 filterDir: "workflow/out/filtered/filtered"
 mapDir: "workflow/out/mapping"
 SAMDir: "workflow/out/mapping/sam"
-humanReadsDir: "workflow/out/humanReads"
 prodigalDir: "workflow/out/prodigal"
-coAssemblyDir: "workflow/out/biohub_assemblies/Becca/co_assemblies"
-sampleFileRaw: "config/sampleReadList.txt"
-
+dsrHMMERDir: "workflow/out/dsrAB_hmmer"
+geneReadsDir: "workflow/out/mapping/bam/CoAssembly_gene_reads"

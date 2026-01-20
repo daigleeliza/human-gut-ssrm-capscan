@@ -15,13 +15,13 @@ closestRefInfo_allScoreThresholdHits <- read_csv(paste0(treeInfoDir, "closestRef
 closestRefInfo_allScoreThresholdHits_capsule <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_capsule.csv"))
 ```
 
-# For hit sequences with multiple "closest ref sequences", select a single reference sequence as the representetive. Choose the first of Mueller2015's sequences in the list. If none of Mueller2015's sequences are in the closest ref list, choose the first of Anantharaman2018's sequences.
+# For hit sequences with multiple "closest ref sequences", select a single reference sequence as the representative. Choose the first of Mueller2015's sequences in the list. If none of Mueller2015's sequences are in the closest ref list, choose the first of Anantharaman2018's sequences.
 ```{r}
 get_single_ref <- function(ref_list) {
   ref_list <- gsub("\\]", "", ref_list)
   ref_list <- gsub("\\[", "", ref_list)
   ref_list <- gsub(" ", "", ref_list)
-  ref_list <- gsub("\\'", "", ref_list)
+  ref_list <- gsub("'", "", ref_list)
   ref_list <- strsplit(ref_list, ",")[[1]]
   
   # check if all of the closest ref sequences are Anantharaman2018 seqs
@@ -36,21 +36,25 @@ get_single_ref <- function(ref_list) {
     return(ref_list[single_ref_index])
   }
 }
+
+```
+
+```{r}
+#check that we are getting output we expect
+get_single_ref("['QUERY___Bilophila_wadsworthia_dsrA', 'QUERY___Bilophila_wadsworthia_dsrB', 'Bilophila_sp._4_1_30__BilSpec3', 'Bilophila_wadsworthia__BilWads6']")
 ```
 
 # add single_closest_refs for the NCBI and capsule dataframes
 ```{r}
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef <- closestRefInfo_allScoreThresholdHits %>%
-  rowwise() %>%
-  mutate(single_closest_ref = get_single_ref(closest_ref), na.rm = T)
+  mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
 write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef.csv"),
           row.names = FALSE)
 
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule <- closestRefInfo_allScoreThresholdHits_capsule %>%
-  rowwise() %>%
-  mutate(single_closest_ref = get_single_ref(closest_ref), na.rm = T)
+  mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
 write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"),

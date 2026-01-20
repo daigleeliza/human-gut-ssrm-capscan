@@ -1,0 +1,211 @@
+---
+title: "tree_visualization"
+output: html_document
+date: "2024-06-21"
+---
+
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(readr)
+library(seqinr)
+library(xlsx)
+library(readxl)
+```
+
+# dfs to load
+```{r}
+rooted_ref_tree_f = read.tree("../../workflow/out/raxmlOutput/RAxML_labelledTree_noBootstrap_capsule_plus_wgs.newick")
+
+rooted_result_tree_f = read.tree("../../workflow/out/raxmlOutput/RAxML_labelledTree_noBootstrap_capsule_plus_wgs.newick")
+
+closestRefInfo_allScoreThresholdHits_wSingleClosestRef <- read_csv("../workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_plus_wgs.csv")
+
+otu_hits_table <- read_csv("hits_per_sequence.csv", 
+    col_types = cols(...1 = col_skip()))
+
+sample_hits_table <- read_csv("sample_hits_table.csv", 
+    col_types = cols(...1 = col_skip()))
+
+tax_df_closest_hits <- read_excel("taxonomy_df_of_closest_hit_sequences.xlsx", 
+                                  sheet = "Sheet2", col_types = c("skip", 
+                                                                  "text", "text", "text", "text", "text", 
+                                                                  "text", "text", "text", "text", "text", 
+                                                                  "text", "text"))
+
+```
+
+
+# otu_hits_table: number of hit sequences (including duplicates) associated with each reference sequence (by shortest branch distance) for all samples
+# sample_hits_table: number of samples ("Biosample" as defined by NCBI) containing each hit sequence (rounded to shortest reference sequence)
+```{r}
+otu_hits_table <- as.data.frame(table(subset(closestRefInfo_allScoreThresholdHits_wSingleClosestRef$single_closest_ref, closestRefInfo_allScoreThresholdHits_wSingleClosestRef$distance < 2.5 | is.na(closestRefInfo_allScoreThresholdHits_wSingleClosestRef$distance))))
+otu_hits_table <- rename(otu_hits_table, tip_label = Var1)
+
+# write.csv(otu_hits_table, "hits_per_sequence.csv")
+
+sample_hits_table <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef %>%
+  filter(distance < 2.5 | is.na(distance)) %>%
+  group_by(single_closest_ref) %>%
+  summarize(n_samples = n_distinct(biosample_id))
+
+sample_hits_table <- rename(sample_hits_table, tip_label = single_closest_ref)
+
+# write.csv(sample_hits_table, "sample_hits_table.csv")
+```
+
+# Make a new taxonomy df for each sequence in the ref tree, including Anantharaman 2018 seq.
+```{r}
+# read in the fasta file for ref seqs, complete with taxonomy descriptions from Mueller 2015 paper
+
+# hack way for reading in a fasta file
+ref_fa <- read_delim("Muller2015_reference_seqs_with_taxonomy.txt", delim = "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+
+ref_fa <- na.omit(ref_fa) #lol it worked!
+ref_fa <- rename(ref_fa, seq_abbreviation = X1,
+                 seq_name = X2,
+                 strain_name = X3,
+                 environment = X4,
+                 description = X5)
+
+id <- as.character(ref_fa[1, "description"])
+strsplit(id, ";")
+
+get_taxa <- function(description, level) {
+  taxa <- strsplit(as.character(description), ";")[[1]][level]
+  return(taxa)
+}
+
+ref_fa <- ref_fa %>%
+  rowwise() %>%
+  mutate(tax_1 = get_taxa(description, 1),
+         tax_2 = get_taxa(description, 2),
+         tax_3 = get_taxa(description, 3),
+         tax_4 = get_taxa(description, 4),
+         tax_5 = get_taxa(description, 5))
+# WEEEE
+
+# ok i can bind the otu_hits_table to ref_fa using the seq_abbreviation column in ref_fa by creating a new column that matches this format in otu_hits_table
+
+make_seq_abbreviation <- function(label) {
+  label <- strsplit(as.character(label), "_")[[1]]
+  abbreviation <- tail(label, n=1)
+  abbreviation <- paste(">", abbreviation, sep="")
+  
+  return(abbreviation)
+}
+
+ref_seqs <- data_frame(tip_label = rooted_ref_tree_f$tip.label)
+all_seqs <- data_frame(tip_label = rooted_result_tree_f$tip.label)
+
+ref_seqs <- ref_seqs %>%
+  rowwise() %>%
+  mutate(seq_abbreviation = make_seq_abbreviation(tip_label))
+
+# manually correct seq_abbreviation for Candidatus_Desulfovibrio_trichonymphae
+ref_seqs$seq_abbreviation[ref_seqs$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$seq_abbreviation[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+ref_tax <- merge(ref_fa, ref_seqs, by = "seq_abbreviation")
+
+anantharaman_seqs <- read_delim("../config/Anantharaman2018_dsrA_dsrB.faa", delim = "\t", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+anantharaman_seqs <- subset(anantharaman_seqs, grepl(">", X1))
+anantharaman_seqs <- rename(anantharaman_seqs, seq_abbreviation = X1)
+
+make_tip_label <- function(seq_name){
+  label <- gsub(">", "", as.character(seq_name))
+  label <- paste("QUERY___", label, sep = "")
+  return(label)
+}
+
+anantharaman_seqs <- anantharaman_seqs %>%
+  rowwise() %>%
+  mutate(tip_label = make_tip_label(seq_abbreviation))
+
+# bind taxa data to df with tip labels
+tax_df <- merge(anantharaman_seqs, ref_tax, by = c("tip_label", "seq_abbreviation"), all = T)
+
+tax_df[is.na(tax_df)] <- " Unclassified"
+
+anantharaman_seqs_in_tree <- subset(anantharaman_seqs, tip_label %in% all_seqs$tip_label)
+
+# write.csv(tax_df, "dsrAB_taxonomy_table.csv")
+# write.csv(ref_seqs, "reference_sequence_naming_table.csv")
+# write.csv(anantharaman_seqs_in_tree, "anantharaman_seqs_in_tree.csv")
+
+```
+
+# Manually update taxonomy info for named Anantharaman seqs in tax_df
+```{r}
+tax_df$tax_1[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrA"] <- tax_df$tax_1[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_2[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrA"] <- tax_df$tax_2[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_3[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrA"] <- tax_df$tax_3[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_4[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrA"] <- tax_df$tax_4[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_5[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrA"] <- tax_df$tax_5[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+
+tax_df$tax_1[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrB"] <- tax_df$tax_1[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_2[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrB"] <- tax_df$tax_2[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_3[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrB"] <- tax_df$tax_3[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_4[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrB"] <- tax_df$tax_4[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+tax_df$tax_5[tax_df$tip_label == "QUERY___Bilophila_wadsworthia_dsrB"] <- tax_df$tax_5[tax_df$tip_label == "Bilophila_wadsworthia__BilWads6"]
+
+tax_df$tax_1[tax_df$tip_label == "QUERY___Desulfosporosinus_orientis_dsrA"] <- tax_df$tax_1[tax_df$tip_label == "Desulfosporosinus_orientis__DesOrie4"]
+tax_df$tax_2[tax_df$tip_label == "QUERY___Desulfosporosinus_orientis_dsrA"] <- tax_df$tax_2[tax_df$tip_label == "Desulfosporosinus_orientis__DesOrie4"]
+tax_df$tax_3[tax_df$tip_label == "QUERY___Desulfosporosinus_orientis_dsrA"] <- tax_df$tax_3[tax_df$tip_label == "Desulfosporosinus_orientis__DesOrie4"]
+tax_df$tax_4[tax_df$tip_label == "QUERY___Desulfosporosinus_orientis_dsrA"] <- tax_df$tax_4[tax_df$tip_label == "Desulfosporosinus_orientis__DesOrie4"]
+tax_df$tax_5[tax_df$tip_label == "QUERY___Desulfosporosinus_orientis_dsrA"] <- tax_df$tax_5[tax_df$tip_label == "Desulfosporosinus_orientis__DesOrie4"]
+
+tax_df$tax_1[tax_df$tip_label == "QUERY___Archaeoglobus_sulfaticallidus_dsrA"] <- tax_df$tax_1[tax_df$tip_label == "Archaeoglobus_sulfaticallidus__ArgSulfa"]
+tax_df$tax_2[tax_df$tip_label == "QUERY___Archaeoglobus_sulfaticallidus_dsrA"] <- tax_df$tax_2[tax_df$tip_label == "Archaeoglobus_sulfaticallidus__ArgSulfa"]
+tax_df$tax_3[tax_df$tip_label == "QUERY___Archaeoglobus_sulfaticallidus_dsrA"] <- tax_df$tax_3[tax_df$tip_label == "Archaeoglobus_sulfaticallidus__ArgSulfa"]
+tax_df$tax_4[tax_df$tip_label == "QUERY___Archaeoglobus_sulfaticallidus_dsrA"] <- tax_df$tax_4[tax_df$tip_label == "Archaeoglobus_sulfaticallidus__ArgSulfa"]
+tax_df$tax_5[tax_df$tip_label == "QUERY___Archaeoglobus_sulfaticallidus_dsrA"] <- tax_df$tax_5[tax_df$tip_label == "Archaeoglobus_sulfaticallidus__ArgSulfa"]
+
+tax_df$tax_1[tax_df$tip_label == "QUERY___Thermodesulfobium_narugense_dsrA"] <- tax_df$tax_1[tax_df$tip_label == "Thermodesulfobium_narugense__TrfNaru2"]
+tax_df$tax_2[tax_df$tip_label == "QUERY___Thermodesulfobium_narugense_dsrA"] <- tax_df$tax_2[tax_df$tip_label == "Thermodesulfobium_narugense__TrfNaru2"]
+tax_df$tax_3[tax_df$tip_label == "QUERY___Thermodesulfobium_narugense_dsrA"] <- tax_df$tax_3[tax_df$tip_label == "Thermodesulfobium_narugense__TrfNaru2"]
+tax_df$tax_4[tax_df$tip_label == "QUERY___Thermodesulfobium_narugense_dsrA"] <- tax_df$tax_4[tax_df$tip_label == "Thermodesulfobium_narugense__TrfNaru2"]
+tax_df$tax_5[tax_df$tip_label == "QUERY___Thermodesulfobium_narugense_dsrA"] <- tax_df$tax_5[tax_df$tip_label == "Thermodesulfobium_narugense__TrfNaru2"]
+
+tax_df$seq_abbreviation[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$seq_abbreviation[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$seq_name[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$seq_name[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$strain_name[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$strain_name[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$environment[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$environment[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$description[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$description[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$tax_1[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$tax_1[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$tax_2[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$tax_2[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$tax_3[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$tax_3[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$tax_4[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$tax_4[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+tax_df$tax_5[tax_df$tip_label == "Candidatus_Desulfovibrio_trichonymphae"] <- ref_fa$tax_5[ref_fa$seq_name == "Candidatus Desulfovibrio trichonymphae"]
+
+```
+
+# Trim results tree to only include reference sequences. Save data which will be needed to create the paneled tree plot. 
+```{r}
+ref_tips <- append(ref_seqs$tip_label, anantharaman_seqs_in_tree$tip_label)
+query_tips <- setdiff(all_seqs$tip_label, ref_tips)
+
+# function to auto generate list of groups for different taxon levels courtsey of the internet woohoo
+taxa_groups_df <- subset(tax_df, tax_5 != "" & !is.na(tax_5) & !is.na(tip_label))
+
+write.csv(taxa_groups_df, "taxa_groups_df.csv")
+
+# closest hits (reference sequences) only tree
+not_closest_hits <- setdiff(rooted_result_tree_f$tip.label, otu_hits_table$tip_label)
+closest_hits_tree <- drop.tip(rooted_result_tree_f, not_closest_hits)
+
+write.tree(closest_hits_tree, "closest_hits_tree.newick")
+
+tax_df_closest_hits <- subset(tax_df, tip_label %in% closest_hits_tree$tip.label)
+
+tax_df_closest_hits <- tax_df_closest_hits %>%
+  mutate(source = ifelse(grepl("QUERY", tip_label), 
+                         "Anantharaman 2018", 
+                         "Müller 2015"))
+
+write.csv(tax_df_closest_hits, "tax_df_closest_hits.csv")
+
+```
+

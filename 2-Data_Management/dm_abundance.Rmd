@@ -6,7 +6,7 @@ author: "Elizabeth Daigle"
 ---
 # Read in packages and functions
 ```{r}
-source(paste0(here::here(), "/0-Config_Functions/0-Config.R"))
+source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 # Read in sample metadata
@@ -41,10 +41,9 @@ samples_unique_genes <- samples %>%
   slice_max(Score, n = 1, with_ties = FALSE) %>%
   ungroup()
 ```
-
 # Read in closest reference leaf info
 ```{r}
-closest_ref <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_capsule.csv"))
+closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
 ```
 
 # Add a column to samples that has the single_closest_ref
@@ -56,3 +55,13 @@ samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% 
 
 saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique_genes_with_names.rds"))
 ```
+
+## Why does samples_unique_genes have 739 rows but samples_unique_genes_with_names have 720 rows?
+```{r}
+rows_not_in_names <- samples_unique_genes %>%
+  anti_join(samples_unique_genes_with_names)
+## they are all this one Capsule_1.k141_35391_6/64-437
+## my filtering above kept the 64-437, which was present in 19 samples from Capsule_1. The filtering pipeline used to make the closestRefInfo kept the 62-342 domain, which was present in 17 samples.
+```
+
+

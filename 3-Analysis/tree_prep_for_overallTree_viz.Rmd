@@ -1,0 +1,289 @@
+---
+title: "tree_prep_for_overallTree_viz"
+output: html_document
+date: "2024-06-21"
+---
+
+# packages and dfs to load
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(readr)
+library(seqinr)
+library(xlsx)
+library(readxl)
+
+nodeid.tbl_tree <- utils::getFromNamespace("nodeid.tbl_tree", "tidytree")
+rootnode.tbl_tree <- utils::getFromNamespace("rootnode.tbl_tree", "tidytree")
+offspring.tbl_tree <- utils::getFromNamespace("offspring.tbl_tree", "tidytree")
+offspring.tbl_tree_item <- utils::getFromNamespace(".offspring.tbl_tree_item", "tidytree")
+child.tbl_tree <- utils::getFromNamespace("child.tbl_tree", "tidytree")
+parent.tbl_tree <- utils::getFromNamespace("parent.tbl_tree", "tidytree")
+
+rooted_result_tree_f = read.tree("../../workflow/out/raxmlOutput/RAxML_labelledTree_noBootstrap_capsule_plus_wgs.newick")
+
+closestRefInfo_allScoreThresholdHits_wSingleClosestRef <- read_csv("../../workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_plus_wgs.csv")
+
+tax_df <- read_csv("dsrAB_taxonomy_table.csv")
+
+tax_df_closest_hits <- read_excel("taxonomy_df_of_closest_hit_sequences.xlsx", 
+                                  sheet = "Sheet2", col_types = c("skip", 
+                                                                  "text", "text", "text", "text", "text", 
+                                                                  "text", "text", "text", "text", "text", 
+                                                                  "text", "text"))
+
+ref_seqs <- read_csv("reference_sequence_naming_table.csv")
+anantharaman_seqs_in_tree <- read_csv("anantharaman_seqs_in_tree.csv")
+all_seqs <- data_frame(tip_label = rooted_result_tree_f$tip.label)
+hit_otus <- read_csv("hit_otus.csv", col_types = cols(...1 = col_skip()))
+
+```
+
+# Pruning and Clade Subsetting
+```{r}
+# prune tree to only include leaves that are either from mueller 2015 (subset for reductive dsrAB) or are novel anatharaman 2018 seqs
+reductive_tips <- subset(tax_df, grepl("Reductive", tax_1))$tip_label
+long_edge_anantharaman_seqs_to_drop <- c("QUERY___rifoxyc1_full_scaffold_51380_dsrB", 
+                                    "QUERY___rifixya3_full_scaffold_25079_dsrB", 
+                                    "QUERY___rifoxyd2_full_scaffold_44429_dsrA", 
+                                    "QUERY___DORA_ECA_850_dsrB", 
+                                    "QUERY___RBG_13_OP3_44_8_RBG_13_scaffold_10190_dsrB", 
+                                    "QUERY___mol-32-1605-051718_dsrB", 
+                                    "QUERY___DORA_UNB_8638_dsrB", 
+                                    "QUERY___Infant_1_KP_23_dsrB", 
+                                    "QUERY___UC1CITii_18930_dsrB", 
+                                    "QUERY___scnpilot_cont_500_p_scaffold_168_curated_dsrB", 
+                                    "QUERY___UC1SER_17878_dsrB")
+
+oxidative_taxa <- c("Betaproteobacteria", 
+                    "Nitrospinae", 
+                    "Nitrospirae_bacterium_RBG_19FT_COMBO_42_15_dsrA", 
+                    "RIFOXYD12_FULL_Gammaproteobacteria_61_37", 
+                    "Chlorobium")
+
+# identifying Anantharamn sequences not within the clades identified in Mueller 2015
+
+ref_tips <- append(subset(ref_seqs, tip_label %in% reductive_tips)$tip_label, subset(anantharaman_seqs_in_tree, grepl("Moorella", tip_label) == F & !(tip_label %in% long_edge_anantharaman_seqs_to_drop))$tip_label)
+drop_tips <- setdiff(all_seqs$tip_label, ref_tips)
+
+pruned_t <- drop.tip(rooted_result_tree_f, drop_tips)
+
+# reductive_mrca <- MRCA(pruned_t, c(reductive_tips[1], reductive_tips[length(reductive_tips)]))
+reductive_mrca <- MRCA(pruned_t, c("Desulfovibrio_vulgaris_oxamicus__DslVulg9", subset(tax_df, grepl("Reductive archaeal", tax_1))$tip_label))
+
+reductive_t <- extract.clade(pruned_t, reductive_mrca)
+
+# Trim non-clustered Anantharaman sequences from tree (group closest to reductive archaeal sequences but don’t actually cluster together). These sequences have relatively long branch lengths from any other dsrAB sequences from Mueller 2015's tree. 
+# collapse reductive bacterial clade in overall tree
+# MRCA will be between archaeoglobus and deltaproteobacteria (take any two random tip labels in these clades)
+red_bact_mrca <- MRCA(reductive_t, c("Desulfovibrio_vulgaris_oxamicus__DslVulg9","Archaeoglobus_fulgidus__ArgFulg5"))
+red_bact_clade <- extract.clade(reductive_t, node = red_bact_mrca)
+red_bact_tips <- red_bact_clade$tip.label
+
+# red_arch_mrca <- MRCA(reductive_t, subset(tax_df, grepl("Reductive archaeal", tax_1))$tip_label)
+# red_arch_clade <- extract.clade(reductive_t, node = red_arch_mrca)
+red_arch_tips <- subset(tax_df, grepl("Reductive archaeal", tax_1))$tip_label
+
+unclustered_t <- drop.tip(reductive_t, c(red_arch_tips, red_bact_tips))
+unclustered_tips <- unclustered_t$tip.label
+
+reductive_t_no_unclustered_tips <- unroot(drop.tip(reductive_t, unclustered_tips))
+reductive_t_no_unclustered_tips_rooted <- root(reductive_t_no_unclustered_tips, outgroup = red_arch_tips)
+
+desulfovibrionaceae_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("Desulfovibrionaceae", tax_5))$tip_label)
+nitrospirae_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("Nitrospirae", tax_2))$tip_label)
+faca_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("FACA", tax_2))$tip_label)
+envsup1_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("Environmental supercluster 1", tax_2))$tip_label)
+archaeoglobus_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("Archaeoglobus cluster", tax_2))$tip_label)
+deltaprot_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, grepl("Deltaproteobacteria", tax_2))$tip_label)
+red_arch_mrca <- MRCA(reductive_t_no_unclustered_tips_rooted, red_arch_tips[!red_arch_tips == "Caldivirga_maquilingensis__CvgMaqu3"])
+
+red_anantharaman_seqs <- subset(anantharaman_seqs_in_tree, tip_label %in% reductive_t$tip.label)$tip_label
+red_anantharaman_seqs <- subset(anantharaman_seqs_in_tree, tip_label %in% reductive_t$tip.label)$tip_label
+
+not_anantharaman_seqs <- setdiff(all_seqs$tip_label, red_anantharaman_seqs)
+anantharaman_t <- drop.tip(rooted_result_tree_f, not_anantharaman_seqs)
+
+```
+
+# Collapsing sum nodes
+```{r}
+tip_in_nodes_list <- list(
+  # deltaproteobacteria
+  c(subset(tax_df, tax_4 == "Thermodesulfobacteria")$tip_label),
+  c(subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[1])$tip_label),
+  c(subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[7])$tip_label),
+  c(subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[8])$tip_label),
+  c(subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[10])$tip_label),
+  (c("Arctic_sediment_clone_J4-28__Af1t0y27", "Arctic_sediment_clone_AH1_29__AtcSed60")),
+  (c("QUERY___rifoxyc3_full_scaffold_48866_dsrB", "Thalassohaline_sediment_clone__FJ588546")),
+  (c("Deep_sea_sediment_clone__UncSu230", "Petroleum-contaminated_sediment_clone__FM212326")),
+  (c("Desulforhabdus_amnigena__DrhAmni2", "Saltmarsh_clone__UncS1742")),
+  (c("Bioreactor_metagenome__BioMet11", "Pearl_river_estuary_clone_SMTZDsr30__UncS2062")),
+  (c("Arctic_sediment_clone_AH3_22__Bq7a0Ab4", "QUERY___CG1_02_FULL_Deltaproteobacteria_45_11_curated_dsrB")),
+  (c("Schlöppnerbrunnen_I_soil_clone_dsrSbI-82__Af0ScI32", "QUERY___RBG_13_scaffold_9_dsrA")),
+  (c("QUERY___RBG_13_scaffold_15836_dsrA", "Polluted_aquifer_clone_LGWK13__UncS1625")),
+  (c("Desulfomicrobium_apsheronum__DscApsh7_AF420281", "Desulfovibrio_aminophilus__DslAmin2")),
+  (c("Desulfovibrio_africanus__EU716165", "Desulfovibrio_sp._X2__DsvSp235")),
+  (c("Bioreactor_clone__UncS2020", "Bacterium_AR1201__DQ211849")),
+  (c("Desulfovibrio_vulgaris_oxamicus__DslVulg9", "Desulfovibrio_cuneatus__DslCune3")),
+  (c("Desulfovibrio_acrylicus__FJ655912", "Desulfovibrio_oceani__FJ655911")),
+  (c("Desulfovibrio_burkinensis__DslBurk3", "Desulfovibrio_sp._U5L__DsvSp234")),
+  (c("Desulfovibrio_fructosivorans__DslFruc2", "Bioreactor_clone__UncS2019")),
+  (c("Desulfovibrio_bastinii__DsvBast3", "Desulfovibrio_hydrothermalis__DsvHydr2")),
+  (c("Desulfovibrio_intestinalis__DslInte3", "Desulfovibrio_intestinalis__DslInte4")),
+  
+  # faca group
+  (c("Seine_river_floodplain_clone_VO4__Bq8Rive4", "Pearl_river_estuary_clone_MidDsr75__UncS2039")),
+  (c("QUERY___RBG_13_scaffold_38282_dsrB", "Seine_river_floodplain_clone_VO2__Bq8Rive3")),
+  (c("QUERY___rifixya3_full_scaffold_108421_dsrB", "QUERY___Desulfosporosinus_acididurans_dsrB")),
+  (c("QUERY___Candidatus_Hydrothermarchaeota_archaeon_JdFR_18_JGI24020J35080_1000151_dsrA", "Rasner_Möser_fen_soil_clone_Rm58__RmRasn11")),
+  (c("Saline-alkaline_soil_clone__JX985645", "QUERY___mol-32-15fa-012545_dsrB")),
+  (c("Rhi-d-50-rice_field_soil__JN615185", "Bacterium_LS1701__DQ211852")),
+  (c("QUERY___rifcsp2_19ft_1_scaffold_145950_dsrB", "New_York_peatland_soil_clone_W20__UncSu782")),
+  (c("QUERY___Dehalococcoidia_bacterium_SCGC_AB_540_C11_dsrB", "Black_Sea_sediment_clone_BSI-10__BlackSe2")),
+  # (c("QUERY___rifcsp16_3_sub10_scaffold_10226_dsrB", "Deep_soil_clone_D7__Z17DSoil")),
+  # (c("QUERY___rifcsp16_3_sub10_scaffold_34522_dsrB", "Hot_spring_microbial_mat_clone__EF429276")),
+  (c("Hydrothermal_field_microbial_mats_clone__AB451525", "QUERY___mol-32-15fa-020022_dsrB")),
+  (c("Pelotomaculum_propionicicum__PtmSpec4", "QUERY___Desulfurispora_thermophila_dsrB")),
+  (c("Deep_sea_sediment_clone__JN798930", "Aarhus_bay_sediment_clone_DSRIV-8__Bv6AaB25")),
+  (c("Deep_sea_sediment_clone_NTd-VI02__UncSu273", "Polluted_aquifer_clone_LGWI13__UncS1646")),
+  (c("QUERY___Syntrophomonas_zehnderi_dsrA", "MSW_digester_clone__Unc01cxc")),
+  (c("Black_Sea_sediment_clone_BSI-6__BlackS17", "Hydrothermal_field_microbial_mat_clone__AB451523")),
+  (c("Carboxydothermus_ferrireducens__CrxFerr3", "Carboxydothermus_hydrogenoformans_Z-2901__CrxHydr2")),
+  (c("Thermodesulfobium_narugense__TrfNaru2", "Thermodesulfobium_narugense__CP002690")),
+  
+  # Env Supercluster 1
+  (c("QUERY___RBG_13_scaffold_1896_dsrB", "QUERY___19ft_2_nophage_noknown_scaffold_70821_dsrB")),  
+  (c("QUERY___BJP_IG3402_Desantisbacteria_44_7_dsrB", "Polluted_aquifer_clone_LGWG11__UncS1683")),
+  (c("Uncultured_prokaryote_clone_A24__JQ304764", "QUERY___BJP_IG2599_Bacteria_36_9_dsrA")),
+  (c("QUERY___RBG_16_scaffold_1647_dsrA", "hydrothermal_vent_sediment_clone_B04P014__HydrVe46")),
+  (c("New_York_peatland_soil_clone_W9__UncSu779", "Schlöppnerbrunnen_fen_peat_soil_clone__Dsqncy15")),
+  (c("QUERY___rifcsplowo2_12_scaffold_393080_dsrB", "Schlöppnerbrunnen_fen_peat_soil_clone__DsqnnY12")),
+  (c("Seine_estuary_intertidal_zone_clone_VN10__UncS1735", "Aarhus_bay_sediment_clone_DSRIV-10__Bv6AaB23")),
+  
+  # archaeoglobus
+  (c("QUERY___Archaeoglobus_veneficus_dsrB", "QUERY___rifcsphigho2_12_scaffold_694182_dsrB")))
+
+nodes <- c()
+
+for (n in 1:length(tip_in_nodes_list)) {
+  print(n)
+  node <- MRCA(reductive_t_no_unclustered_tips_rooted, tip_in_nodes_list[[n]])
+  nodes <- append(nodes, node)
+}
+
+collapsed_nodes_df <- data.frame(node = nodes)
+
+get_n_tips <- function(node, tree) {
+  clade <- extract.clade(tree, node)
+  return(Ntip(clade))
+}
+
+collapsed_nodes_df <- collapsed_nodes_df %>%
+  rowwise() %>%
+  mutate(n_tips = get_n_tips(node, reductive_t_no_unclustered_tips_rooted)) %>%
+  mutate(size_group = case_when(n_tips < 10 ~ "<10", 
+                                n_tips >= 10 & n_tips <= 100 ~ "10-100", 
+                                n_tips > 100 ~ ">100"))
+
+collapsed_nodes_df$size_group <- factor(collapsed_nodes_df$size_group, levels = c("<10", "10-100", ">100"))
+```
+
+# tree 1 of why am i doing this
+```{r}
+tree_plot_yuh <- 
+  ggtree(reductive_t_no_unclustered_tips_rooted, layout = "circular") %>%
+
+collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, tax_4 == "Thermodesulfobacteria")$tip_label)) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[1])$tip_label)) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[7])$tip_label)) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[8])$tip_label)) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, subset(tax_df, tax_5 == unique(subset(tax_df, tax_2 == "Deltaproteobacteria supercluster" & tax_4 != "Clostridia" & tax_4 != "Thermodesulfobacteria" & tax_5 != "Desulfovibrionaceae" & tax_5 != "Unclassified")$tax_5)[10])$tip_label)) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Arctic_sediment_clone_J4-28__Af1t0y27", "Arctic_sediment_clone_AH1_29__AtcSed60"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifoxyc3_full_scaffold_48866_dsrB", "Thalassohaline_sediment_clone__FJ588546"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Deep_sea_sediment_clone__UncSu230", "Petroleum-contaminated_sediment_clone__FM212326"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulforhabdus_amnigena__DrhAmni2", "Saltmarsh_clone__UncS1742"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Bioreactor_metagenome__BioMet11", "Pearl_river_estuary_clone_SMTZDsr30__UncS2062"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Arctic_sediment_clone_AH3_22__Bq7a0Ab4", "QUERY___CG1_02_FULL_Deltaproteobacteria_45_11_curated_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Schlöppnerbrunnen_I_soil_clone_dsrSbI-82__Af0ScI32", "QUERY___RBG_13_scaffold_9_dsrA"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___RBG_13_scaffold_15836_dsrA", "Polluted_aquifer_clone_LGWK13__UncS1625"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfomicrobium_apsheronum__DscApsh7_AF420281", "Desulfovibrio_aminophilus__DslAmin2"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_africanus__EU716165", "Desulfovibrio_sp._X2__DsvSp235"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Bioreactor_clone__UncS2020", "Bacterium_AR1201__DQ211849"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_vulgaris_oxamicus__DslVulg9", "Desulfovibrio_cuneatus__DslCune3"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_acrylicus__FJ655912", "Desulfovibrio_oceani__FJ655911"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_burkinensis__DslBurk3", "Desulfovibrio_sp._U5L__DsvSp234"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_fructosivorans__DslFruc2", "Bioreactor_clone__UncS2019"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_bastinii__DsvBast3", "Desulfovibrio_hydrothermalis__DsvHydr2"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Desulfovibrio_intestinalis__DslInte3", "Desulfovibrio_intestinalis__DslInte4"))) %>%
+
+  # collapsed nodes for faca group
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Seine_river_floodplain_clone_VO4__Bq8Rive4", "Pearl_river_estuary_clone_MidDsr75__UncS2039"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___RBG_13_scaffold_38282_dsrB", "Seine_river_floodplain_clone_VO2__Bq8Rive3"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifixya3_full_scaffold_108421_dsrB", "QUERY___Desulfosporosinus_acididurans_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___Candidatus_Hydrothermarchaeota_archaeon_JdFR_18_JGI24020J35080_1000151_dsrA", "Rasner_Möser_fen_soil_clone_Rm58__RmRasn11"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Saline-alkaline_soil_clone__JX985645", "QUERY___mol-32-15fa-012545_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Rhi-d-50-rice_field_soil__JN615185", "Bacterium_LS1701__DQ211852"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifcsp2_19ft_1_scaffold_145950_dsrB", "New_York_peatland_soil_clone_W20__UncSu782"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___Dehalococcoidia_bacterium_SCGC_AB_540_C11_dsrB", "Black_Sea_sediment_clone_BSI-10__BlackSe2"))) %>%
+  
+  # CHECK THESE CLUSTERS! RETURNING ERRORS
+  # collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifcsp16_3_sub10_scaffold_10226_dsrB", "Deep_soil_clone_D7__Z17DSoil"))) %>%
+  # collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifcsp16_3_sub10_scaffold_34522_dsrB", "Hot_spring_microbial_mat_clone__EF429276"))) %>%
+  
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Hydrothermal_field_microbial_mats_clone__AB451525", "QUERY___mol-32-15fa-020022_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Pelotomaculum_propionicicum__PtmSpec4", "QUERY___Desulfurispora_thermophila_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Deep_sea_sediment_clone__JN798930", "Aarhus_bay_sediment_clone_DSRIV-8__Bv6AaB25"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Deep_sea_sediment_clone_NTd-VI02__UncSu273", "Polluted_aquifer_clone_LGWI13__UncS1646"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___Syntrophomonas_zehnderi_dsrA", "MSW_digester_clone__Unc01cxc"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Black_Sea_sediment_clone_BSI-6__BlackS17", "Hydrothermal_field_microbial_mat_clone__AB451523"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Carboxydothermus_ferrireducens__CrxFerr3", "Carboxydothermus_hydrogenoformans_Z-2901__CrxHydr2"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Thermodesulfobium_narugense__TrfNaru2", "Thermodesulfobium_narugense__CP002690"))) %>%
+
+  # Env Supercluster 1
+
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___RBG_13_scaffold_1896_dsrB", "QUERY___19ft_2_nophage_noknown_scaffold_70821_dsrB"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___BJP_IG3402_Desantisbacteria_44_7_dsrB", "Polluted_aquifer_clone_LGWG11__UncS1683"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Uncultured_prokaryote_clone_A24__JQ304764", "QUERY___BJP_IG2599_Bacteria_36_9_dsrA"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___RBG_16_scaffold_1647_dsrA", "hydrothermal_vent_sediment_clone_B04P014__HydrVe46")))  %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("New_York_peatland_soil_clone_W9__UncSu779", "Schlöppnerbrunnen_fen_peat_soil_clone__Dsqncy15"))) %>%
+  collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___rifcsplowo2_12_scaffold_393080_dsrB", "Schlöppnerbrunnen_fen_peat_soil_clone__DsqnnY12"))) %>%
+      collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("Seine_estuary_intertidal_zone_clone_VN10__UncS1735", "Aarhus_bay_sediment_clone_DSRIV-10__Bv6AaB23"))) %>%
+
+  # archaeoglobus
+    collapse(node = MRCA(reductive_t_no_unclustered_tips_rooted, c("QUERY___Archaeoglobus_veneficus_dsrB", "QUERY___rifcsphigho2_12_scaffold_694182_dsrB"))) %>%
+
+  # these clades are entirely collapsed bc they have no hit seqs from the HMMER search
+  collapse(node = nitrospirae_mrca) %>%
+  collapse(node = red_arch_mrca) %<+%
+
+  collapsed_nodes_df +
+geom_point2(aes(node = node, size = size_group), alpha = 0.3) +
+
+  geom_cladelabel(node = desulfovibrionaceae_mrca, color = "#40b8b4", label = "Desulfovibrionaceae", offset = 1.5, barsize = 0.7, offset.text = 0.8) +
+  geom_cladelabel(node = nitrospirae_mrca, color = "#d4af37", label = "Nitrospirae", offset = 0.7, barsize = 0.7, offset.text = 1, align = T) +
+  geom_cladelabel(node = faca_mrca, color = "#fc74fd", label = "FACA", offset = 0.7, barsize = 0.7, offset.text = 2, align = T) +
+  geom_cladelabel(node = envsup1_mrca, color = "#430b80", label = "Env. Supercluster 1", offset = 0.7, barsize = 0.7, offset.text = 1, align = T) +
+  geom_cladelabel(node = archaeoglobus_mrca, color = "#fc6a03", "Archaeoglobus", offset = 0.7, barsize = 0.7, offset.text = 1, align = T) +
+  geom_cladelabel(node = deltaprot_mrca, color = "#b80f0a", "Deltaproteobacteria", barsize = 0.7, offset = 0.7, hjust = 2.2, align = T) +
+  geom_cladelabel(node = red_arch_mrca, color = "#ff0080", "Reductive Archaea", align = T, barsize = 0.7, offset.text = 1.6) +
+  
+  geom_point2(aes(subset=(node==red_arch_mrca)), shape=24, size=2, fill="#ff0080") + 
+  geom_point2(aes(subset=(node==nitrospirae_mrca)), shape=24, size=2, fill="#d4af37") + 
+  
+  
+  geom_point2(aes(subset=(label %in% hit_otus$otu)), color = "red", size = 1) +
+  scale_size_manual(na.translate = F, values = c(1, 2, 3), name = "N Tips in Collapsed Clade") +
+  theme(legend.position = "bottom")
+
+pdf("../figures/overall_tree_figure.pdf")
+tree_plot_yuh
+
+```
+
+

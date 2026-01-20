@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 # Read in packages and functions
 ```{r}
-source(paste0(here::here(), "/0-Config_Functions/0-Config.R"))
+source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 ```{r}

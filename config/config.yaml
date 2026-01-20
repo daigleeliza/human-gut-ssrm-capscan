@@ -14,7 +14,7 @@ dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
 refMSA: "config/dsrAB_referenceSequences_aa.faa"
 
 # reference leaves to select from tree
-refListToSelect: "config/ref_leaves_to_select.txt"
+#refListToSelect: "config/ref_leaves_to_select.txt"
 
 # BLAST db
 blastDB: "workflow/out/sequenceSimilarity/db"

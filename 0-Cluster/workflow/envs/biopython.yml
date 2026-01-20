@@ -1,0 +1,9 @@
+name: biopython
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython=1.78=py39h3811e60_2
+  - seqkit=2.12.0
+  - ete3

@@ -1,0 +1,67 @@
+# Input file with WGS accession numbers downloaded in this study.
+accessionNumFile: "config/NCBI_WGS_accessionNumbers.txt"
+# Metadata associated with each Biosample from NCBI
+biosampleMetadata: "config/metadata/NCBI_biosample_metadata.json"
+
+# sample list for capsule/stool data
+sampleFileRaw: "config/sampleReadList.txt"
+
+# profile HMMs for dsrAB
+dsrAB_bact_HMMProfile: "config/profileHMM_bacteria_aa.phmm"
+dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
+
+# reference dsrAB files
+refMSA: "config/dsrAB_referenceSequences_aa.faa"
+
+# reference leaves to select from tree
+#refListToSelect: "config/ref_leaves_to_select.txt"
+
+# BLAST db
+blastDB: "workflow/out/sequenceSimilarity/db"
+
+# raxml input files
+#treeFileExtension: Christensen2024
+treeFileExtension: Daigle2026
+treeFileExtension_frag: Daigle2026_frag
+treeFileExtension_frag_capsule: Daigle2026_frag_capsule
+
+paramName: "[date]"
+binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
+refTree: "workflow/out/modelParams/RAxML_result."
+raxmlOutputFileExtension: "raxml"
+
+scriptsDir: "workflow/scripts"
+
+# location of SRA repository -- where prefetch sends files to
+repositoryDir: "workflow/out/sra_repo/wgs"
+# output directory for dumped FASTA files from NCBI
+dumpDir: "workflow/out/dump"
+
+# prodigal output directory -- translated genes
+prodigalGeneCoordDir: "workflow/out/geneCoord"
+prodigalProteinSeqDir: "workflow/out/proteinSeq"
+
+# HMMER search output directories
+domtblDir: "workflow/out/dsrAB_hmmer/domtbl"
+hmmOutDir: "workflow/out/dsrAB_hmmer/hmmOut"
+msaDir: "workflow/out/dsrAB_hmmer/msa"
+summaryDir: "workflow/out/dsrAB_hmmer/summary"
+
+# "cleaned" hits -- filtered for score and duplicates -- unique hits
+scoreThreshold: 100 # score cutoff
+gapThreshold: 60 # gap filter to remove ultra-gappy sequences
+cleanHitsDir: "workflow/out/cleanHits"
+
+# Tree files
+raxmlOutputDir: "workflow/out/raxmlOutput"
+modelParamsDir: "workflow/out/modelParams"
+
+# Directories for capsule abundance rules
+tmpDir: "/scratch/ehd5113/capsule/meta/tmp"
+coAssemblyDir: "workflow/out/biohub_assemblies/Becca/co_assemblies"
+filterDir: "workflow/out/filtered/filtered"
+mapDir: "workflow/out/mapping"
+SAMDir: "workflow/out/mapping/sam"
+prodigalDir: "workflow/out/prodigal"
+dsrHMMERDir: "workflow/out/dsrAB_hmmer"
+geneReadsDir: "workflow/out/mapping/bam/CoAssembly_gene_reads"

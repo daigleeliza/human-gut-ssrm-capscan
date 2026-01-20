@@ -1,0 +1,331 @@
+
+#packages to load
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(phyloseq)
+```
+
+
+```{r}
+#root tree
+ref_tree = read.tree("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/raxmlOutputFinal/RAxML_originalLabelledTree_noBootstrap.newick")
+
+out_group = as.vector(archaeaRootsetIDs$X1)
+
+rooted_ref_tree <-root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+
+```
+
+# nodes
+```{r}
+faca_node = intersect(as.vector(subset(taxa_table$OTU, taxa_table$supercluster == "FACA group sensu lato")), pruned_tree$tip.label)
+
+desulfovibrionaceae_node = intersect(as.vector(subset(taxa_table$OTU, taxa_table$level3_taxon == "Desulfovibrionaceae")), pruned_tree$tip.label)
+
+archaeoglobus_node = intersect(as.vector(subset(taxa_table$OTU, taxa_table$supercluster == "Archaeoglobus cluster")), pruned_tree$tip.label)
+
+env_supercluster1_node = intersect(as.vector(subset(taxa_table$OTU, taxa_table$supercluster == "Environmental supercluster 1")), pruned_tree$tip.label)
+
+deltaproteobacteria_node = intersect(as.vector(subset(taxa_table$OTU, taxa_table$level2_taxon == "Deltaproteobacteria")), pruned_tree$tip.label)
+
+moorella_node = MRCA(rooted_ref_tree, c('Moorella_thermoacetica_Y72_copy_2__MooTher5', "Moorella_thermoacetica_ATCC_39073_copy_2__MooThe10"))
+
+red_arch_node = c("Caldivirga_maquilingensis__CvgMaqu3", "Pyrobaculum_oguniense_copy_1__PyrOgun6") 
+
+oxbact_node = MRCA(rooted_ref_tree, c("Thiocapsa_rosea_DSM_235__ThpRos10", "Magnetococcus_marinus__Z04Spec2"))
+
+nitrospirae_node <- intersect(as.vector(subset(taxa_table$OTU, taxa_table$supercluster == "Nitrospirae supercluster")), pruned_tree$tip.label)
+
+```
+
+# remove oxidative bacterial node and moorella thermoacetica cp 2
+```{r}
+
+moorella_copy_2_labels <- c("Moorella_thermoacetica_Y72_copy_2__MooTher5", "Moorella_thermoacetica_ATCC_39073_copy_2__MooThe10")
+
+# oxbact_clade <- tree_subset(rooted_ref_tree, node = oxbact_node, levels_back = 0)
+ox_bact_labels <- subset(taxa_table$OTU, taxa_table$dsrab_type == "Oxidative bacterial type DsrAB")
+
+
+pruned_tree <- drop.tip(rooted_ref_tree, c(moorella_copy_2_labels, ox_bact_labels))
+
+```
+
+# circular tree
+```{r}
+
+tree <- ggtree(pruned_tree, layout = "circular", size = 0.15) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13), legend.title = element_text(hjust = 0.5, size = 8))
+
+
+```
+
+# adding node points for HIT reference leaves
+```{r}
+# hit_otus <- otu_hits_table$Var
+
+tree + 
+  
+  geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "jitter") +
+  
+  geom_hilight(node = MRCA(pruned_tree, desulfovibrionaceae_node), fill = "yellow", alpha = 0.3) +
+  
+  geom_hilight(node = MRCA(pruned_tree, faca_node), fill = "pink", alpha = 0.3) +
+
+
+  # geom_hilight(node = MRCA(pruned_tree, red_arch_node), fill = "blue", alpha = 0.25) +
+  geom_cladelabel(node = MRCA(pruned_tree, red_arch_node), label = "Crenarchaeota", align = TRUE, barsize = 1, fontsize = 3.5) +
+  
+  # geom_hilight(node = MRCA(pruned_tree, nitrospirae), fill = "orange", alpha = 0.25) +
+  geom_cladelabel(node = MRCA(pruned_tree, nitrospirae), label = "Nitrospirae supercluster", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
+  
+  # geom_hilight(node = MRCA(pruned_tree, archaeoglobus_node), fill = "purple", alpha = 0.25) +
+  geom_cladelabel(node = MRCA(pruned_tree, archaeoglobus_node), label = "Euryarchaeota", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
+  
+  # geom_hilight(node = MRCA(pruned_tree, env_supercluster1_node), fill = "red", alpha = 0.25) +
+  geom_cladelabel(node = MRCA(pruned_tree, env_supercluster1_node), label = "Environmental Supercluster 1", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
+  
+  geom_cladelabel(node = MRCA(pruned_tree, deltaproteobacteria_node), label = "Deltaproteobacteria", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white")
+  
+  
+
+```
+
+# iterated clade hilights by taxonomic level
+```{r}
+# library(RColorBrewer)
+tree <- ggtree(pruned_tree, layout = "circular", size = 0.15) +
+  theme(plot.title = element_text(hjust = 0.5, size = 13), legend.title = element_text(hjust = 0.5, size = 8))
+
+taxa <- as.vector(unique(taxa_table$supercluster))
+
+deltaproteobacteria_node <- c("Desulfobacca_acetoxidans__DebAcet3", "Desulfovibrio_magneticus__AP010904")
+
+# hit_otus <- otu_hits_table$Var
+# hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
+# hit_otus <- gsub("[.]", "-", hit_otus)
+# hit_otus <- gsub("sp-", "sp.", hit_otus)
+# hit_otus <- gsub("sk-", "sk.", hit_otus)
+# hit_otus <- gsub("str-", "str.", hit_otus)
+
+colors <- brewer.pal(7, "Set2")
+purple <- brewer.pal(10, "Set3")[10]
+n = 1
+
+for (taxon in taxa) {
+  if (!is.na(taxon) & taxon != "Deltaproteobacteria supercluster") {
+
+    node <- intersect(as.vector(subset(taxa_table$OTU, taxa_table$supercluster == taxon)), pruned_tree$tip.label)
+
+  if ((length(node) > 0)) {
+
+    tree <-
+      tree +
+      # geom_hilight(node = MRCA(pruned_tree, node), color = colors[n], alpha = 0) +
+      # geom_cladelab(node = MRCA(pruned_tree, node), label = taxon, fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n], align = T, barsize = 1)
+      geom_cladelab(node = MRCA(pruned_tree, node), label = "", fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n], align = T, barsize = 1)
+
+    n = n +1
+    }
+  }
+}
+
+tree <-
+  tree +
+      # geom_hilight(node = MRCA(pruned_tree, deltaproteobacteria_node), color = colors[n], alpha = 0) +
+      # geom_cladelab(node = MRCA(pruned_tree, deltaproteobacteria_node), label = "Deltaproteobacteria supercluster", fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n], align = T, barsize = 1) +
+  geom_cladelab(node = MRCA(pruned_tree, deltaproteobacteria_node), label = "", fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n], align = T, barsize = 1) +
+
+  # geom_hilight(node = MRCA(pruned_tree, red_arch_node), color = colors[n+1], alpha = 0) +
+      # geom_cladelab(node = MRCA(pruned_tree, red_arch_node), label = "reductive archaeal type DsrAB", fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n+1], align = T, barsize = 1) +
+  geom_cladelab(node = MRCA(pruned_tree, red_arch_node), label = "", fontsize = 3.5, horizontal = F, hjust = 0.5, vjust = 1.5, barcolor = colors[n+1], align = T, barsize = 1) +
+
+  geom_hilight(node = MRCA(pruned_tree, faca_node), fill = colors[2], alpha = 0.2) +
+  geom_hilight(node = MRCA(pruned_tree, desulfovibrionaceae_node), fill = purple, alpha = 0.2) +
+
+  geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "jitter")
+
+tree
+ggsave(plot = tree,file = "circular_tree.jpeg", width = 5, height = 5)
+```
+
+# barchart by cluster
+```{r}
+# prepare taxonomy table
+# rownames(taxa_table) <- taxa_table$OTU
+# taxa_table <- as.matrix(taxa_table)
+# taxa_table <- taxa_table[,-c(1:2)]
+# TAX = tax_table(taxa_table)
+# dummy otu_table
+# ref_otu_matrix <- matrix(data = 1, nrow = nrow(taxa_table))
+# rownames(ref_otu_matrix) <- rownames(taxa_table)
+# colnames(ref_otu_matrix) <- c("sample1")
+# OTU = otu_table(ref_otu_matrix, taxa_are_rows = TRUE)
+#
+
+# hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
+# hit_otus <- gsub("[.]", "-", hit_otus)
+# hit_otus <- gsub("sp-", "sp.", hit_otus)
+# hit_otus <- gsub("sk-", "sk.", hit_otus)
+# hit_otus <- gsub("str-", "str.", hit_otus)
+# hit_otus
+# 
+# # hits_list <- as.vector(otu_hits_table$Var1)
+# hits_list <- hit_otus
+# hits_only_tree <- keep.tip(pruned_tree, c(hits_list))
+# phylotree <- phyloseq(TAX, OTU, hits_only_tree)
+# # 
+# plot_tree(phylotree)
+# 
+# desulfovibrionaceae_node <- intersect(as.vector(subset(taxa_table$OTU, taxa_table$level3_taxon == "Desulfovibrionaceae")), pruned_tree$tip.label)
+# 
+desulfovibrionaceae_tax <- subset_taxa(TAX, level3_taxon == "Desulfovibrionaceae")
+# 
+desulfovibrionaceae_tree <- phyloseq(desulfovibrionaceae_tax, OTU, hits_only_tree)
+
+
+# plot_tree(tip_glom(phylotree, h = 0), label.tips = "taxa_names", text.size = 2)
+
+# desulfovibrionnaceae_tree_clustered <- tip_glom(desulfovibrionaceae_tree, h = 0)
+
+plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0), label.tips = "taxa_names", text.size = 2)
+plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0.1), label.tips = "taxa_names", text.size = 2)
+plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0.2), label.tips = "taxa_names", text.size = 2)
+
+
+# ggtree(desulfovibrionnaceae_tree_clustered, layout = "fan", open.angle = 250, color = purple) +
+#   geom_tippoint(aes(subset= label %in%  hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
+#   geom_tiplab(size = 2, offset = 0.01)
+
+# desulfovibrionaceae_tree_plot_unlabeled <- ggtree(desulfovibrionnaceae_tree_clustered, color = purple) +
+#   geom_tippoint(aes(subset=(label %in% closest_ref_leaves)), color = "black", size = 1)
+
+# desulfovibrionaceae_tree_plot_labeled <-
+#   ggtree(desulfovibrionnaceae_tree_clustered, color = purple) +
+#   # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
+#   geom_tiplab(aes(subset=(label %in% closest_ref_leaves)), size = 2)
+#   # geom_text(aes(label=node), size = 2)
+
+
+# ggsave(plot = desulfovibrionaceae_tree_plot_labeled, file = "desulfovibrionaceae_tree_plot_labeled.jpeg", width = 7, height = 7)
+# # 
+# ggsave(plot = desulfovibrionaceae_tree_plot_unlabeled, file = "desulfovibrionaceae_tree_plot_unlabeled.jpeg", width = 7, height = 7)
+
+# desulfovibrionaceae_tree <- phyloseq(desulfovibrionaceae_tax, OTU, pruned_tree)
+
+# write.xlsx(as.data.frame(tax_table(tip_glom(desulfovibrionaceae_tree, h = 0))), "taxa_table_desulfovibrionaceae_notipglom.xlsx")
+write.xlsx(as.data.frame(tax_table(tip_glom(desulfovibrionaceae_tree, h = 0.1))), "taxa_table_desulfovibrionaceae_tipglom_01.xlsx")
+
+```
+
+# firmicutes group
+```{r}
+
+# faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
+
+# faca_tree <- phyloseq(faca_tax, OTU, hits_only_tree)
+# plot_tree(tip_glom(faca_tree, h = 0), label.tips = "taxa_names", text.size = 2)
+# plot_tree(tip_glom(faca_tree, h = 0.1), label.tips = "taxa_names", text.size = 2)
+# plot_tree(tip_glom(faca_tree, h = 0.2), label.tips = "taxa_names", text.size = 2)
+
+# hit_otus <- tip_glom_cluster$otu
+# hit_otus <- gsub("[.]", "-", hit_otus)
+# hit_otus <- gsub("sp-", "sp.", hit_otus)
+# hit_otus <- gsub("sk-", "sk.", hit_otus)
+# hit_otus <- gsub("str-", "str.", hit_otus)
+
+
+# faca_tree_clustered <-
+#   tip_glom(faca_tree, h = 0)
+
+faca_tree_plot_labeled <-
+  ggtree(faca_tree_clustered, color = colors[2]) +
+  # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
+  geom_tiplab(aes(subset=(label %in% hit_otus)), size = 2)
+  # geom_text(aes(label=node), sizec = 2)c
+
+faca_tree_plot_unlabeled <-
+ggtree(faca_tree_clustered,color = colors[2]) +
+geom_tippoint(aes(subset=(label %in% hit_otus)), color = "black", size = 1)
+
+ggsave(plot = faca_tree_plot_labeled, file = "faca_tree_plot_labeled.jpeg", width = 7, height = 7)
+
+ggsave(plot = faca_tree_plot_unlabeled, file = "faca_tree_plot_unlabeled.jpeg", width = 7, height = 7)
+# ggtree(faca_tree_clustered) + geom_tiplab(size = 1.5, offset = 0.01) 
+
+
+# faca_tree_plot %>%
+#   flip(12,23) %>%
+#   flip(14,22) %>%
+#   flip(1,16) %>%
+#   flip(8,17) %>%
+#   flip(18,19) %>%
+#   flip(9,15)
+
+
+```
+
+# firmicutes tree with all leaves (not just hit references)
+```{r}
+# faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
+
+faca_tree <- phyloseq(faca_tax, OTU, pruned_tree)
+
+# labels <- as.vector(c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
+            # "Deep_sea_sediment_clone_NTd-III05__UncSu254",  
+            # "Deep_sea_sediment_clone_NTd-III03__UncSu252",
+            # "Deep_sea_sediment_clone_NTd-III02__UncSu251",
+            # "Deep_sea_sediment_clone_NTd-III01__UncSu250",
+            # "Deep_sea_sediment_clone_NTd-III06__UncSu255",
+            # "Deep_sea_sediment_clone_NTd-III07__UncSu256",
+            # "Deep_sea_sediment_clone_NTd-III08__UncSu257"))
+
+# ggtree(tip_glom(faca_tree, h = 0)) +
+#   geom_tiplab(aes(subset= label %in% hit_otus), size = 1, color = "red", alpha = 0.8)
+# 
+# ggtree(tip_glom(faca_tree, h = 0.2)) +
+#   geom_tiplab(aes(subset= label %in% hit_otus), size = 1, color = "red", alpha = 0.8)
+
+ggtree(tip_glom(faca_tree, h = 0)) +
+  geom_tiplab(aes(subset = label %in% c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
+            "Deep_sea_sediment_clone_NTd-III05__UncSu254",
+            "Deep_sea_sediment_clone_NTd-III03__UncSu252",
+            "Deep_sea_sediment_clone_NTd-III02__UncSu251",
+            "Deep_sea_sediment_clone_NTd-III01__UncSu250",
+            "Deep_sea_sediment_clone_NTd-III06__UncSu255",
+            "Deep_sea_sediment_clone_NTd-III07__UncSu256",
+            "Deep_sea_sediment_clone_NTd-III08__UncSu257", "Polluted_aquifer_clone_LGWN06__UncS1609")), size = 1, color = "red", alpha = 0.8)
+
+ggtree(tip_glom(faca_tree, h = 0.2)) +
+  geom_tiplab(aes(subset = label %in% c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
+            "Deep_sea_sediment_clone_NTd-III05__UncSu254",
+            "Deep_sea_sediment_clone_NTd-III03__UncSu252",
+            "Deep_sea_sediment_clone_NTd-III02__UncSu251",
+            "Deep_sea_sediment_clone_NTd-III01__UncSu250",
+            "Deep_sea_sediment_clone_NTd-III06__UncSu255",
+            "Deep_sea_sediment_clone_NTd-III07__UncSu256",
+            "Deep_sea_sediment_clone_NTd-III08__UncSu257", "Polluted_aquifer_clone_LGWN06__UncS1609")), size = 1, color = "red", alpha = 0.8)
+
+# ggsave(plot1, "firm_tree_unclustered.pdf")
+# ggsave(plot2, "firm_tree_clustered.pdf")
+
+# write.xlsx(as.data.frame(tax_table(tip_glom(faca_tree, h = 0))), "taxa_table_firmicutes_notipglom.xlsx")
+write.xlsx(as.data.frame(tax_table(tip_glom(faca_tree, h = 0.1))), "taxa_table_firmicutes_tipglom_01.xlsx")
+
+# plot_tree(tip_glom(faca_tree, h = 0.25), label.tips = "taxa_names", text.size = 2)
+
+# faca_tree_clustered <- tip_glom(faca_tree, h = 0.2)
+
+# faca_tree_plot <-
+#   ggtree(faca_tree_clustered, layout = "fan", open.angle = 250, color = colors[2]) +
+#   # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
+#   geom_tiplab(size = 1.5, offset = 0.01)
+#   # geom_text(aes(label=node), size = 2)
+```
+
+

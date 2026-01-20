@@ -1,0 +1,29 @@
+---
+title: "sequence_similarity_clustering"
+output: html_document
+---
+
+# df: "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/sequenceSimilarity/select_ref_blast.out"
+# imported as: ref_blast_percid
+# long to wide formatting
+```{r}
+# ref_blast_percid_wide <- reshape(ref_blast_percid[1:3], idvar = "query_id", timevar = "subject_id", direction = "wide", v.names = "perc_id")
+
+ref_blast_percid_wide <- spread(ref_blast_percid[1:3], query_id, perc_id)
+View(ref_blast_percid_wide)
+
+# ref_blast_percpos_wide <- spread(ref_blast_percid[c(1,2,4)], query_id, perc_pos)
+# View(ref_blast_percpos_wide)
+
+write.csv(ref_blast_percid_wide, "select_ref_blast_wide_nuc.csv")
+
+```
+
+# subsetting df by percid threshold
+```{r}
+THRESHOLD = 90
+
+select_ref_blast_threshold <- subset(ref_blast_percid, perc_id > THRESHOLD & subject_id != query_id)
+
+write.xlsx(select_ref_blast_threshold, "select_ref_blast_96_threshold_nuc.xlsx")
+```

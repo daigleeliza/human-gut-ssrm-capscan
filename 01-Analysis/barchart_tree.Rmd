@@ -1,0 +1,191 @@
+
+# code to assign clusters h = 0.1 to tip_glom_clusters table
+# save file at the end!
+```{r}
+# taxa_table_firmicutes_notipglom$otu_formatted <- gsub("[-]", ".", taxa_table_firmicutes_notipglom$otu)
+# taxa_table_firmicutes_notipglom$otu_formatted <- gsub("sp.", "sp-", taxa_table_firmicutes_notipglom$otu_formatted)
+# taxa_table_firmicutes_notipglom$otu_formatted <- gsub("sk.", "sk-", taxa_table_firmicutes_notipglom$otu_formatted)
+# taxa_table_firmicutes_notipglom$otu_formatted <- gsub("str.", "str-", taxa_table_firmicutes_notipglom$otu_formatted)
+
+
+tip_glom_cluster$tip_glom_cluster_01 <- NA
+
+for (n_row in 1:nrow(tip_glom_cluster)) {
+  if (tip_glom_cluster[n_row, "otu"] %in% taxa_table_firmicutes_notipglom$otu) {
+    otu <- as.character(tip_glom_cluster[n_row, "otu"])
+    cluster <- taxa_table_firmicutes_notipglom$tip_glom_01_clusters[taxa_table_firmicutes_notipglom$otu == otu]
+    tip_glom_cluster[n_row, "tip_glom_cluster_01"] <- cluster
+  }
+  if (tip_glom_cluster[n_row, "otu"] %in% taxa_table_desulfovibrionaceae_notipglom$out) {
+    otu <- as.character(tip_glom_cluster[n_row, "otu"])
+    cluster <- taxa_table_desulfovibrionaceae_notipglom$tip_glom_01_clusters[taxa_table_desulfovibrionaceae_notipglom$out == otu]
+    tip_glom_cluster[n_row, "tip_glom_cluster_01"] <- cluster
+  }
+  
+}
+```
+
+# subject level species (in this case, clusters at h = 0.1) matrix!!!!!!
+# i am fricking pissed that the file crashed
+```{r}
+# read in file
+# subject_OTU_matrix <- read.xlsx2("subject_OTU_matrix.xlsx", row.names=1, sheetIndex = 1, colClasses = c("character", rep("numeric", 54)), endRow = 1295)
+
+
+# blank subject-species matrix (species level instead of OTU level)
+subject_species_matrix <- matrix(data = 0,
+       nrow = nrow(subject_OTU_matrix),
+       ncol = length(unique(tip_glom_cluster$cluster_name_01)))
+
+rownames(subject_species_matrix) <- (rownames(subject_OTU_matrix))
+colnames(subject_species_matrix) <- c(unique(tip_glom_cluster$cluster_name_01))
+
+for (species in colnames(subject_species_matrix)) {
+  OTUs <- (subset(tip_glom_cluster$otu, tip_glom_cluster$cluster_name_01 == species))
+  
+  for (n_row in 1:nrow(subject_species_matrix)) {
+    for (OTU in OTUs) {
+      if (subject_OTU_matrix[n_row, OTU] == 1) {
+        subject_species_matrix[n_row, species] <- 1
+      }
+    }
+  }
+}
+
+write.csv(subject_species_matrix, "subject_species_matrix.csv")
+
+```
+
+# sample level!
+# ODIJFOISSJDSA
+```{r}
+
+# renaming columns in sample_otu_matrix to match tip_glom_cluster otu name format
+# 
+sample_otu_matrix <- sample_otu_matrix %>%
+  rename(
+    Desulfitobacterium_sp._PCE.1__DstSpe13 = `Desulfitobacterium_sp._PCE-1__DstSpe13`,
+    Gordonibacter_pamelaeae_7.10.1.b__FP929047 = `Gordonibacter_pamelaeae_7-10-1-b__FP929047`,
+    Rice_field_soil_clone_Bu.23__JN615148 = `Rice_field_soil_clone_Bu-23__JN615148`
+  )
+  
+sample_species_matrix <- matrix(data = 0,
+       nrow = nrow(sample_otu_matrix),
+       ncol = length(unique(tip_glom_cluster$cluster_name_01)))
+
+rownames(sample_species_matrix) <- sample_otu_matrix$sample_id
+colnames(sample_species_matrix) <- c(unique(tip_glom_cluster$cluster_name_01))
+
+for (species in colnames(sample_species_matrix)) {
+  OTUs <- (subset(tip_glom_cluster$otu, tip_glom_cluster$cluster_name_01 == species))
+
+  for (n_row in 1:nrow(sample_species_matrix)) {
+    for (OTU in OTUs) {
+      if (sample_otu_matrix[n_row, OTU] == 1) {
+        sample_species_matrix[n_row, species] <- 1
+      }
+    }
+  }
+}
+
+write.csv(sample_species_matrix, "sample_species_matrix.csv")
+```
+
+# cooccurrence analysis
+```{r}
+cooccur.subjectCluster <- cooccur(mat=t(subject_species_matrix), spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 20)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/10
+V(igraph_net)$label.size <- 0
+deg <- degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, vertex.label.dist=4, edge.alpha = 0.5)
+
+```
+
+# bar chart prep -- making column sums
+```{r}
+
+# tip_glom_cluster_sums <- data.frame(cluster = unique(tip_glom_cluster$cluster_name_01), 
+#                                     subject_sum = NA, 
+#                                     sample_sum = NA)
+# 
+# for (column_cluster in colnames(subject_species_matrix)){
+#   tip_glom_cluster_sums$subject_sum[tip_glom_cluster_sums$cluster == column_cluster] <- sum(subject_species_matrix[, column_cluster])
+# }
+# for (column_cluster in colnames(sample_species_matrix)){
+#   tip_glom_cluster_sums$sample_sum[tip_glom_cluster_sums$cluster == column_cluster] <- sum(sample_species_matrix[, column_cluster])
+# }
+
+# make long df!
+tip_glom_cluster_sums_long <- melt(as.data.frame(tip_glom_cluster_sums), id.vars = c("cluster", "group"), variable.name = "variable")
+
+```
+
+# proportion for df
+```{r}
+tip_glom_cluster_sums$subj_perc <- (tip_glom_cluster_sums$subject_sum / sum(hgm_subject_df$SRM_present == T)) * 100
+tip_glom_cluster_sums$sample_perc <- (tip_glom_cluster_sums$sample_sum / sum(sum(dataset21and22_withNayfachData_distanceFiltered$SRM_present == T))) * 100
+```
+
+# plot barchart
+```{r}
+# tip_glom_cluster_sums_long$group <- factor(tip_glom_cluster_sums_long$group, levels = c("Desulfovibrionaceae", "Firmicute", "Environmental supercluster 1", "Archaeoglobus"))
+
+# colors <- brewer.pal(name = "Set2", 8)
+
+
+
+# plot <- 
+  # ggplot(subset(tip_glom_cluster_sums_long, variable %in% c("sample_perc", "subj_perc")), aes(y = reorder(cluster, value_log), x = value_log)) +
+  # geom_point(color = "black") +
+  # facet_grid(group ~ variable, scales = "free", space = "free") +
+  # theme_bw() +
+  # # scale_fill_manual(values = c(colors[3], colors[4])) +
+  # guides(fill = "none") +
+  # theme(axis.title = element_blank(), strip.background = element_blank(), strip.text = element_blank()) 
+# 
+# breaks = c(0, .5, 1, 1.5, 2)
+# minor_breaks = c()
+#   ggplot(subset(tip_glom_cluster_sums_long, variable %in% c("sample_perc", "subj_perc")), aes(y = reorder(cluster, value_log), x = value_log)) +
+#   geom_point(color = "black") +
+#   facet_grid(group ~ variable, scales = "free", space = "free") +
+#   theme_bw() +
+#   # scale_fill_manual(values = c(colors[3], colors[4])) +
+#   guides(fill = "none") +
+#   theme(axis.title = element_blank(), strip.background = element_blank(), strip.text = element_blank()) +
+#   scale_x_log10(breaks = breaks, minor_breaks = minor_breaks)
+
+# breaks <- 10^(-10:10)
+# minor_breaks <- rep(1:9, 21)*(10^rep(-10:10, each=9))
+
+# breaks = c(0, 0.1, 1, 10, 100)
+plot <-
+  ggplot(subset(tip_glom_cluster_sums_long, variable %in% c("sample_perc", "subj_perc")), aes(y = reorder(cluster, value), x = value, color = group)) +
+  geom_point(size = 2) +
+    scale_color_manual(values = c(purple, colors[2], colors[1], colors[3])) +
+  facet_grid(group ~ variable, scales = "free_y", space = "free") +
+  theme_bw() +
+  # scale_fill_manual(values = c(colors[3], colors[4])) +
+  guides(fill = "none", color = "none") +
+  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text = element_blank(), axis.text.y= element_text(size = 10), axis.text.x= element_text(size = 9)) +
+    scale_x_log10(breaks = breaks, minor_breaks = minor_breaks, limits = c(NA,100))
+
+ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_v2.jpeg")
+
+```
+

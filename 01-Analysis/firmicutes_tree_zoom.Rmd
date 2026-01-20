@@ -1,0 +1,270 @@
+---
+title: "firmicutes_tree_zoom"
+output: html_document
+---
+
+#packages to load
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+```
+
+# prepare result tree! load, root, select query and ref leaves, remove Moorella cpy 2
+```{r}
+# load result tree in and root
+result_tree = read.tree("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/raxmlOutputFinal/RAxML_labelledTree_noBootstrap_rooted.newick")
+rooted_result_tree <-root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+
+# only keep leaves that are in the closest ref leaves list OR have "query" in the name
+closest_ref_leaves <- as.vector(otu_hits_table$Var1)
+# closest ref leaves from otu_hits_table (made from the ref tree)
+query_leaves <- as.vector(subset(rooted_result_tree$tip.label, grepl("QUERY", rooted_result_tree$tip.label) == TRUE))
+
+# remove Moorella copy 2 from tree
+trimmed_result_tree <- keep.tip(rooted_result_tree, c(closest_ref_leaves, query_leaves))
+moorella_queries <- queryDistanceInfo$query_names[grepl("copy_2", queryDistanceInfo$closest_ref) == TRUE]
+
+tree <- drop.tip(trimmed_result_tree, c(moorella_queries, "Moorella_thermoacetica_Y72_copy_2__MooTher5"))
+
+```
+
+# subset tree for Firmicutes node and visualize
+```{r}
+# using viewClade function
+# firmicutes_node <- MRCA(tree, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")
+# tree_plot <- ggtree(tree) +
+# #   geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = TRUE)
+# viewClade(tree_plot, firmicutes_node)
+
+# using tree_subset function
+# firmicutes_subset_tree <- tree_subset(tree, "Gordonibacter_pamelaeae__GrdPame5", levels_back = 7)
+firmicutes_subset_tree <- tree_subset(tree, firmicutes_node, levels_back = 0)
+ggtree(firmicutes_subset_tree, layout = "circular") +
+  geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = TRUE)
+ggtree(firmicutes_subset_tree) +
+  geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = TRUE)
+gordonibacter_pamaleae_node <- MRCA(tree, "Gordonibacter_pamelaeae__GrdPame5", "Gordonibacter_pamelaeae_7-10-1-b__FP929047")
+# tree_plot %>% collapse(node = 1883)
+
+# collapse Desulfitibacter alkalitolerans surrounding node to viz half of firmicutes tree
+# upperFirmNode <- MRCA(firmicutes_subset_tree, "Desulfitibacter_alkalitolerans__DfiAlka2", "QUERY___S233")
+# color = label %in% closest_ref_leaves
+tree_plot <- ggtree(firmicutes_subset_tree, layout = "slanted", aes(alpha = label %in% closest_ref_leaves, color = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = TRUE, offset = -0.5) +
+  scale_color_manual(values = c("grey", "black")) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  guides(color = "none", alpha = "none") +
+  geom_treescale(x = 0.09, y = 300, width = 0.5, fontsize = 4, color = "darkgray") +
+  
+  # reference leaf label
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Gordonibacter_pamelaeae__GrdPame5"), label = 'paste(italic("Gordonibacter pamelaeae"))', parse = T, fontsize = 4, offset = 0.0) +
+  
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Gordonibacter_pamelaeae_7-10-1-b__FP929047"), label = 'paste(italic("Gordonibacter pamelaeae"))', parse = T, fontsize = 4, offset = 0.0) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitibacter_alkalitolerans__DfiAlka2"), label = 'paste(italic("Desulfitibacter alkalitolerans"))', parse = T, fontsize = 4, offset = -.01) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitobacterium_hafniense_Y51__DsfHaf15"), label = 'paste(italic("Desulfitobacterium hafniense"))', parse = T, fontsize = 4, offset = 0.0) +
+
+    geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitobacterium_sp._PCE-1__DstSpe13"), label = 'paste(italic("Desulfitobacterium "), "spp.")', parse = T, fontsize = 4, offset = -0.75) +
+
+    geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfosporosinus_youngiae__DfpYoun5"), label = 'paste(italic("Desulfosporosinus youngiae"))', parse = T, fontsize = 4, offset = 0) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Thermodesulfobium_narugense__CP002690"), label = 'paste(italic("Thermodesulfobium narugense"))', parse = T, fontsize = 4, offset = 0)
+
+unclassified_bacteria <- c("Anaerobic_bacterium_sk.prop8__Bv2Prop2", "Anaerobic_bacterium_EtOH8__Bv2EtOH2", "MSW_digester_clone__Unc01cxc", "Deep_sea_sediment_clone__JN798931", "Bioreactor_clone__UncS2029", "Pearl_river_estuary_clone_TopDSR14__UncS2036", "Arctic_sediment_clone_AH5_5__AtcSed67", "Polluted_aquifer_clone_LGWK16__UncS1633")
+  
+for (node in unclassified_bacteria) {
+  tree_plot <- tree_plot +  geom_cladelabel(node = MRCA(firmicutes_subset_tree, node), label = "*", fontsize = 5, offset = 0)
+}
+  
+
+# tree_plot %>%
+#   collapse(node = upperFirmNode) +
+#   geom_point2(aes(subset=(node==upperFirmNode)), shape=23, size=2, fill='blue') 
+
+# tree_plot_allLabels <- ggtree(firmicutes_subset_tree, layout = "circular") +
+# geom_tiplab(size = 2, align = TRUE)
+# tree_plot_allLabels %>%
+#   collapse(node = upperFirmNode) +
+#   geom_point2(aes(subset=(node==upperFirmNode)), shape=23, size=3, fill='red')
+
+# viewClade(tree_plot, upperFirmNode)
+
+# add metadata on metabolism
+# tree_plot %<+%
+#   otu_all_table +
+#   geom_point2(aes(color = updated_freq, subset = Freq > 0))
+# ggsave("firmicutes_tree_plot.png", tree_plot, height = 4000, units = "px")
+
+tree_plot
+
+```
+
+
+```{r}
+tree_plot %<+%
+otu_all_table +
+geom_point2(aes(color = updated_freq, subset = Freq > 0))
+
+# tree_plot
+```
+
+# subset desulfovibrionaceae node and zoom in to visualize
+```{r}
+dsl_node <- MRCA(tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+
+dsl_subset_tree <- tree_subset(tree, dsl_node, levels_back = 0)
+
+upperDisNode <- MRCA(dsl_subset_tree, "Desulfovibrio_piger__DslPige3", "QUERY___S606")
+
+dsl_tree_plot <- ggtree(dsl_subset_tree, layout = "slanted", aes(color = label %in% closest_ref_leaves, alpha = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 4, align = F) +
+  # geom_tiplab() +
+  scale_color_manual(values = c("grey", "red")) +
+  scale_alpha_manual(values = c(0.5, 1)) +
+  guides(color = "none", alpha = "none")
+
+#   geom_treescale(x = 0.09, y = 300, width = 0.1, fontsize = 4, color = "darkgray") +
+#   
+# # labels
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_piger__DslPige3"), label = 'paste(italic("Desulfovibrio piger"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_piger__DslPige2"), label = 'paste(italic("Desulfovibrio piger"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DQ092635"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 4, offset = 0.2, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_simplex__DslSimpl"), label = 'paste(italic("Desulfovibrio simplex"))', parse = T, fontsize = 4, offset = -0.7, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_sp._3_1_syn3__DsvSp230"), label = 'paste(italic("Desulfovibrio "), "spp.")', parse = T, fontsize = 4, offset = -0.7, color = "red") +
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_sp._Dsv1__DsvSp233"), label = 'paste(italic("Desulfovibrio "), "spp.")', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Candidatus_Desulfovibrio_trichonymphae"), label = 'paste("Candidatus ", italic("Desulfovibrio trichonymphae"))', parse = T, fontsize = 4, offset = -0.7, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Bilophila_sp._4_1_30__BilSpec3"), label = 'paste(italic("Bilophila "), "spp.")', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#     geom_cladelabel(node = MRCA(dsl_subset_tree, "Bilophila_wadsworthia__BilWads6"), label = 'paste(italic("Bilophila wadsworthia"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#   geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_vulgaris__DQ826729"), label = 'paste(italic("Desulfovibrio vulgaris"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#     geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 4, offset = 0.5, color = "red") +
+# 
+#     geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_carbinoliphilus__JQ031012"), label = 'paste(italic("Desulfovibrio carbinoliphilus"))', parse = T, fontsize = 4, offset = 0, color = "red") +
+# 
+#     geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes24"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 4, offset = -0.6, color = "red")
+# 
+# unclassified_bacteria <- c("uncultured_bacterium__EF645666", "uncultured_bacterium__EF645667", "uncultured_bacterium__EF645664", "uncultured_bacterium__EF645665", "Bioreactor_clone__UncS2028", "Termite_protist_endosymbiont_community_metagenome__entry118", "Polluted_aquifer_clone__UncS1623")
+
+# for (node in unclassified_bacteria) {
+#   dsl_tree_plot <- dsl_tree_plot +  geom_cladelabel(node = MRCA(dsl_subset_tree, node), label = "*", fontsize = 5, offset = 0, color = "red")
+# }
+
+# ggsave("Tree_Plots/desulfovibrionaceae_tree_plot.png", dsl_tree_plot, height = 3000, units = "px")
+```
+
+# lower desulfovibrionaceae branches
+```{r}
+upperDisNode <- MRCA(dsl_subset_tree, "Desulfovibrio_piger__DslPige3", "Bilophila_wadsworthia__BilWads6")
+
+dsl_tree_plot <- ggtree(dsl_subset_tree, layout = "slanted", aes(color = label %in% closest_ref_leaves, alpha = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 4, align = F) +
+  # geom_tiplab() +
+  scale_color_manual(values = c("grey", "darkorange1")) +
+  scale_alpha_manual(values = c(0.5, 1)) +
+  guides(color = "none", alpha = "none")
+
+dsl_tree_plot_lower <- dsl_tree_plot %>%
+  collapse(node = upperDisNode) +
+  geom_point2(aes(subset=(node==upperDisNode)), shape=23, size=3, fill='darkorange1', color = 'darkorange1', alpha = 1) +
+  
+  # labels
+    geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_vulgaris__DQ826729"), label = 'paste(italic("Desulfovibrio vulgaris"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+    geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+  geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_carbinoliphilus__JQ031012"), label = 'paste(italic("Desulfovibrio carbinoliphilus"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+  geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes24"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 3, offset = -0, color = "darkorange1") +
+  
+    geom_treescale(x = 0.06, y = 50, width = 0.1, fontsize = 3, color = "darkgray")
+
+  
+unclassified_bacteria <- c("Polluted_aquifer_clone__UncS1623")
+
+for (node in unclassified_bacteria) {
+  dsl_tree_plot_lower <- dsl_tree_plot_lower +  
+    geom_cladelabel(node = MRCA(dsl_subset_tree, node), label = "*", fontsize = 5, offset = 0, color = "darkorange1")
+}
+
+dsl_tree_plot_lower
+# ggsave("Tree_Plots/desulfovibrionaceae_tree_plot_lowerHalf.png", dsl_tree_plot_lower, height = 2000, units = "px")
+```
+
+# upper desulfovibrionaceae branches
+```{r}
+upperDisNode <- MRCA(dsl_subset_tree, "Desulfovibrio_piger__DslPige3", "Bilophila_wadsworthia__BilWads6")
+
+dsl_subset_tree_upper <- tree_subset(dsl_subset_tree, upperDisNode, levels_back = 0)
+
+dsl_tree_plot_upper <- ggtree(dsl_subset_tree_upper, layout = "slanted", aes(color = label %in% closest_ref_leaves, alpha = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = T) +
+  # geom_tiplab() +
+  scale_color_manual(values = c("grey", "darkorange1")) +
+  scale_alpha_manual(values = c(0.3, 1)) +
+  guides(color = "none", alpha = "none") +
+  geom_treescale(x = 0.02, y = 1200, width = 0.1, fontsize = 3, color = "darkgray") +
+  ggplot2::ylim(-0.1, 1300) +
+
+# labels
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_piger__DslPige3"), label = 'paste(italic("Desulfovibrio piger"))', parse = T, fontsize = 2, offset = 0, color = "darkorange1") +
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_piger__DslPige2"), label = 'paste(italic("Desulfovibrio piger"))', parse = T, fontsize = 2, offset = 0, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_desulfuricans__DQ092635"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 2, offset = 0.01, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 2, offset = 0.03, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_simplex__DslSimpl"), label = 'paste(italic("Desulfovibrio simplex"))', parse = T, fontsize = 2, offset = -0.15, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_sp._3_1_syn3__DsvSp230"), label = 'paste(italic("Desulfovibrio "), "spp.")', parse = T, fontsize = 2, offset = -0.15, color = "darkorange1") +
+  # geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Desulfovibrio_sp._Dsv1__DsvSp233"), label = 'paste(italic("Desulfovibrio "), "spp.")', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Candidatus_Desulfovibrio_trichonymphae"), label = 'paste("Candidatus ", italic("Desulfovibrio trichonymphae"))', parse = T, fontsize = 2, offset = 0.1, color = "darkorange1") +
+
+  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Bilophila_sp._4_1_30__BilSpec3"), label = 'paste(italic("Bilophila "), "spp.")', parse = T, fontsize = 2, offset = 0, color = "darkorange1") +
+
+    geom_cladelabel(node = MRCA(dsl_subset_tree_upper, "Bilophila_wadsworthia__BilWads6"), label = 'paste(italic("Bilophila wadsworthia"))', parse = T, fontsize = 2, offset = 0, color = "darkorange1")
+
+unclassified_bacteria <- c("uncultured_bacterium__EF645666", "uncultured_bacterium__EF645667", "uncultured_bacterium__EF645664", "uncultured_bacterium__EF645665", "Bioreactor_clone__UncS2028", "Termite_protist_endosymbiont_community_metagenome__entry118")
+
+for (node in unclassified_bacteria) {
+  dsl_tree_plot_upper <- dsl_tree_plot_upper +  geom_cladelabel(node = MRCA(dsl_subset_tree_upper, node), label = "*", fontsize = 5, offset = -0.001, color = "darkorange1")
+}
+
+dsl_tree_plot_upper
+
+ggsave("Tree_Plots/desulfovibrionaceae_tree_plot_upperHalf.png", dsl_tree_plot_upper, height = 2000, units = "px")
+
+```
+
+
+# desulfovibrionaceae tree, annotated with tip shapes instead of labels
+```{r}
+# dsl_node <- MRCA(tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+
+# dsl_subset_tree <- tree_subset(tree, dsl_node, levels_back = 0)
+
+dsl_tree_plot_points <- ggtree(dsl_subset_tree, layout = "slanted", alpha = 0.3, color = "gray")
+
+dsl_tree_plot_points %<+% desulfovibrionaceae_species_metadataTable +
+   geom_tippoint(aes(subset = label %in% closest_ref_leaves, color = species))
+# ggsave("Tree_Plots/desulfovibrionaceae_tree_plot_tipPoints.png", dsl_tree_plot_points , height = 4000, units = "px")
+
+```
+
+# adding metabolism info per ref leaf to metadata (otu_all_table)
+```{r}
+df <- otu_all_table
+
+sulfite_reduc
+
+```

@@ -1,0 +1,141 @@
+---
+title: "adding_organisms_to_df"
+output: html_document
+---
+
+```{r}
+# working df:
+# df <- hgm_df
+# 
+# df_samples <- as.vector(df$sample_id)
+# org_samples <- as.vector(sample_organisms$sample_id)
+# 
+# length(intersect(df_samples, org_samples))
+
+# all samples in the df are in the sample_organisms df, but not all samples in the sample_organisms df are in the df
+# how to account?
+
+```
+
+```{r}
+# subset the df to include only samples that have the organism tags that are unclassified
+
+# make a subset of sample_organisms so i can add the organisms column to the dataset
+# org_df <- subset(sample_organisms, sample_organisms$sample_id %in% intersect(df_samples, org_samples))
+# org_df <- org_df %>% distinct()
+# length(org_df$sample_id)
+
+# bind organism column to df
+# df <- left_join(df, org_df, by = "sample_id")
+# length(df$sample_id)
+# ok we good to go
+
+# make a subset df for samples that have organism name in the org_tags list
+org_tags <- c("human gut metagenome", "uncultured bacterium", "bacterium", "metagenome")
+sum(df$organism %in% org_tags)
+hgm_df <- subset(df, df$organism %in% org_tags)
+nrow(hgm_df)
+# 9,023 biosamples in this df 
+
+```
+
+```{r}
+# change hgm_df to a subject-level df per row
+length(unique(hgm_df$merged_subject_id))
+# 968 individual subject IDs
+
+OTU_names <- colnames(hgm_df[11:45])
+OTU_names <- append(OTU_names, colnames(hgm_df[146:158]))
+OTU_names <- append(OTU_names, colnames(hgm_df[448:454]))
+
+# make empty df with column names from original hgm_df
+hgm_subject_df <- data.frame(matrix(nrow = 0, ncol = ncol(hgm_df)))
+colnames(hgm_subject_df) <- colnames(hgm_df)
+
+# iterate over rows in original hgm_df and add rows with subject ID's one at a time
+for (n_row in 1:nrow(hgm_df)) {
+  # check that there is a value for subject id
+  if (!is.na(hgm_df[n_row, "merged_subject_id"])) {
+    # add row to hgm_subject_df if subject id isn't already in there
+    if (!hgm_df[n_row, "merged_subject_id"] %in% as.list(hgm_subject_df$merged_subject_id)){
+      hgm_subject_df <- rbind(hgm_subject_df, hgm_df[n_row,])
+    }
+    # if subject id already in df, append sample_id to sample_id column and iterate over OTU names (retain TRUE)
+    else if (hgm_df[n_row, "merged_subject_id"] %in% as.list(hgm_subject_df$merged_subject_id)) {
+      sample_ids <- append(hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == hgm_df[n_row, "merged_subject_id"]], hgm_df[n_row, "sample_id"])
+      hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == hgm_df[n_row, "merged_subject_id"]] <- toString(sample_ids)
+      # retain TRUE ("1") values for OTUs
+      for (OTU in OTU_names) {
+        # check that OTU = 1 in original df
+        if (hgm_df[n_row, OTU] == 1) {
+          # check that OTU = 0 in subject df
+          if (hgm_subject_df[,OTU][hgm_subject_df$merged_subject_id == hgm_df[n_row, "merged_subject_id"]] == 0) {
+            # change OTU 0 --> 1 in subject df
+            hgm_subject_df[,OTU][hgm_subject_df$merged_subject_id == hgm_df[n_row, "merged_subject_id"]] <- 1
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+```{r}
+# now, to get the bioproject accession for all these samples
+# first, get a file list of the samples for this hgm_df
+
+# n samples that have age_years, bin_9yrSize, or bin_5yrCutoff AND merged_subject_id = 1204
+length(as.vector(subset(hgm_df$sample_id, !is.na(hgm_df$merged_subject_id) & (!is.na(hgm_df$age_years) | !is.na(hgm_df$bin_9yrSize) | !is.na(hgm_df$bin_5yrCutoff)))))
+# n samples that have age_years, bin_9yrSize, or bin_5yrCutoff BUT NOT merged_subject_id = 609
+length(as.vector(subset(hgm_df$sample_id, is.na(hgm_df$merged_subject_id) & (!is.na(hgm_df$age_years) | !is.na(hgm_df$bin_9yrSize) | !is.na(hgm_df$bin_5yrCutoff)))))
+
+samples <- as.vector(subset(hgm_df$sample_id, is.na(hgm_df$merged_subject_id) & (!is.na(hgm_df$age_years) | !is.na(hgm_df$bin_9yrSize) | !is.na(hgm_df$bin_5yrCutoff))))
+
+write_lines(samples, file = "biosample_accessions_hgmdf.txt", sep = "\n")
+```
+
+```{r}
+# continuing with researching the bioprojects for each of the sample with age data but no subject_id
+# let's find the sample_ids that overlap in the sample_projects df and the hgm_df and merge the two dfs
+
+# samples <- intersect(sample_projects$sample_id, dataset21and22$sample_id)
+# length(samples)
+# # confirmed: 609 samples from the sample_projects df that are also in dataset21and22
+
+# # time to merge
+# length(dataset21and22$sample_id)
+# dataset21and22 <- left_join(dataset21and22, subset(sample_projects, sample_projects$sample_id %in% samples), by = "sample_id")
+# length(dataset21and22$sample_id)
+
+# UPDATED AFTER MERGING
+# n samples with a project accession = 609
+sum(!is.na(dataset21and22$merged_project_accession))
+
+# n samples with an age = 1813
+sum(!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_5yrCutoff) | !is.na(dataset21and22$bin_9yrSize))
+
+# n samples with a subject_id = 2795
+sum(!is.na(dataset21and22$merged_subject_id))
+
+# n samples with an age and subject_id = 1204
+sum(!is.na(dataset21and22$merged_subject_id) & (!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_5yrCutoff) | !is.na(dataset21and22$bin_9yrSize)))
+
+# n samples with an age and a project accession BUT NOT a subject id = 609
+sum(is.na(dataset21and22$merged_subject_id) & !is.na(dataset21and22$merged_project_accession) & (!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_5yrCutoff) | !is.na(dataset21and22$bin_9yrSize)))
+
+# n of unique project ids = 7 !!!!
+# now, to manually research the 7 projects
+
+```
+
+# check all samples from 2021 data is in hgm_df
+```{r}
+# hgm_df: subset of dataset21and22 by organism tag ("human gut metagenome", "uncultured bacterium", "bacterium", "metagenome")
+# sample_metadata_2021 : metadata from 2021
+
+length(setdiff(sample_metadata_2021$sample_id, hgm_df$sample_id))
+# 23 samples didn't make it into the hgm_df
+# let's take a look at them manually
+setdiff(sample_metadata_2021$sample_id, hgm_df$sample_id)
+# they all have the organism tag: "human oral metagenome". this is not what we want to use, so let's just leave it out...
+```

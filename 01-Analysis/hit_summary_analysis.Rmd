@@ -1,0 +1,83 @@
+---
+title: "hit_summary_analysis"
+output: html_document
+---
+
+# let's look at the overall results from the hits
+
+# first, total number of samples with and without hits
+```{r}
+# n samples with SRM
+sum(dataset21and22$SRM_present == TRUE)
+# 2,027
+
+# n samples without SRM
+sum(dataset21and22$SRM_present == FALSE)
+# 70,474
+
+```
+
+# distribution of samples with SRM, how many SRM?
+``` {r}
+ggplot(subset(dataset21and22, dataset21and22$`n_leaf-level_OTUs` != 0), aes(x = as.factor(`n_leaf-level_OTUs`))) +
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+  ggtitle("Number of Samples by Number of Leaf-Level OTUs") +
+  xlab("Number of Leaf-Level OTUs") +
+  ylab("Number of Samples")
+```
+
+# number of hits in desulfovibrionaceae
+``` {r}
+
+# total n hit sequences
+n_hits <- sum(otu_all_table$Freq)
+
+desulfovibrionaceae_ref_otus <- c("uncultured_bacterium__EF645666", "uncultured_bacterium__EF645667", "uncultured_bacterium__EF645664", "uncultured_bacterium__EF645665", "Bioreactor_clone__UncS2028", "Termite_protist_endosymbiont_community_metagenome__entry118", "Polluted_aquifer_clone__UncS1623","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige2", "Desulfovibrio_desulfuricans__DQ092635", "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358", "Desulfovibrio_simplex__DslSimpl", "Desulfovibrio_sp._3_1_syn3__DsvSp230", "Desulfovibrio_sp._Dsv1__DsvSp233", "Candidatus_Desulfovibrio_trichonymphae", "Bilophila_sp._4_1_30__BilSpec3", "Bilophila_wadsworthia__BilWads6", "Desulfovibrio_vulgaris__DQ826729", "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8", "Desulfovibrio_carbinoliphilus__JQ031012", "Desulfovibrio_carbinoliphilus__JQ031012", "Desulfovibrio_piger__DslPige4")
+
+desulfovibrionaceae_hits <- subset(otu_all_table, Var1 %in% desulfovibrionaceae_ref_otus)
+n_des_hits <- sum(desulfovibrionaceae_hits$Freq)
+
+# percentage of desulfovibrionaceae hits
+# (n_des_hits / n_hits ) *100
+
+n_bil_hits <- sum(subset(otu_all_table$Freq, otu_all_table$Var1 %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3")))
+# (n_bil_hits / n_hits ) *100
+
+n_dpig_hits <- sum(subset(otu_all_table$Freq, otu_all_table$Var1 %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige2", "Desulfovibrio_piger__DslPige4")))
+# (n_dpig_hits / n_hits ) *100
+
+# (sum(subset(otu_all_table$Freq, otu_all_table$Var1 == "uncultured_bacterium__EF645667")) / n_hits) * 100
+
+# (sum(subset(otu_all_table$Freq, otu_all_table$Var1 == "Desulfovibrio_vulgaris__DQ826729")) / n_hits) * 100
+
+(sum(subset(otu_all_table$Freq, otu_all_table$Var1 %in% c("Desulfovibrio_simplex__DslSimpl", "Desulfovibrio_carbinoliphilus__JQ031012", "Candidatus_Desulfovibrio_trichonymphae"))) / n_hits) * 100
+
+```
+
+# number of hits in Firmicutes group 
+```{r}
+# total n hit sequences
+n_hits <- sum(otu_all_table$Freq)
+
+firmicutes_ref_otus <- c("Anaerobic_bacterium_sk.prop8__Bv2Prop2", "Anaerobic_bacterium_EtOH8__Bv2EtOH2", "MSW_digester_clone__Unc01cxc", "Deep_sea_sediment_clone__JN798931", "Bioreactor_clone__UncS2029", "Pearl_river_estuary_clone_TopDSR14__UncS2036", "Arctic_sediment_clone_AH5_5__AtcSed67", "Polluted_aquifer_clone_LGWK16__UncS1633", "Thermodesulfobium_narugense__CP002690", "Desulfosporosinus_youngiae__DfpYoun5", "Desulfitobacterium_sp._PCE-1__DstSpe13", "Desulfitobacterium_hafniense_Y51__DsfHaf15", "Desulfitibacter_alkalitolerans__DfiAlka2", "Gordonibacter_pamelaeae_7-10-1-b__FP929047", "Gordonibacter_pamelaeae__GrdPame5")
+
+firmicutes_hits <- subset(otu_all_table, Var1 %in% firmicutes_ref_otus)
+n_firm_hits <- sum(firmicutes_hits$Freq)
+
+# percentage of firmicutes hits
+# (n_firm_hits / n_hits ) *100
+
+# n_dalka_hits <- sum(subset(otu_all_table$Freq, otu_all_table$Var1 == "Desulfitibacter_alkalitolerans__DfiAlka2"))
+# (n_dalka_hits / n_hits ) *100
+# 
+# (sum(subset(otu_all_table$Freq, otu_all_table$Var1 == "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))
+# / n_hits ) *100
+
+n_gpam_hits <- sum(subset(otu_all_table$Freq, otu_all_table$Var1 %in% c("Gordonibacter_pamelaeae__GrdPame5", "Gordonibacter_pamelaeae_7-10-1-b__FP929047")))
+(n_gpam_hits / n_hits ) *100
+
+```
+
+
+

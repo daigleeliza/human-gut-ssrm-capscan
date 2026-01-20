@@ -1,0 +1,183 @@
+---
+title: "cooccurrence_network"
+output: html_document
+---
+
+# packages 
+```{r}
+library(GGally)
+library(network)
+library(sna)
+library(ggplot2)
+library(igraph)
+library(cooccur)
+```
+
+```{r}
+# # random graph
+# net = rgraph(10, mode = "graph", tprob = 0.5)
+# net = network(net, directed = FALSE)
+# 
+# # vertex names
+# network.vertex.names(net) = letters[1:10]
+# 
+# ggnet2(net)
+# sp_by_sp_matrix <- create.N.matrix(subject_species_matrix_transposed)
+# net = network(sp_by_sp_matrix)
+# 
+# ggnet2(net, label = TRUE, mode = "circle")
+
+sp_by_sp_matrix <- create.N.matrix(t(subject_tipglomcluster_matrix))
+net = network(sp_by_sp_matrix)
+
+# cool i think this works?
+```
+
+# extracting edge list from cooccur object
+```{r}
+# set rownames
+# subject_species_matrix = subject_species_matrix %>% column_to_rownames("...1")
+
+# no subsetting
+# subject_species_matrix_transposed <- t(subject_species_matrix)
+cooccur.subjectCluster <- cooccur(mat=t(subject_species_matrix), spp_names = T)
+
+# View(cooccur.subjectSpecies$results)
+
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 20)
+# 
+# net = network(edgeList, directed C= F)
+
+# ggnet2(net, label = TRUE, size = "degree", label.size = 2, edge.size = "weights") +
+#   guides(size = "none")
+
+# subsetting the df to take out some species with <20 observations 
+# species_to_exclude <- c("Desulfitobacterium hafniense", "Desulfovibrio desulfuricans cluster 3", "Thermodesulfobium narugense", "unclassified Firmicute Unc01cxc", "Archaeoglobus sulfaticallidus", "Desulfovibrio desulfuricans cluster 2")
+# species_to_include <- setdiff(rownames(subject_species_matrix_transposed), species_to_exclude)
+# subject_species_matrix_transposed_subset <- subject_species_matrix_transposed[rownames(subject_species_matrix_transposed) %in% species_to_include,]
+# cooccur.subjectSpecies <- cooccur(mat=subject_species_matrix_transposed_subset, spp_names = T)
+# 
+# edgeList <- cooccur.subjectSpecies$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+# edgeList <- subset(edgeList, obs_cooccur > 5)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/10
+V(igraph_net)$label.size <- 0
+deg <- degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+
+
+
+l <- layout_in_circle(igraph_net)
+# 
+# plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "lavender", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, vertex.label.dist=4, edge.alpha = 0.5)
+
+order <- c(1, 2, 3, 4, 7, 5, 6, 8)
+igraph_net <- permute(igraph_net, order)
+
+unlabeled_network <- plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+
+labeled_network <- plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, vertex.label.dist=4, edge.alpha = 0.5)
+
+ggsave(plot = unlabeled_network, file = "unlabeled_network.jpeg", width = 7, height = 7)
+ggsave(plot = labeled_network, file = "labeled_network.jpeg", width = 7, height = 7)
+
+# vertex.label.dist = 3
+```
+
+# cooccurrence statistics
+# FOR JESS 
+```{r}
+# number of co-occurrence instances
+# sum(edgeList$obs_cooccur)
+
+# nuimber of co-occurrence instances in Bilophila
+
+# sum(subset(edgeList$obs_cooccur, edgeList$sp1_name == "Bilophila wadsworthia" | edgeList$sp2_name == "Bilophila wadsworthia"))
+
+# make dataframe for co-occurrence pairs (long) by subject
+
+# subject_species_edge <- subject_species_matrix %>% 
+#   data.frame(check.names = F) %>%
+#   rownames_to_column("subject_id")
+
+clusters <- unique(c(edgeList$sp1_name, edgeList$sp2_name))
+
+# subject_species_edge_cooccur <- data.frame()
+
+x = map_dfr(1:nrow(subject_species_edge[1:5,]), function(x) {
+  subject_id = subject_species_edge[x, "subject_id"]
+  print(subject_id)
+  
+  # out = data.frame(subject = subject_id)
+  
+  for (sp1_name in colnames(subject_species_edge)) {
+    if (sp1_name %in% clusters) {
+      
+      if (subject_species_edge[x, sp1_name] == 1) {
+        # subject_species_edge_cooccur$subject_id <- subject_id
+        # subject_species_edge_cooccur$sp1[subject_species_edge_cooccur$subject_id == subject_id] <- column_name
+        
+        sp1 = sp1_name
+        print(sp1)
+        #   for (sp2_name in colnames(subject_species_edge)) {
+        #     if (sp2_name %in% clusters) {
+        #       if (sp2_name != sp1) {
+        #         if (subject_species_edge[x, sp2_name] == 1) {
+        #           
+        #           sp2 = sp2_name
+        #           
+        #           
+        #     }
+        #   }
+        # }
+        # }
+      }
+      
+    }
+    # } )
+    return(list(subject_id, sp1))
+  }
+  
+})
+
+for (n_row in 1:nrow(subject_species_edge[1:5,])) {
+  subject_id <- subject_species_edge[n_row, "subject_id"]
+  print(subject_id)
+  for (column_name in colnames(subject_species_edge)) {
+    if (column_name %in% clusters) {
+
+      if (subject_species_edge[n_row, column_name] == 1) {
+        subject_species_edge_cooccur$subject_id <- subject_id
+        subject_species_edge_cooccur$sp1[subject_species_edge_cooccur$subject_id == subject_id] <- column_name
+
+        print(column_name)
+      #   for (column_name in colnames(subject_species_edge)) {
+      #     if (column_name %in% clusters) {
+      #       if (subject_species_edge[n_row, column_name] == 1)
+      #   }
+      # }
+    }
+  }
+  }
+}
+
+# View( subject_species_edge_cooccur)
+
+# subject_species_edge_long <- subject_species_edge %>%
+#   data.frame() %>%
+#   rownames_to_column("subject_id") %>%
+#   pivot_longer(cols = !starts_with("subject_id"))
+
+```
+

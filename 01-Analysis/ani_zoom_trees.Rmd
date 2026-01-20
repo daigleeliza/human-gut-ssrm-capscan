@@ -1,0 +1,68 @@
+---
+title: "ani_zoom_trees"
+output: html_document
+---
+# overall purpose: get a table for each reference leaf and which cluster they fall into with h=0.2 for tip_glom
+
+# packages to install
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(phyloseq)
+```
+
+# prep tree, OTU, and TAX
+```{r}
+pruned_tree <- drop.tip(rooted_ref_tree, c(moorella_copy_2_labels, ox_bact_labels))
+
+hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
+hit_otus <- gsub("[.]", "-", hit_otus)
+hit_otus <- gsub("sp-", "sp.", hit_otus)
+hit_otus <- gsub("sk-", "sk.", hit_otus)
+hit_otus <- gsub("str-", "str.", hit_otus)
+```
+
+```{r}
+faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
+
+faca_tree <- phyloseq(faca_tax, OTU, pruned_tree)
+
+plot_tree(tip_glom(faca_tree, h = 0), label.tips = "taxa_names" %in% hit_otus, text.size = 2)
+plot_tree(tip_glom(faca_tree, h = 0.25), label.tips = "taxa_names", text.size = 2)
+```
+
+# make df for each leaf in each cluster at h = 0.2
+```{r}
+df <- taxa_table_firmicutes_notipglom
+
+df$tip_glom_01_clusters <- ifelse(df$otu %in% df$tip_glom_01_clusters,
+                              df$otu,
+                              NA)
+
+for (n_row in 1:nrow(df)) {
+  if (is.na(df[n_row, "tip_glom_01_clusters"])) {
+    df[n_row, "tip_glom_01_clusters"] <- df[n_row - 1, "tip_glom_01_clusters"]
+  }
+}
+
+clusters_freq <- as.data.frame(table(df$tip_glom_01_clusters))
+clusters <- subset(clusters_freq$Var1, clusters_freq$Freq > 1)
+
+taxa_table_firmicutes_notipglom <- df
+
+# for (cluster in clusters) {
+#   otus_in_cluster <- df$out[df$tip_glom_01_clusters == cluster]
+# 
+#   write_lines(otus_in_cluster, file = paste("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/cluster_otus/ids/firmicutes/", cluster, "_otus_in_cluster.txt", sep = ""))
+# }
+
+# write_lines(unique(clusters),
+#             file = "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/config/firmicutes_cluster_names.txt", 
+#             sep = "\n")
+
+```
+

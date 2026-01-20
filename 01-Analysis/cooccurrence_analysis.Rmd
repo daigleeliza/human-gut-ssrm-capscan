@@ -1,0 +1,44 @@
+---
+title: "cooccurrence_analysis"
+output: html_document
+---
+
+# format data into a species/site matrix! (in our case, OTU/subject matrix)
+```{r}
+# library(cooccur)
+# library(xlsx)
+
+# example analysis w/ finches data and cooccur package
+# data(finches)
+# View(finches)
+
+# now, to check out the dataframe we're working with!
+# srm_pos_hgm_subject_df <- subset(hgm_subject_df, SRM_present == "TRUE")
+# subject_OTU_matrix <- srm_pos_hgm_subject_df[,c("merged_subject_id",OTU_names)]
+# row.names(subject_OTU_matrix) <- subject_OTU_matrix$merged_subject_id
+
+# write.xlsx2(subject_OTU_matrix, "subject_OTU_matrix.xlsx")
+# manually remove merged_subject_id column in excel here!!!
+subject_OTU_matrix <- read.xlsx2("subject_OTU_matrix.xlsx", row.names=1, sheetIndex = 1, colClasses = c("character", rep("numeric", 55)), endRow = 1295)
+
+# subject_OTU_matrix_num <- as.matrix(apply(subject_OTU_matrix, 2, as.numeric))
+
+# typeof(subject_OTU_matrix[1,1])
+View(subject_OTU_matrix)
+# DONE FUCKING FINALLY
+```
+
+# cooccurrence analysis on finches data (example)
+```{r}
+# example on finches data
+# co <- print(cooccur(finches, spp_names = TRUE))
+```
+
+# cooccurrence analysis on our data!
+```{r}
+# small_matrix <- subject_OTU_matrix[1:9,1:3]
+cooccur(mat=small_matrix, spp_names = T, type = "site_spp", thresh = T)
+# subject_OTU_co <- print(cooccur(small_matrix, spp_names = T, type = "site_spp"))
+
+# cooccur(finches, spp_names = T)
+```

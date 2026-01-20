@@ -1,0 +1,42 @@
+---
+title: "distance_filter"
+output: html_document
+---
+
+```{r}
+df <- hgm_subject_df
+
+pos_samples <- subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$biosample_id, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref == "Archaeoglobus_sulfaticallidus__ArgSulfa")
+
+df$Archaeoglobus_sulfaticallidus__ArgSulfa <- ifelse(df$sample_id %in% pos_samples,
+                                                     1,
+0)
+
+hgm_subject_df <- df
+# subject_OTU_matrix redo for archaeoglobus
+df <- subject_OTU_matrix
+
+pos_subjects <- subset(hgm_subject_df$merged_subject_id, hgm_subject_df$Archaeoglobus_sulfaticallidus__ArgSulfa == 1)
+
+df$Archaeoglobus_sulfaticallidus__ArgSulfa <- ifelse(rownames(subject_OTU_matrix) %in% pos_subjects,
+                                                     1,
+                                                     0)
+sum(df$Archaeoglobus_sulfaticallidus__ArgSulfa)
+
+subject_OTU_matrix <- df
+
+write.csv(subject_OTU_matrix, "subject_OTU_matrix.csv")
+```
+
+# view df subsets
+```{r}
+# Archaeoglobus > 2.5
+View(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance > 2.5 & closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref == "Archaeoglobus_sulfaticallidus__ArgSulfa"))
+
+# Archaeoglobus < 2.5
+View(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref == "Archaeoglobus_sulfaticallidus__ArgSulfa"))
+
+# by sample df, view only archaeoglobus columns and sample_id
+
+View(subset(dataset21and22_withNayfachData[, c("sample_id", "Archaeoglobus_sulfaticallidus__ArgSulfa")], dataset21and22_withNayfachData$Archaeoglobus_sulfaticallidus__ArgSulfa == 1))
+```

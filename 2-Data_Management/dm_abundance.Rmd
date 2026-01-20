@@ -4,10 +4,14 @@ date: "20 January 2026"
 output: html_document
 author: "Elizabeth Daigle"
 ---
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/0-Config_Functions/0-Config.R"))
+```
 
 # Read in sample metadata
 ```{r}
-meta <- read_tsv(paste0(analysis_dir, "/0-Config_Functions/sampleReadList.txt"))
+meta <- read_tsv(paste0(configDir, "/sampleReadList.txt"))
 ```
 
 # Read in dsrAB gene counts
@@ -38,16 +42,17 @@ samples_unique_genes <- samples %>%
   ungroup()
 ```
 
-# Read in tree info and subset to only include Capsule and stool hits
+# Read in closest reference leaf info
 ```{r}
-tree <- read_csv(paste0(data_dir, "tree_info/closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_plus_wgs.csv"))
-tree_capsule_stool <- tree %>% filter(biosample_id %in% samples$coassembly)
+closest_ref <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_capsule.csv"))
 ```
 
 # Add a column to samples that has the single_closest_ref
 ```{r}
-samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% tree_capsule_stool$hit_id) %>%
-  left_join(tree_capsule_stool %>% select(hit_id, single_closest_ref),
+samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% closest_ref$hit_id) %>%
+  left_join(closest_ref %>% select(hit_id, single_closest_ref),
             by = c("geneLoc" = "hit_id")) %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
+
+saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique_genes_with_names.rds"))
 ```

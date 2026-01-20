@@ -12,6 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 source(paste0(here::here(), "/0-Config_Functions/0-Config.R"))
 ```
 
+```{r}
+samples_unique_genes_with_names <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
+```
+
+
 #here making new plots
 Making viridis color palette for plots
 ```{r}

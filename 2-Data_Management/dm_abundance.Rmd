@@ -1,0 +1,53 @@
+---
+title: "dm_abundance"
+date: "20 January 2026"
+output: html_document
+author: "Elizabeth Daigle"
+---
+
+# Read in sample metadata
+```{r}
+meta <- read_tsv(paste0(analysis_dir, "/0-Config_Functions/sampleReadList.txt"))
+```
+
+# Read in dsrAB gene counts
+```{r}
+# capsule data
+capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM.txt"))
+# stool data
+stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM.txt"))
+# combine capsule and stool data
+samples <- bind_rows(capsule, stool) %>%
+  mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))
+
+# filter and remove duplicate genes
+samples_unique_genes <- samples %>%
+  mutate(RPKM = as.numeric(RPKM)) %>%
+# Remove RPKMs of 0 (feature counts keeps genes even when nothing has mapped to them) 
+  filter(RPKM>0) %>%
+  mutate(subject = factor(subject)) %>%
+# remove rest of file name from sample column (this can be fixed by rerunning concat rule and fixing column 2 str extraction)
+  mutate(sample = sub("^(([^_]+_[^_]+)).*$", "\\1", sample)) %>%
+# add capsule type
+  left_join(meta %>% select(samplename, Type), 
+            by = c("sample" = "samplename")) %>%
+# filter for unique genes in each sample
+# want to keep gene domain with the highest score, if there is a tie return just the first hit encountered
+  group_by(geneID, sample) %>%
+  slice_max(Score, n = 1, with_ties = FALSE) %>%
+  ungroup()
+```
+
+# Read in tree info and subset to only include Capsule and stool hits
+```{r}
+tree <- read_csv(paste0(data_dir, "tree_info/closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_plus_wgs.csv"))
+tree_capsule_stool <- tree %>% filter(biosample_id %in% samples$coassembly)
+```
+
+# Add a column to samples that has the single_closest_ref
+```{r}
+samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% tree_capsule_stool$hit_id) %>%
+  left_join(tree_capsule_stool %>% select(hit_id, single_closest_ref),
+            by = c("geneLoc" = "hit_id")) %>% 
+  mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
+```

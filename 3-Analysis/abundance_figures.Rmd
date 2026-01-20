@@ -1,0 +1,270 @@
+---
+title: "abundance_figures"
+date: "25 November 2025"
+output: html_document
+author: "Elizabeth Daigle"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/0-Config_Functions/0-Config.R"))
+```
+
+#here making new plots
+Making viridis color palette for plots
+```{r}
+# Generate a viridis palette with 20 colors
+viridis_palette <- viridis(20)
+viridis_palette
+
+boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
+
+jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
+```
+
+# Plot the number of unique genes for each subject 
+```{r}
+plot_count_dsr <- samples_unique_genes_with_names %>%
+# find number of unique genes for each sample
+  group_by(subject, sample, Type) %>%
+  summarize(n=n(), .groups="drop") 
+
+plot_count_dsr_median <- samples_unique_genes_with_names %>%
+# find number of unique genes for each sample
+  group_by(subject, sample, Type) %>%
+  summarize(n=n(), .groups="drop") %>%
+# find median of each type
+  group_by(subject, Type) %>% 
+  summarize(median_n = median(n))
+
+plot_count_dsr_median %>%
+  ggplot(aes(x = Type, y = median_n)) +
+  geom_boxplot() + 
+  geom_jitter(aes(color = Type),
+              alpha = 0.7, 
+              size = 3,
+              position = position_jitter(width = 0.15, height = 0)) +
+  scale_color_manual(values = jitter_colors) +
+  labs(
+    title = "Median dsrAB gene count by sample type",
+    x = "Sample Type",
+    y = "Subject Median Gene Count",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 24),
+    axis.title.x = element_text(size = 24),
+    axis.title.y = element_text(size = 24),
+    legend.text = element_text(size = 24),
+    legend.title = element_text(size = 24),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    plot.title = element_text(size = 28, hjust = 0.5),
+    plot.subtitle = element_text(size = 24, hjust = 0.5))
+
+plot_count_dsr %>%
+  ggplot(aes(x = Type, y = n)) +
+  geom_boxplot() + 
+  geom_jitter(aes(color = Type),
+              alpha = 0.7, 
+              size = 3,
+              position = position_jitter(width = 0.15, height = 0)) +
+  scale_color_manual(values = jitter_colors) +
+  facet_wrap(~ subject,
+              #scales = "free_y",
+              strip.position = "bottom",
+              labeller = labeller(subject = function(x) paste("Subject", x))) +
+  labs(
+    title = "Unique dsrAB gene count by sample type across subjects",
+    x = "Sample Type",
+    y = "Gene Count",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 24),
+    axis.title.x = element_text(size = 24),
+    axis.title.y = element_text(size = 24),
+    legend.text = element_text(size = 24),
+    legend.title = element_text(size = 24),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    plot.title = element_text(size = 28, hjust = 0.5),
+    plot.subtitle = element_text(size = 24, hjust = 0.5))
+```
+# Change species labels
+```{r}
+species_labels <- c("QUERY___Bilophila_wadsworthia_dsrA" = "Bilophila wadsworthia dsrA",
+                    "Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+                    "Desulfovibrio_piger__DslPige2" = "Desulfovibrio piger",
+                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
+                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
+                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
+                    "QUERY___Moorella_thermoacetica_2_dsrA" = "Moorella thermoacetica")
+```
+
+# plot RPKM for every hit to compare between species; facet by location and subject
+```{r}
+samples_unique_genes_with_names %>%
+  filter(!single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA",
+                       "QUERY___Ley3_66761_scaffold_1830_dsrB",
+                       #"Gordonibacter_pamelaeae__GrdPame5",
+                       #"QUERY___Moorella_thermoacetica_2_dsrA",
+                       "Anaerobic_bacterium_sk.prop8__Bv2Prop2")) %>%
+  ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8) +
+  geom_jitter(aes(color = Type),
+            alpha = 0.9, size = 2,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = jitter_colors) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  scale_x_discrete(labels = species_labels) + 
+  guides(fill = "none") +
+  facet_grid(subject ~ Type, scale = "free_y") +
+  labs(
+    title = "RPKM for unique dsrAB genes by species across subjects and sample locations",
+    x = "Closest Reference",
+    y = "log10(RPKM)",
+    color = "Sample Location"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5)
+  )
+```
+# plot RPKM for every hit to compare between location; facet by species and subject
+```{r}
+samples_unique_genes_with_names %>%
+  filter(!single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA",
+                       "QUERY___Ley3_66761_scaffold_1830_dsrB",
+                       #"Gordonibacter_pamelaeae__GrdPame5",
+                       #"QUERY___Moorella_thermoacetica_2_dsrA",
+                       "Anaerobic_bacterium_sk.prop8__Bv2Prop2")) %>%
+  ggplot(aes(x = Type, y = log10(RPKM))) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8) +
+  geom_jitter(aes(color = Type),
+            alpha = 0.9, size = 2,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = jitter_colors) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_grid(subject ~ single_closest_ref, 
+             scale = "free_y",
+             labeller = labeller(single_closest_ref = species_labels)) +
+  labs(
+    title = "RPKM for unique dsrAB genes by sample location across subjects and species",
+    x = "Sample Location",
+    y = "log10(RPKM)",
+    color = "Sample Location"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 10),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5)
+  )
+ggsave("dsrAB_RPKM.png",
+       width = 16, height = 14, units = "in",   # increase for larger output
+       dpi = 600)
+```
+
+
+##fix below 
+# individual plots
+## subject 1
+```{r}
+#facet by species
+samples_unique_genes_with_names %>%
+  filter(subject == 1) %>%
+  mutate(Type = factor(Type, levels = all_types)) %>%
+  ggplot(aes(x = Type, y = log10(RPKM))) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8) +
+  geom_jitter(aes(color = Type),
+            alpha = 0.9, size = 2,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = jitter_colors, drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_wrap(~ single_closest_ref) +
+  labs(
+    title = "RPKM across capsule and stool samples by species",
+    subtitle = "Subject 1",
+    x = "Sample Type",
+    y = "log10(RPKM)",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    legend.position = "none",
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5)
+  )
+#facet by type
+samples_unique_genes_with_names %>%
+  filter(subject == 1) %>%
+  mutate(Type = factor(Type, levels = all_types),
+    single_closest_ref = factor(single_closest_ref, levels = all_species)) %>%
+  ggplot(aes(x = single_closest_ref, y = log10(RPKM))) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8) +
+  geom_jitter(aes(color = Type),
+            alpha = 0.9, size = 2,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = jitter_colors, drop = FALSE) +
+  #scale_x_discrete(drop = FALSE) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_wrap(~ Type, drop = FALSE) +
+  labs(
+    title = "RPKM across species by capsule and stool samples",
+    subtitle = "Subject 1",
+    x = "Closest Reference Species",
+    y = "log10(RPKM)",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    legend.position = "none",
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5)
+  )
+```
+

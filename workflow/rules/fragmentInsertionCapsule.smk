@@ -70,9 +70,9 @@ rule runRAXML:
 # CLEAN TREE
 rule removeBootstrapValues:
 	input:
-		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag_capsule']}")
 	output:
-		join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_capsule.newick"),
+		join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_capsule.newick")
 	resources:
 		time=5,
 		mem_mb=500

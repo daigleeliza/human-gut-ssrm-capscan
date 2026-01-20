@@ -1,5 +1,5 @@
 # SSRM_2022
-Snakemake pipeline:
+Snakemake pipeline (cluster folder -> to be downloaded onto cluster and run via slurm submission):
 - for NCBI data (Snakefile_NCBI -> copy/paste into Snakefile so Snakemake can recognize the file name)
   1. prepAnantharaman.smk: Remove sequences from Anantharaman that are already found in Mueller.
   2. downloadMetagenomicData.smk: Pull data from NCBI using accession numbers in NCBI_WGS_accessionNumbers.txt and convert to .faa.

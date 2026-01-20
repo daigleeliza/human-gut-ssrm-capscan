@@ -1,1 +1,0 @@
-Geneid	Chr	Start	End	Strand	Length	workflow/out/mapping/bam/CoAssembly/Capsule_8/C12_2.bam	RPKM	geneLoc	geneNum	Score

@@ -20,6 +20,7 @@ rule all:
 		
 		# remove bootstrap values
 		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick"),
+		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick")
 		# fragment insertion (.Daigle2026_frag)
 		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_frag']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_frag']}"),

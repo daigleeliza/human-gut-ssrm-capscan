@@ -58,6 +58,7 @@ conflicts_prefer(dplyr::left_join)
 #--------------------------------------------
 configDir = paste0(here::here(), "/0-Cluster/config/")
 treeInfoDir = paste0(here::here(), "/0-Cluster/workflow/out/treeInfo/")
+raxmlDir = paste0(here::here(), "/0-Cluster/workflow/out/raxmlOutput")
 abundanceDir = paste0(here::here(), "/0-Cluster/workflow/out/dsrAB_CapsuleStool_Abundances/")
 
 dataDir = paste0(here::here(), "/data/")

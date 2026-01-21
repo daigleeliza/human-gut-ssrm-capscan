@@ -1,4 +1,9 @@
 
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
 #packages to load
 ```{r}
 library(ggplot2)
@@ -13,9 +18,9 @@ library(phyloseq)
 
 ```{r}
 #root tree
-ref_tree = read.tree("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/raxmlOutputFinal/RAxML_originalLabelledTree_noBootstrap.newick")
+ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
 
-out_group = as.vector(archaeaRootsetIDs$X1)
+#out_group = as.vector(archaeaRootsetIDs$X1)
 
 rooted_ref_tree <-root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 

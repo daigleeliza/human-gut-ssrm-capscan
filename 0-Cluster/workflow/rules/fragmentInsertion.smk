@@ -69,13 +69,16 @@ rule runRAXML:
 # CLEAN TREE
 rule removeBootstrapValues:
 	input:
-		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag']}"),
+		original=join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_frag']}"),
+		labelled=join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag']}")
 	output:
-		join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick"),
+		original=join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick"),
+		labelled=join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick")
 	resources:
-		time=5,
+		time=10,
 		mem_mb=500
 	shell:
 		"""
-		python3 workflow/scripts/removeBootstrapValues.py {input} {output}
+		python3 workflow/scripts/removeBootstrapValues.py {input.original} {output.original}
+		python3 workflow/scripts/removeBootstrapValues.py {input.labelled} {output.labelled}
 		"""

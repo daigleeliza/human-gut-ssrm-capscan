@@ -52,6 +52,7 @@ rule all:
 		
 		# remove bootstrap values
 		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_capsule.newick"),
+		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_capsule.newick"),
 		# fragment insertion 
 		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_frag_capsule']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_frag_capsule']}"),

@@ -16,3 +16,8 @@ Snakemake pipeline (cluster folder -> to be downloaded onto cluster and run via 
   1. mapReads.smk: map raw reads to capsule/stool coassemblies and get reads per contig
   2. perGeneCounts.smk: get reads per gene and calculate RPKMs
   3. getGeneAbunCapsule.smk: extract RPKMs of dsrAB genes to make dataset for analysis
+ 
+Move into RStudio for data visualization
+  1. Ensure packages listed in config are installed
+  2. Data management
+  3. Analysis

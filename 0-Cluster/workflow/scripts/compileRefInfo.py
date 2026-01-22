@@ -42,7 +42,7 @@ with open(scoreThresholdCSV, 'r') as f:
                              "distance",
                              "SRM_present"])
 
-            next(scoreThreshold_reader)  # skip header
+            #next(scoreThreshold_reader)  # skip header (ED- there is no header in these files)
             for row in scoreThreshold_reader:
                 hit_id = row[0]  # first column in csv file. hit_id includes full sequence info
                 query_id = hit_id.split(".")[0]  # query_id is the WGS accession prefix

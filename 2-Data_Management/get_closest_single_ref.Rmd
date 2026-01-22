@@ -5,11 +5,12 @@ date: "2024-04-18"
 ---
 # edited 1/20/2026 by Eliza 
 
-# load packages
+# Read in packages, functions, and directories
 ```{r}
-library(readr)
-library(tidyverse)
-
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+# Read in info on closest references to capsule and NCBI hits
+```{r}
 closestRefInfo_allScoreThresholdHits <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits.csv"))
 
 closestRefInfo_allScoreThresholdHits_capsule <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_capsule.csv"))
@@ -49,6 +50,7 @@ get_single_ref("['QUERY___Bilophila_wadsworthia_dsrA', 'QUERY___Bilophila_wadswo
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef <- closestRefInfo_allScoreThresholdHits %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
+# save as csv
 write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef.csv"),
           row.names = FALSE)
@@ -56,6 +58,7 @@ write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef,
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule <- closestRefInfo_allScoreThresholdHits_capsule %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
+# save as csv
 write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"),
           row.names = FALSE)

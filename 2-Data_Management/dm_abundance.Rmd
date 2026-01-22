@@ -4,7 +4,7 @@ date: "20 January 2026"
 output: html_document
 author: "Elizabeth Daigle"
 ---
-# Read in packages and functions
+# Read in packages, functions, and directories
 ```{r}
 source(paste0(here::here(), "/1-Config/config.R"))
 ```

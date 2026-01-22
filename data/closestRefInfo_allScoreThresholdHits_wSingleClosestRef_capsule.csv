@@ -1,4 +1,5 @@
 "hit_id","query_id","biosample_id","closest_ref","distance","SRM_present","single_closest_ref"
+"Capsule_1.k141_35391_6/64-437","k141_35391_6/64-437","Capsule_1","['QUERY___Bilophila_wadsworthia_dsrA', 'QUERY___Bilophila_wadsworthia_dsrB']",0.007817,TRUE,"QUERY___Bilophila_wadsworthia_dsrA"
 "Capsule_1.k141_35391_7/11-266","k141_35391_7/11-266","Capsule_1","['QUERY___Bilophila_wadsworthia_dsrA', 'QUERY___Bilophila_wadsworthia_dsrB']",0.009599,TRUE,"QUERY___Bilophila_wadsworthia_dsrA"
 "Capsule_11.k141_302606_35/64-437","k141_302606_35/64-437","Capsule_11","['Bilophila_sp._4_1_30__BilSpec3']",0.0016698334302823,TRUE,"Bilophila_sp._4_1_30__BilSpec3"
 "Capsule_11.k141_302606_34/11-266","k141_302606_34/11-266","Capsule_11","['Bilophila_wadsworthia__BilWads6']",1.50000025001454e-06,TRUE,"Bilophila_wadsworthia__BilWads6"

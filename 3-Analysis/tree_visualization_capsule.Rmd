@@ -1,0 +1,62 @@
+---
+title: "tree_visualization_capsule"
+output: html_document
+---
+
+# Read in packages, functions, and directories
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
+
+#get trees
+```{r}
+ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
+rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+
+result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_capsule.newick"))
+rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+```
+
+# need to figure out how to get the query hits to show up
+```{r}
+# Read in names of species that have hits
+otu_hits_table <- as.data.frame(table(subset(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$single_closest_ref, closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$distance < 2.5)))
+
+otu_hits_table$logFreq <- log2(otu_hits_table$Freq + 1)
+desulfovibionaceae_node <- MRCA(rooted_result_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+desulfovibrionaceae_subset_tree <- tree_subset(rooted_result_tree, desulfovibionaceae_node, levels_back = 0)
+plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table))
+
+plot %<+%
+  otu_hits_table +
+  aes(color = logFreq) +
+  geom_tippoint(aes(subset= label %in% otu_hits_table$Var1), size = 0.5, color = "red", alpha = 0.8, position = "jitter")
+```
+
+```{r}
+firmicutes_node <- MRCA(rooted_ref_tree, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")
+firmicutes_subset_tree <- tree_subset(rooted_ref_tree, firmicutes_node, levels_back = 0)
+
+firmicute_orange <- brewer.pal(2, "Set2")[2]
+
+faca_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% otu_hits_table)) +
+  scale_color_manual(values=c("black", firmicute_orange)) +
+  guides(color = "none") +
+  geom_tiplab(aes(subset = label %in% closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$single_closest_ref), size = 2, align = T, offset = -0.5)
+faca_subset_tree_plot
+
+
+desulfovibionaceae_node <- MRCA(rooted_ref_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+desulfovibrionaceae_subset_tree <- tree_subset(rooted_ref_tree, desulfovibionaceae_node, levels_back = 0)
+
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+
+faca_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table)) 
+faca_subset_tree_plot %<+%
+  otu_hits_table +
+  aes(color = logFreq) +
+  scale_color_gradient(low = "blue", high = "orange") +
+  geom_tiplab(aes(subset = label %in% otu_hits_table$Var1), size = 2, align = T, offset = -0.1)
+
+```

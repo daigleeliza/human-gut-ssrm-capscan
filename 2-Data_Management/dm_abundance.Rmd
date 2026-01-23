@@ -30,7 +30,7 @@ samples_unique_genes <- samples %>%
 # Remove RPKMs of 0 (feature counts keeps genes even when nothing has mapped to them) 
   filter(RPKM>0) %>%
   mutate(subject = factor(subject)) %>%
-# remove rest of file name from sample column (this can be fixed by rerunning concat rule and fixing column 2 str extraction)
+# remove rest of file name from sample column (this can be fixed by rerunning concat rule and fixing column 2 string extraction)
   mutate(sample = sub("^(([^_]+_[^_]+)).*$", "\\1", sample)) %>%
 # add capsule type
   left_join(meta %>% select(samplename, Type), 
@@ -56,12 +56,6 @@ samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% 
 saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique_genes_with_names.rds"))
 ```
 
-## Why does samples_unique_genes have 739 rows but samples_unique_genes_with_names have 720 rows?
-```{r}
-rows_not_in_names <- samples_unique_genes %>%
-  anti_join(samples_unique_genes_with_names)
-## they are all this one Capsule_1.k141_35391_6/64-437
-## my filtering above kept the 64-437, which was present in 19 samples from Capsule_1. The filtering pipeline used to make the closestRefInfo kept the 62-342 domain, which was present in 17 samples.
-```
+
 
 

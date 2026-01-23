@@ -32,6 +32,10 @@ library(factoextra)
 #library(ComplexHeatmap)
 library(ape)
 library(phytools)
+library(treeio)
+library(ggtree)
+library(tidytree)
+library(RColorBrewer)
 
 # fix conflicts between packages
 library(conflicted)

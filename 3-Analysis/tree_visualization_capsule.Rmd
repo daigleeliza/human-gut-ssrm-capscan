@@ -9,29 +9,40 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 
-#get trees
+# get trees
 ```{r}
-ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
+ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_capsule.newick"))
 rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 
 result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_capsule.newick"))
 rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 ```
 
+# get names of closest references
+```{r}
+closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
+```
+
+
 # need to figure out how to get the query hits to show up
 ```{r}
 # Read in names of species that have hits
-otu_hits_table <- as.data.frame(table(subset(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$single_closest_ref, closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$distance < 2.5)))
+otu_hits_table <- as.data.frame(table(subset(closest_ref$single_closest_ref, closest_ref$distance < 2.5)))
 
 otu_hits_table$logFreq <- log2(otu_hits_table$Freq + 1)
-desulfovibionaceae_node <- MRCA(rooted_result_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
-desulfovibrionaceae_subset_tree <- tree_subset(rooted_result_tree, desulfovibionaceae_node, levels_back = 0)
-plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table))
 
-plot %<+%
+##could just add another layer with the hits from the NCBI data!
+plot <- ggtree(rooted_ref_tree, layout = "circular")
+
+(full_plot <- plot %<+%
   otu_hits_table +
-  aes(color = logFreq) +
-  geom_tippoint(aes(subset= label %in% otu_hits_table$Var1), size = 0.5, color = "red", alpha = 0.8, position = "jitter")
+  geom_tree(color = "black") +
+  geom_tippoint(aes(subset = label %in% otu_hits_table$Var1), size = 0.8, color = "red", alpha = 0.8, position = "jitter") + 
+  scale_color_manual(
+    name = "Hits",
+    values = c(`TRUE` = "black", `FALSE` = "red"),
+    labels = c("Capsule or Stool sample", "No hits")
+  ))
 ```
 
 ```{r}
@@ -40,23 +51,45 @@ firmicutes_subset_tree <- tree_subset(rooted_ref_tree, firmicutes_node, levels_b
 
 firmicute_orange <- brewer.pal(2, "Set2")[2]
 
-faca_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% otu_hits_table)) +
-  scale_color_manual(values=c("black", firmicute_orange)) +
-  guides(color = "none") +
-  geom_tiplab(aes(subset = label %in% closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule$single_closest_ref), size = 2, align = T, offset = -0.5)
-faca_subset_tree_plot
+firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% otu_hits_table))
 
+inset_firmicutes <- firmicutes_subset_tree_plot %<+%  
+  otu_hits_table +
+  aes(color = logFreq) +
+  scale_color_gradient(low = "blue", high = "orange") +
+  geom_tiplab(aes(subset = label %in% closest_ref$single_closest_ref), size = 2, align = F, hjust = -0.15) +
+  theme(legend.position = "none") +
+  xlim(NA, max(firmicutes_subset_tree$edge.length) * 1.5) 
++
+  #hexpand()
+  
+inset_firmicutes
 
 desulfovibionaceae_node <- MRCA(rooted_ref_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
 desulfovibrionaceae_subset_tree <- tree_subset(rooted_ref_tree, desulfovibionaceae_node, levels_back = 0)
 
 desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
 
-faca_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table)) 
-faca_subset_tree_plot %<+%
+desulfo_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table)) 
+
+inset_desulfo <- desulfo_subset_tree_plot %<+%
   otu_hits_table +
   aes(color = logFreq) +
   scale_color_gradient(low = "blue", high = "orange") +
-  geom_tiplab(aes(subset = label %in% otu_hits_table$Var1), size = 2, align = T, offset = -0.1)
+  geom_tiplab(aes(subset = label %in% otu_hits_table$Var1), size = 2, align = F, hjust = -0.15) +
+  hexpand(0.2)
+
+inset_desulfo
 
 ```
+
+```{r}
+final_plot <- (inset_firmicutes | main_plot | inset_desulfo) +
+  plot_layout(widths = c(1, 1.5, 1))
+final_plot
+ggsave("capsule_tree_with_insets.png",
+       width = 16, height = 10, units = "in",   # increase for larger output
+       dpi = 600)
+```
+
+

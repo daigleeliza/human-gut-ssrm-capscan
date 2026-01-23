@@ -36,6 +36,7 @@ library(treeio)
 library(ggtree)
 library(tidytree)
 library(RColorBrewer)
+library(patchwork)
 
 # fix conflicts between packages
 library(conflicted)

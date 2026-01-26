@@ -18,26 +18,52 @@ result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_capsul
 rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 ```
 
-# get names of closest references
+# get names of closest references and filter to remove gene duplicates
 ```{r}
 closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
+
+# filter by the genes that have the higher bit score in at least one sample (this df is made in dm_abundance.Rmd)
+# don't want to keep any hits that are not a unique hit for a sample
+samples_unique_genes_with_names <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
+unique_genes <- samples_unique_genes_with_names %>%
+  mutate(geneLoc = str_split(geneLoc, "\\.", simplify = TRUE)[, 2]) %>%
+  select(geneLoc) %>%
+  unique()
+# this df has the geneLoc for each unique ssrm hit in each sample. 
+# we only want the closest_ref df to count hits that are unique.
+  
+closest_ref_filtered <- closest_ref %>%
+  filter(query_id %in% unique_genes$geneLoc)
+#this df gives you the hits for a certain leaf that are unique in at least one sample
+
+
 ```
 
-
-# need to figure out how to get the query hits to show up
 ```{r}
 # Read in names of species that have hits
 otu_hits_table <- as.data.frame(table(subset(closest_ref$single_closest_ref, closest_ref$distance < 2.5)))
 
-otu_hits_table$logFreq <- log2(otu_hits_table$Freq + 1)
+# remove moorella thermoacetica from the RPKM data since the distance is too far!!!!
+
+subjects_per_species <- closest_ref_filtered %>%
+  filter(distance < 2.5) %>%
+  mutate(subject = str_split(biosample_id, "\\_", simplify = TRUE)[, 2]) %>%
+  # get total hits per closest_reference; may be several hits per subject
+  group_by(single_closest_ref, subject) %>%
+  summarize(n=n()) %>%
+  group_by(single_closest_ref) %>%
+  summarize(sum=sum(n))
+  
+
+otu_hits_table$logFreq <- log2(subjects_per_species$sum + 1)
 
 ##could just add another layer with the hits from the NCBI data!
 plot <- ggtree(rooted_ref_tree, layout = "circular")
 
 (full_plot <- plot %<+%
-  otu_hits_table +
+  subjects_per_species +
   geom_tree(color = "black") +
-  geom_tippoint(aes(subset = label %in% otu_hits_table$Var1), size = 0.8, color = "red", alpha = 0.8, position = "jitter") + 
+  geom_tippoint(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 0.8, color = "red", alpha = 0.8, position = "jitter") + 
   scale_color_manual(
     name = "Hits",
     values = c(`TRUE` = "black", `FALSE` = "red"),
@@ -57,7 +83,7 @@ inset_firmicutes <- firmicutes_subset_tree_plot %<+%
   otu_hits_table +
   aes(color = logFreq) +
   scale_color_gradient(low = "blue", high = "orange") +
-  geom_tiplab(aes(subset = label %in% closest_ref$single_closest_ref), size = 2, align = F, hjust = -0.15) +
+  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 2, align = F, hjust = -0.15) +
   theme(legend.position = "none") +
   xlim(NA, max(firmicutes_subset_tree$edge.length) * 1.5) 
 +

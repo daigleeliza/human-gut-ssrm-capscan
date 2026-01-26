@@ -104,24 +104,30 @@ plot_count_dsr %>%
 ```
 # Change species labels
 ```{r}
-species_labels <- c("QUERY___Bilophila_wadsworthia_dsrA" = "Bilophila wadsworthia dsrA",
-                    "Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
-                    "Desulfovibrio_piger__DslPige2" = "Desulfovibrio piger",
+species <- unique(samples_unique_genes_with_names$single_closest_ref)
+
+species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+                    "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
+                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
                     "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
                     "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
                     "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
                     "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "QUERY___Moorella_thermoacetica_2_dsrA" = "Moorella thermoacetica")
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
+
+species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+                    "Desulfovibrio_piger" = "Desulfovibrio piger",
+                    "Bilophila_species" = "Bilophila species",
+                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
 ```
 
 # plot RPKM for every hit to compare between species; facet by location and subject
 ```{r}
 samples_unique_genes_with_names %>%
-  filter(!single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA",
-                       "QUERY___Ley3_66761_scaffold_1830_dsrB",
-                       #"Gordonibacter_pamelaeae__GrdPame5",
-                       #"QUERY___Moorella_thermoacetica_2_dsrA",
-                       "Anaerobic_bacterium_sk.prop8__Bv2Prop2")) %>%
   ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -156,11 +162,6 @@ samples_unique_genes_with_names %>%
 # plot RPKM for every hit to compare between location; facet by species and subject
 ```{r}
 samples_unique_genes_with_names %>%
-  filter(!single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA",
-                       "QUERY___Ley3_66761_scaffold_1830_dsrB",
-                       #"Gordonibacter_pamelaeae__GrdPame5",
-                       #"QUERY___Moorella_thermoacetica_2_dsrA",
-                       "Anaerobic_bacterium_sk.prop8__Bv2Prop2")) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -196,80 +197,48 @@ ggsave("dsrAB_RPKM.png",
        width = 16, height = 14, units = "in",   # increase for larger output
        dpi = 600)
 ```
-
-
-##fix below 
-# individual plots
-## subject 1
+## now make a plot that combines the two D. piger and two B. wadsworthia species
 ```{r}
-#facet by species
 samples_unique_genes_with_names %>%
-  filter(subject == 1) %>%
-  mutate(Type = factor(Type, levels = all_types)) %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
   geom_jitter(aes(color = Type),
-            alpha = 0.9, size = 2,
+            alpha = 0.9, size = 1,
             position = position_jitterdodge(
         jitter.width = 0.5,
         dodge.width = 0.8)) +
-  scale_color_manual(values = jitter_colors, drop = FALSE) +
-  scale_x_discrete(drop = FALSE) +
+  scale_color_manual(values = jitter_colors) +
   #get rid of box fill
   scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
   guides(fill = "none") +
-  facet_wrap(~ single_closest_ref) +
+  facet_grid(subject ~ combine_species, 
+             scale = "free_y",
+             labeller = labeller(combine_species = species_labels_combine_species)) +
   labs(
-    title = "RPKM across capsule and stool samples by species",
-    subtitle = "Subject 1",
-    x = "Sample Type",
+    title = "RPKM for unique dsrAB genes by sample location across subjects and species",
+    x = "Sample Location",
     y = "log10(RPKM)",
-    color = "Type"
+    color = "Sample Location"
   ) +
   theme_bw() +
   theme(
     strip.background = element_blank(),
-    strip.text = element_text(size = 14),
-    legend.position = "none",
+    strip.text = element_text(size = 10),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
     axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
     plot.title = element_text(size = 20, hjust = 0.5),
     plot.subtitle = element_text(size = 16, hjust = 0.5)
   )
-#facet by type
-samples_unique_genes_with_names %>%
-  filter(subject == 1) %>%
-  mutate(Type = factor(Type, levels = all_types),
-    single_closest_ref = factor(single_closest_ref, levels = all_species)) %>%
-  ggplot(aes(x = single_closest_ref, y = log10(RPKM))) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
-  geom_jitter(aes(color = Type),
-            alpha = 0.9, size = 2,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = jitter_colors, drop = FALSE) +
-  #scale_x_discrete(drop = FALSE) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  guides(fill = "none") +
-  facet_wrap(~ Type, drop = FALSE) +
-  labs(
-    title = "RPKM across species by capsule and stool samples",
-    subtitle = "Subject 1",
-    x = "Closest Reference Species",
-    y = "log10(RPKM)",
-    color = "Type"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 14),
-    legend.position = "none",
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
-  )
+ggsave("dsrAB_RPKM_combine_species.png",
+       width = 16, height = 14, units = "in",   # increase for larger output
+       dpi = 600)
 ```
-
+```{r}
+# above plot shows that 1. 6/10 subjects with bilophila have none present in the stool 2. all subjects have either d. piger or d. alkalitolerans but not both 3. 3/4 subjects with d. desulfuricans also have d. piger
+```

@@ -41,9 +41,9 @@ samples_unique_genes <- samples %>%
   slice_max(Score, n = 1, with_ties = FALSE) %>%
   ungroup()
 ```
-# Read in closest reference leaf info
+# Read in closest reference leaf info; only 2015 references
 ```{r}
-closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
+closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
 ```
 
 # Add a column to samples that has the single_closest_ref

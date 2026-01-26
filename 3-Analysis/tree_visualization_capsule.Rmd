@@ -41,7 +41,8 @@ closest_ref_filtered <- closest_ref %>%
 
 ```{r}
 # Read in names of species that have hits
-otu_hits_table <- as.data.frame(table(subset(closest_ref$single_closest_ref, closest_ref$distance < 2.5)))
+#otu_hits_table <- as.data.frame(table(subset(closest_ref$single_closest_ref, closest_ref$distance < 2.5)))
+#otu_hits_table$logFreq <- log2(subjects_per_species$sum + 1)
 
 # remove moorella thermoacetica from the RPKM data since the distance is too far!!!!
 
@@ -53,9 +54,11 @@ subjects_per_species <- closest_ref_filtered %>%
   summarize(n=n()) %>%
   group_by(single_closest_ref) %>%
   summarize(sum=sum(n))
+
+subjects_per_species$logFreq <- log2(subjects_per_species$sum + 1)
   
 
-otu_hits_table$logFreq <- log2(subjects_per_species$sum + 1)
+
 
 ##could just add another layer with the hits from the NCBI data!
 plot <- ggtree(rooted_ref_tree, layout = "circular")
@@ -77,17 +80,15 @@ firmicutes_subset_tree <- tree_subset(rooted_ref_tree, firmicutes_node, levels_b
 
 firmicute_orange <- brewer.pal(2, "Set2")[2]
 
-firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% otu_hits_table))
+firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% subjects_per_species$single_closest_ref))
 
 inset_firmicutes <- firmicutes_subset_tree_plot %<+%  
-  otu_hits_table +
+  subjects_per_species +
   aes(color = logFreq) +
   scale_color_gradient(low = "blue", high = "orange") +
   geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 2, align = F, hjust = -0.15) +
   theme(legend.position = "none") +
   xlim(NA, max(firmicutes_subset_tree$edge.length) * 1.5) 
-+
-  #hexpand()
   
 inset_firmicutes
 
@@ -96,13 +97,13 @@ desulfovibrionaceae_subset_tree <- tree_subset(rooted_ref_tree, desulfovibionace
 
 desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
 
-desulfo_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% otu_hits_table)) 
+desulfo_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% subjects_per_species$single_closest_ref)) 
 
 inset_desulfo <- desulfo_subset_tree_plot %<+%
-  otu_hits_table +
+  subjects_per_species +
   aes(color = logFreq) +
   scale_color_gradient(low = "blue", high = "orange") +
-  geom_tiplab(aes(subset = label %in% otu_hits_table$Var1), size = 2, align = F, hjust = -0.15) +
+  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 2, align = F, hjust = -0.15) +
   hexpand(0.2)
 
 inset_desulfo

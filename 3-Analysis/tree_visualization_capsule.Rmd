@@ -111,7 +111,7 @@ inset_desulfo
 ```
 
 ```{r}
-final_plot <- (inset_firmicutes | main_plot | inset_desulfo) +
+final_plot <- (inset_firmicutes | full_plot | inset_desulfo) +
   plot_layout(widths = c(1, 1.5, 1))
 final_plot
 ggsave("capsule_tree_with_insets.png",

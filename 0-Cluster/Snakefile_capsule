@@ -111,16 +111,16 @@ rule all:
 
 ## getting abundances below 
 		# concatenate RPKMs into Capsule and Stool files -> these files DO NOT include the samples that were dropped, this is specified in the rule input.
-		#"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM.txt",
-		#"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM.txt"
+		#"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM_redo.txt",
+		#"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM_redo.txt"
 		# extract RPKMs for dsrAB hits in Capsule and Stool
 		#expand(
-		#	join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"),
+		#	join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
 		#	zip,
 		#	coassembly=[c for c in stool for _ in get_subject_sample_list(c)],
 		#	sample=[s for c in stool for s in get_subject_sample_list(c)]),
 		#expand(
-		#	join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"),
+		#	join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
 		#	zip,
 		#	coassembly=[c for c in capsule for _ in get_subject_sample_list(c)],
 		#	sample=[s for c in capsule for s in get_subject_sample_list(c)]),

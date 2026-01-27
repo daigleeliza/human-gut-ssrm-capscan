@@ -200,6 +200,8 @@ ggsave("dsrAB_RPKM.png",
 ## now make a plot that combines the two D. piger and two B. wadsworthia species
 ```{r}
 samples_unique_genes_with_names %>%
+  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",

@@ -44,6 +44,22 @@ def get_subject_sample_list_dropped(coassembly):
 
 rule all:
 	input:
+		# redo fragment insertion and getting tree info for just 2015 references.
+		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"),
+		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"),
+		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.csv",
+		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.json",
+		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv",
+		#"workflow/out/treeInfo/closestRefList_no_2018_capsule.txt"
+
+		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018_capsule']}"),
+		#join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_no_2018_capsule']}.jplace")
+
 		# get tree info
 		#"workflow/out/treeInfo/closestRefList_capsule.txt",
 		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_capsule.csv",
@@ -191,7 +207,8 @@ rule all:
 		# get bt2 index
 		#expand(join(config["coAssemblyDir"],"{coassembly}/bowtie2_index.1.bt2"), coassembly=coassemblies)
 
-include: "workflow/rules/getTreeInfoCapsule.smk"
+include: "workflow/rules/fragmentInsertionNo2018.smk"
+#include: "workflow/rules/getTreeInfoCapsule.smk"
 #include: "workflow/rules/fragmentInsertionCapsule.smk"
 #include: "workflow/rules/cleanHitsCapsule.smk"
 #include: "workflow/rules/runHMMERCapsule.smk"

@@ -17,9 +17,9 @@ meta <- read_tsv(paste0(configDir, "/sampleReadList.txt"))
 # Read in dsrAB gene counts
 ```{r}
 # capsule data
-capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM.txt"))
+capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM_redo.txt"))
 # stool data
-stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM.txt"))
+stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM_redo.txt"))
 # combine capsule and stool data
 samples <- bind_rows(capsule, stool) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))

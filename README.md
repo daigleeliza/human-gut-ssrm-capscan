@@ -10,8 +10,7 @@ Snakemake pipeline (cluster folder -> to be downloaded onto cluster and run via 
 - for Capscan/Stool data (Snakefile_Capsule): same steps as rules above, with file names changed.
   1. runHMMERCapsule.smk
   2. cleanHitsCapsule.smk
-  3. fragmentInsertionCapsule.smk
-  4. getTreeInfoCapsule.smk
+  3. fragmentInsertionNo2018.smk: also includes getting tree info
 - for gene abundances
   1. mapReads.smk: map raw reads to capsule/stool coassemblies and get reads per contig
   2. perGeneCounts.smk: get reads per gene and calculate RPKMs

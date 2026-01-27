@@ -28,11 +28,13 @@ rule filterHMMStool:
 		awk -F',' '$8 >= 100' {input} > {output}
 		"""
 
+#the redo fixes the string search so that it only takes rows with exact _genenumber matches. 
+#fixes the count rule not skipping one of the header lines and the concat rule skipping a data line
 rule countHMMinSamplesCapsule:
 	input:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
-	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"
+	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
@@ -48,8 +50,8 @@ rule countHMMinSamplesCapsule:
 				if [ "$sample_subj" == "{wildcards.coassembly}" ]; then
 					contig=$(echo "$col2" | awk -F'_' '{{print $2"_"$3}}' | sed 's/.*\\.//')
 					gene_number=$(echo "$col2" | awk -F'_' '{{print $NF}}')
-					tail -n +2 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
-						$2 == Chr && $1 ~ "_"gene_number {{print $0"\\t"c1"\\t"c2"\\t"c8}}
+					tail -n +3 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
+						$2 == Chr && $1 ~ "_"gene_number"$" {{print $0"\\t"c1"\\t"c2"\\t"c8}}
 					' >> $temp_file
 				fi
 			done
@@ -57,15 +59,17 @@ rule countHMMinSamplesCapsule:
 		mv $temp_file {output}
 		"""
 
+#fix geneID to be contig_number again. prodigal_output makes a different geneID that ends up in the RPKM output
+#Also fixes string extraction in column 2 so that it is just the sample name and not the whole file name
 rule concatGeneHitsCapsule:
 	input:
 		expand(
-			join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"),
+			join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
 			zip,
 			coassembly=[c for c in capsule for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in capsule for s in get_subject_sample_list_dropped(c)])
 	output:
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM.txt"
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,
@@ -76,8 +80,13 @@ rule concatGeneHitsCapsule:
 		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKM\\tgeneLoc\\tgeneNum\\tScore" > {output}
 		for x in {input}; do
 			coassembly=$(basename "$(dirname "$x")")
-			sample=$(basename "$x" _dsrAB_RPKM.txt)
-			tail -n +3 "$x" | awk -F'\\t' -v c="$coassembly" -v s="$sample" 'BEGIN{{OFS="\\t"}} {{print c,s,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}}'
+			sample=$(basename "$x" | awk -F'_' '{{print $1"_"$2}}')
+			tail -n +2 "$x" | awk -F'\\t' -v c="$coassembly" -v s="$sample" 'BEGIN{{OFS="\\t"}} {{
+				split($2, arr2, "_")
+				split($1, arr1, "_")
+				geneID = arr2[2] "_" arr1[2]
+				print c,s,geneID,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
+			}}'
 		done >> {output}
 		"""
 
@@ -85,7 +94,7 @@ rule countHMMinSamplesStool:
 	input:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
-	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"
+	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
@@ -101,8 +110,8 @@ rule countHMMinSamplesStool:
 				if [ "$sample_subj" == "{wildcards.coassembly}" ]; then
 					contig=$(echo "$col2" | awk -F'_' '{{print $2"_"$3}}' | sed 's/.*\\.//')
 					gene_number=$(echo "$col2" | awk -F'_' '{{print $NF}}')
-					tail -n +2 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
-						$2 == Chr && $1 ~ "_"gene_number {{print $0"\\t"c1"\\t"c2"\\t"c8}}
+					tail -n +3 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
+						$2 == Chr && $1 ~ "_"gene_number"$" {{print $0"\\t"c1"\\t"c2"\\t"c8}}
 					' >> $temp_file
 				fi
 			done
@@ -113,12 +122,12 @@ rule countHMMinSamplesStool:
 rule concatGeneHitsStool:
 	input:
 		expand(
-			join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM.txt"),
+			join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
 			zip,
 			coassembly=[c for c in stool for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in stool for s in get_subject_sample_list_dropped(c)])
 	output:
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM.txt"
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,
@@ -129,7 +138,12 @@ rule concatGeneHitsStool:
 		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKM\\tgeneLoc\\tgeneNum\\tScore" > {output}
 		for x in {input}; do
 			coassembly=$(basename "$(dirname "$x")")
-			sample=$(basename "$x" _dsrAB_RPKM.txt)
-			tail -n +3 "$x" | awk -F'\\t' -v c="$coassembly" -v s="$sample" 'BEGIN{{OFS="\\t"}} {{print c,s,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11}}'
+			sample=$(basename "$x" | awk -F'_' '{{print $1"_"$2}}')
+			tail -n +2 "$x" | awk -F'\\t' -v c="$coassembly" -v s="$sample" 'BEGIN{{OFS="\\t"}} {{
+				split($2, arr2, "_")
+				split($1, arr1, "_")
+				geneID = arr2[2] "_" arr1[2]
+				print c,s,geneID,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
+			}}'
 		done >> {output}
 		"""

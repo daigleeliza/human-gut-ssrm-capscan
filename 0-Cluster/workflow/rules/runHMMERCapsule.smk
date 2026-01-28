@@ -47,6 +47,13 @@ rule parseHMMER:
 		python3 {params.scripts_dir}/parse_hmmer_domtable.py {input.arch} {output.arch}
 		"""
 
+rule combineCSVpre:
+	input:
+		CapsuleBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = capsule),
+		CapsuleArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = capsule),
+		StoolBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = stool),
+		StoolArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = stool)
+
 # convert the HMMER output MSA from stockholm format (.sto) to fasta (.faa)
 rule convertMSA:
 	input:

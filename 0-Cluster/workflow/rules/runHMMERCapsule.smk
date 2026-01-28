@@ -53,6 +53,18 @@ rule combineCSVpre:
 		CapsuleArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = capsule),
 		StoolBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = stool),
 		StoolArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = stool)
+	output":
+		CapsuleBact=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		CapsuleArch=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+		StoolBact=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		StoolArch=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv")
+	shell:
+		"""
+		cat {input.CapsuleBact} > {output.CapsuleBact}
+		cat {input.CapsuleArch} > {output.CapsuleArch}
+		cat{input.StoolBact} > {output.StoolBact}
+		cat{input.StoolArch} > {output.StoolArch}
+		"""
 
 # convert the HMMER output MSA from stockholm format (.sto) to fasta (.faa)
 rule convertMSA:

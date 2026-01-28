@@ -110,6 +110,11 @@ rule all:
 		# convert .sto to .faa
 		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
 		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_arch.faa"), coassembly=coassemblies),
+		# combine stool csv files and capsule csv files separately
+		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
 		# parse hmmer domain table
 		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly=coassemblies),
 		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly=coassemblies),

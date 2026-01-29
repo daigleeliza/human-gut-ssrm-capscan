@@ -29,6 +29,8 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```
 
+ # need to choose a representative subunit. need to think more on using the contig as the grouping mechanism because idk that we can assume that that is where all the subunits are found -> what if the assembler split contigs in between subunits?
+
 # Plot the number of unique genes for each subject 
 ```{r}
 plot_count_dsr <- samples_unique_genes_with_names %>%

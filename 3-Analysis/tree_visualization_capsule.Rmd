@@ -1,5 +1,6 @@
 ---
 title: "tree_visualization_capsule"
+date: "20 January 2026"
 output: html_document
 ---
 
@@ -11,10 +12,10 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 # get trees
 ```{r}
-ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_capsule.newick"))
+ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"))
 rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 
-result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_capsule.newick"))
+result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"))
 rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 ```
 
@@ -22,41 +23,37 @@ rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__Mo
 ```{r}
 closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
 
-# filter by the genes that have the higher bit score in at least one sample (this df is made in dm_abundance.Rmd)
-# don't want to keep any hits that are not a unique hit for a sample
+# read in df that filters out gene duplicates in each sample (selects the domain with the highest bit score) 
+# this df is made in dm_abundance.Rmd
 samples_unique_genes_with_names <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
-unique_genes <- samples_unique_genes_with_names %>%
-  mutate(geneLoc = str_split(geneLoc, "\\.", simplify = TRUE)[, 2]) %>%
-  select(geneLoc) %>%
-  unique()
-# this df has the geneLoc for each unique ssrm hit in each sample. 
-# we only want the closest_ref df to count hits that are unique.
-  
+
+# filter the closest_ref df to only have the unique gene hits
+# this df is much smaller since it hits are not split up by sample
 closest_ref_filtered <- closest_ref %>%
-  filter(query_id %in% unique_genes$geneLoc)
-#this df gives you the hits for a certain leaf that are unique in at least one sample
+  filter(hit_id %in% samples_unique_genes_with_names$geneLoc)
 
-
+##move this to the abundance figures
+# select representative subunit (group by sample and contig)
+plot <- samples_unique_genes_with_names %>%
+  group_by()
 ```
 
 ```{r}
-# Read in names of species that have hits
-#otu_hits_table <- as.data.frame(table(subset(closest_ref$single_closest_ref, closest_ref$distance < 2.5)))
-#otu_hits_table$logFreq <- log2(subjects_per_species$sum + 1)
-
 # remove moorella thermoacetica from the RPKM data since the distance is too far!!!!
 
+# find the number of subjects that have a hit for a species
 subjects_per_species <- closest_ref_filtered %>%
+  # filter out hits that are too far from the closest reference
   filter(distance < 2.5) %>%
+  # add variable for the subject
   mutate(subject = str_split(biosample_id, "\\_", simplify = TRUE)[, 2]) %>%
-  # get total hits per closest_reference; may be several hits per subject
-  group_by(single_closest_ref, subject) %>%
-  summarize(n=n()) %>%
+  # count the number of subjects that have a hit for each species
+  distinct(single_closest_ref, subject) %>%
   group_by(single_closest_ref) %>%
-  summarize(sum=sum(n))
+  summarize(n_subjects = n())
 
-subjects_per_species$logFreq <- log2(subjects_per_species$sum + 1)
-  
+subjects_per_species$logFreq <- log2(subjects_per_species$n_subjects + 1)
+ 
 
 
 
@@ -72,6 +69,16 @@ plot <- ggtree(rooted_ref_tree, layout = "circular")
     values = c(`TRUE` = "black", `FALSE` = "red"),
     labels = c("Capsule or Stool sample", "No hits")
   ))
+
+species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+                    "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
+                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
+                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
+                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
+                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
 ```
 
 ```{r}
@@ -84,9 +91,11 @@ firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label 
 
 inset_firmicutes <- firmicutes_subset_tree_plot %<+%  
   subjects_per_species +
-  aes(color = logFreq) +
+  aes(color = n_subjects) +
   scale_color_gradient(low = "blue", high = "orange") +
-  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 2, align = F, hjust = -0.15) +
+  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref,
+                    label = species_labels[label]), size = 2, align = F, hjust = -.15,
+              angle = 20) +
   theme(legend.position = "none") +
   xlim(NA, max(firmicutes_subset_tree$edge.length) * 1.5) 
   
@@ -101,9 +110,15 @@ desulfo_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = 
 
 inset_desulfo <- desulfo_subset_tree_plot %<+%
   subjects_per_species +
-  aes(color = logFreq) +
-  scale_color_gradient(low = "blue", high = "orange") +
-  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref), size = 2, align = F, hjust = -0.15) +
+  aes(color = n_subjects) +
+  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
+  geom_tiplab(aes(subset = label %in% subjects_per_species$single_closest_ref,
+                    label = species_labels[label]), size = 2, align = F, hjust = -0.15,
+              angle = -20) +
+  theme(legend.position = "right",
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 8),
+    legend.box.spacing = unit(1, "cm")) +
   hexpand(0.2)
 
 inset_desulfo

@@ -30,24 +30,27 @@ jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```
 
  # need to choose a representative subunit. need to think more on using the contig as the grouping mechanism because idk that we can assume that that is where all the subunits are found -> what if the assembler split contigs in between subunits?
+```{r}
+# Get median across contigs in each sample
+## need to choose between closest references for the contigs with two different ones if you want to use median for the species plots
+plot_RPKM_dsr_median <- samples_unique_genes_with_names %>%
+  group_by(subject, sample, Type, contig) %>%
+  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75))
+  
+```
 
-# Plot the number of unique genes for each subject 
+
+# Plot the number of unique genes for each subject -> for comparing to asrABC
 ```{r}
 plot_count_dsr <- samples_unique_genes_with_names %>%
 # find number of unique genes for each sample
   group_by(subject, sample, Type) %>%
-  summarize(n=n(), .groups="drop") 
-
-plot_count_dsr_median <- samples_unique_genes_with_names %>%
-# find number of unique genes for each sample
-  group_by(subject, sample, Type) %>%
-  summarize(n=n(), .groups="drop") %>%
-# find median of each type
+  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
   group_by(subject, Type) %>% 
-  summarize(median_n = median(n))
+  summarize(median_gene_set = median(n_contigs))
 
-plot_count_dsr_median %>%
-  ggplot(aes(x = Type, y = median_n)) +
+plot_count_dsr %>%
+  ggplot(aes(x = Type, y = median_gene_set)) +
   geom_boxplot() + 
   geom_jitter(aes(color = Type),
               alpha = 0.7, 
@@ -55,9 +58,9 @@ plot_count_dsr_median %>%
               position = position_jitter(width = 0.15, height = 0)) +
   scale_color_manual(values = jitter_colors) +
   labs(
-    title = "Median dsrAB gene count by sample type",
-    x = "Sample Type",
-    y = "Subject Median Gene Count",
+    title = "Unique dsrAB genes per subject",
+    x = "Sample type",
+    y = "Median contig count across samples",
     color = "Type"
   ) +
   theme_bw() +
@@ -208,6 +211,13 @@ samples_unique_genes_with_names %>%
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
     TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger", 
+                                            "uncultured_bacterium__EF645667",
+                                            "Bilophila_species",
+                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
+                                            "Gordonibacter_pamelaeae__GrdPame5",
+                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -242,7 +252,4 @@ samples_unique_genes_with_names %>%
 ggsave("dsrAB_RPKM_combine_species.png",
        width = 16, height = 14, units = "in",   # increase for larger output
        dpi = 600)
-```
-```{r}
-# above plot shows that 1. 6/10 subjects with bilophila have none present in the stool 2. all subjects have either d. piger or d. alkalitolerans but not both 3. 3/4 subjects with d. desulfuricans also have d. piger
 ```

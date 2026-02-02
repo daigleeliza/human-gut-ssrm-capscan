@@ -96,7 +96,7 @@ firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label 
 inset_firmicutes <- firmicutes_subset_tree_plot %<+%  
   subjects_per_species +
   aes(color = n_subjects) +
-  scale_color_gradient(low = "blue", high = "orange") +
+  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
   geom_text_repel(aes(subset = label %in% subjects_per_species$single_closest_ref,
                     label = species_labels[label]), 
                   size = 3, 
@@ -107,7 +107,7 @@ inset_firmicutes <- firmicutes_subset_tree_plot %<+%
                   box.padding = 0.1,
                   segment.size = 0.25,
                   segment.linetype = "dashed") +
-  theme(legend.position = "none",
+  theme(legend.position = "left",
         plot.margin = margin(5, 10, 5, 5)) +  # Right margin for labels
   hexpand(0.2, direction = 1)
   
@@ -139,13 +139,13 @@ inset_desulfo <- desulfo_subset_tree_plot %<+%
                   segment.size = 0.25,
                   segment.linetype = "dashed") +
   theme(legend.position = "right",
-        plot.margin = margin(5, 10, 5, 5)) +  # Right margin for labels
+        plot.margin = margin(5, 10, 5, 5)) +
   hexpand(0.2, direction = 1)
  
 inset_desulfo
 
 ggsave("capsule_tree_desulfovibrio.png",
-       width = 6, height = 4, units = "in",   # increase for larger output
+       width = 6, height = 4, units = "in",
        dpi = 600)
 
 ```

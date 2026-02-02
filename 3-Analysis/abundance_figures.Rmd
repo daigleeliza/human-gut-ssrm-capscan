@@ -121,13 +121,13 @@ species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacte
                     "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
 
-species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
-                    "Desulfovibrio_piger" = "Desulfovibrio piger",
-                    "Bilophila_species" = "Bilophila species",
-                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
-                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
-                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
+species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
+                    "Bilophila_species" = "italic(Bilophila)~species",
+                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "italic(Moorella~thermoacetica)",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
 ```
 
 # plot RPKM for every hit to compare between species; facet by location and subject
@@ -218,6 +218,7 @@ samples_unique_genes_with_names %>%
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
                                             "Gordonibacter_pamelaeae__GrdPame5",
                                             "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -232,7 +233,8 @@ samples_unique_genes_with_names %>%
   guides(fill = "none") +
   facet_grid(subject ~ combine_species, 
              scale = "free_y",
-             labeller = labeller(combine_species = species_labels_combine_species)) +
+             labeller = labeller(combine_species = label_parsed)) +
+             #labeller = labeller(combine_species = species_labels_combine_species)) +
   labs(
     title = "RPKM for unique dsrAB genes by sample location across subjects and species",
     x = "Sample Location",

@@ -17,7 +17,8 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 ```{r}
 #root tree
-ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
+ref_tree = read.tree(paste0(dataDir, "/RAxML_originalLabelledTree_noBootstrap_wKarthikSeqs_rooted.newick"))
+#ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
 
 #out_group = as.vector(archaeaRootsetIDs$X1)
 

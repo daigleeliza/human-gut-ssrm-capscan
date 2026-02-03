@@ -1,0 +1,16 @@
+---
+title: "assembly_level_analysis"
+output: html_document
+---
+
+```{r}
+# assemblyLevel_variables <- c("assembly_method",
+# "assembly quality",
+# "assembly",
+# "Assembly Method",
+# "assembly_method")
+
+View(table(subject_df[,assemblyLevel_variables[5]]))
+
+# RESULTS: nothing informative on the assembly level
+```

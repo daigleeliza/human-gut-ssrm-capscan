@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# make vector of values to replace with NA and column names
+```{r}
+na_values <- c("missing", 
+               "Missing", 
+               "", 
+               " ",
+               "not collected",
+               "not applicable", 
+               "Not Applicable", 
+               "Not Collected", 
+               "N/A", 
+               "n/a",
+               "not collected",
+               "not determined",
+               "not provided",
+               "Unknown",
+               "unknown",
+               "not available",
+               "Not collected",
+               "Not applicable",
+               "Not available",
+               "na",
+               "NOT COLLECTED")
+
+# column_names <- c("geographic location", 
+#                   "latitude and longitude", 
+#                   "age", 
+#                   "host age", 
+#                   "host_age [months]",
+#                   "host age",
+#                   "sex",
+#                   "host sex")
+
+#column names for 2021 dataset:
+column_names <- c("geographic location",
+                  "latitude and longitude",
+                  "geographic location (latitude)",
+                  "geographic location (longitude)",
+                  "age",
+                  "host age",
+                  "host_day_of_life",
+                  "sex",
+                  "host sex")
+```
+
+# add values for "n/a" data points in specific column # 
+```{r}
+
+# dataset = combined_biosample_metadata_02242022
+
+# for (replace_value in na_values) {
+#   dataset2$`geographic location` <- replace(dataset2$`geographic location`, dataset2$`geographic location` == replace_value, NA)
+# }
+# 
+# for (replace_value in na_values) {
+#   dataset2$`latitude and longitude` <- replace(dataset2$`latitude and longitude`, dataset2$`latitude and longitude` == replace_value, NA)
+# }
+
+for (variable in column_names) {
+  for (replace_value in na_values) {
+    dataset[[variable]] <- replace(dataset[[variable]], dataset[[variable]] == replace_value, NA)
+  }
+}
+
+```
+# make variable summary tables (for each variable and overall NA values)
+```{r}
+
+columns = ncol(dataset)
+
+table_names = c()
+
+for (n in 1:columns) {
+  table_names <- append(table_names, paste("VarSum", n, colnames(dataset[n]), sep = "_"))
+}
+
+for (n in 1:columns) {
+  assign(x = table_names[n],
+         value = table(dataset[n], useNA = "always"))
+}
+
+## Variable Summary of "n/a" data points per variable##
+library(tibble)
+
+VariableSummary <- tibble('variable' = colnames(dataset), 'n_na' = NA, 'n_notna' = NA)
+VariableSummary$n_na <- as.integer(VariableSummary$n_na)
+VariableSummary$n_notna <- as.integer(VariableSummary$n_notna)
+
+for (n in 1:columns) {
+  num_na <- sum(is.na(dataset[n]))
+  col_name <- colnames(dataset[n])
+  not_na = nrow(dataset) - num_na
+
+  VariableSummary[n, 'n_na'] <- num_na
+  VariableSummary[n, 'n_notna'] <- not_na
+}
+
+```
+
+

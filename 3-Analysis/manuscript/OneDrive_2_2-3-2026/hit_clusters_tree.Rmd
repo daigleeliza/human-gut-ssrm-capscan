@@ -1,0 +1,87 @@
+---
+title: "hit_clusters_tree"
+output: html_document
+---
+
+# packages to load
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(phyloseq)
+library(RColorBrewer)
+```
+
+# prep result tree
+```{r}
+result_tree = read.tree("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/raxmlOutputFinal/RAxML_labelledTree_noBootstrap_rooted.newick")
+
+out_group = as.vector(archaeaRootsetIDs$X1)
+
+rooted_result_tree <-root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+
+moorella_copy_2_labels <- c("Moorella_thermoacetica_Y72_copy_2__MooTher5", "Moorella_thermoacetica_ATCC_39073_copy_2__MooThe10")
+
+# ox_bact_labels <- subset(taxa_table$OTU, taxa_table$dsrab_type == "Oxidative bacterial type DsrAB")
+
+
+pruned_tree <- drop.tip(rooted_result_tree, c(moorella_copy_2_labels, ox_bact_labels))
+
+ref_leaves <- rownames(taxa_table)
+
+closest_ref_leaves <- as.vector(otu_hits_table$Var1)
+
+```
+
+# subset firmicutes tree
+```{r}
+
+# firmicutes_node <- MRCA(pruned_tree, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")
+# 
+# firmicutes_subset_tree <- tree_subset(pruned_tree, firmicutes_node, levels_back = 0)
+
+# hit_leaves <- setdiff(firmicutes_subset_tree$tip.label, ref_leaves)
+
+# firmicute_orange <- brewer.pal(2, "Set2")[2]
+
+faca_subset_tree_plot <- ggtree(firmicutes_subset_tree, aes(color = label %in% hit_leaves)) +
+  scale_color_manual(values=c("black", firmicute_orange)) +
+  guides(color = "none") +
+  geom_tiplab(aes(subset = label %in% closest_ref_leaves), size = 2, align = T, offset = -0.5)
+
+ggsave(plot = faca_subset_tree_plot, file = "faca_subset_tree_plot.jpeg")
+
+```
+
+# desulfovibrionaceae tree
+```{r}
+# desulfovibionaceae_node <- MRCA(pruned_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+# 
+# desulfovibrionaceae_subset_tree <- tree_subset(pruned_tree, desulfovibionaceae_node, levels_back = 0)
+# 
+hit_leaves <- setdiff(desulfovibrionaceae_subset_tree$tip.label, ref_leaves)
+hit_leaves <- setdiff(hit_leaves, closest_ref_leaves)
+# 
+# desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+
+# ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% hit_leaves)) +
+#   scale_color_manual(values=c("black", desulfovibrionaceae_purple)) +
+#   guides(color = "none")
+
+plot <- ggtree(desulfovibrionaceae_subset_tree, aes(color = label %in% hit_leaves)) +
+  scale_color_manual(values=c("black", desulfovibrionaceae_purple)) +
+  guides(color = "none") +
+  geom_tiplab(aes(subset=(label %in% closest_ref_leaves)), size = 2, offset = -0.5, align = T)
+
+ggsave(plot = plot, file = "desulfovibrionaceae_subset_tree_plot.jpeg")
+
+```
+
+# desulfovibironaceae tree for fig. 1
+```{r}
+
+
+```

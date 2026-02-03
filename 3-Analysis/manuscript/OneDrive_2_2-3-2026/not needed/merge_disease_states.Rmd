@@ -1,0 +1,91 @@
+---
+title: "merge_disease_states"
+output: html_document
+---
+
+# check current variables in hgm_subject_df for columns related to disease state/host health
+```{r}
+# View(as.vector(colnames(hgm_subject_df)))
+# df <- hgm_subject_df
+# disease_var <- c("host disease", # add!
+#                  "study disease", # add
+#                  "host disease status", # add
+#                  "host disease stage", # na, don't add
+#                  "host disease outcome", # na, don't add
+#                  "disease stage", # na, don't add
+#                  "disease", # na, don't add
+#                  "host health state", # na, don't add
+#                  "health state", # na, don't add
+#                  "host_health", # na, don't add
+#                  "gastrointestinal tract disorder", # add
+#                  "host phenotype", # na, don't add
+#                  "subject is affected", # look into this more... "yes" and "no"
+#                  "gastroinstest_disord", # add
+#                  "histological_diagnosis", # na, don't add
+#                  "ontological term", # na, don't add
+#                  "pathotype", # na, don't add
+#                  "is the sequenced pathogen host associated?", # na, don't add
+#                  "treatment", # na, don't add
+#                  "pathovar", # na, don't add
+#                  "host_desease") # na, don't add
+
+
+# View(table(df[,disease_var[1]]))
+
+```
+
+# add values in selected disease variables to merged_health_status
+```{r}
+
+df$merged_health_status <- NA
+
+selected_disease_var <- c("host disease",
+                          "study disease",
+                          "host disease status", 
+                          "gastrointestinal tract disorder",
+                          "gastroinstest_disord"
+                          )
+
+for (variable in selected_disease_var) {
+  df$merged_health_status <- ifelse(is.na(df$merged_health_status), 
+                                    df[[variable]],
+                                    df$merged_health_status)
+}
+
+View(table(df$merged_health_status))
+```
+
+# convert NA values
+```{r}
+na_values <- c("missing",
+               "Missing", 
+               "", 
+               " ",
+               "not collected",
+               "not applicable", 
+               "Not Applicable", 
+               "Not Collected", 
+               "N/A", 
+               "n/a",
+               "not collected",
+               "not determined",
+               "not provided",
+               "Unknown",
+               "unknown",
+               "not available",
+               "Not collected",
+               "Not applicable",
+               "Not available",
+               "na",
+               "NOT COLLECTED")
+
+# nothing new to add to the NA keywords list
+# next, let's change the NA keywords to NA in the df!
+
+for (variable in disease_var) {
+  for (replace_value in na_values) {
+    df[[variable]] <- replace(df[[variable]], df[[variable]] == replace_value, NA)
+  }
+}
+```
+

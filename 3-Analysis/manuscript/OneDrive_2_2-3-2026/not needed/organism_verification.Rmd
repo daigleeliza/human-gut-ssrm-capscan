@@ -1,0 +1,126 @@
+---
+title: "organismVerification"
+output: html_document
+---
+
+# purpose: identify samples/variables with non-human descriptors from the dataset (dataset21and22)
+
+# isolation source
+```{r}
+# values of interest:
+# feces from 52 yr old caucasian male
+# feces from 53 yr old caucasian female
+# feces of 51 yr old caucasian female with stage I colorectal cancer	
+# infant under 1 year of age, breastfeeding, had prelonged diarrhea
+
+# ^ circle back and add ages for these values
+# other than that, no values of interest with non-human descriptors 
+```
+
+
+# sample type
+```{r}
+View(table(dataset21and22$`sample type`))
+
+"
+values of interest:
+whole organism
+cell culture
+pure culture
+Cell culture
+Bacterial culture
+Culture
+mixed culture
+culture
+Pure culture
+cultured bacterial isolate
+single bacterium
+Microbe isolate
+Pure cell culture
+soil # remove this one for sure
+SINGLE STRAIN
+
+"
+```
+
+# investigation type
+```{r}
+View(table(dataset21and22$`investigation type`))
+
+# nothing of interest
+```
+
+
+
+# isolate
+```{r}
+" values of interest:
+Clostridioides difficile	
+Salmonella wangata
+Enterobacteriaceae
+"
+
+```
+
+# strain
+```{r}
+"
+values of interest:
+Vancomycin resistant Enterococcus faecium
+Salmonella enterica subsp. enterica serovar Enteritidis
+"
+```
+
+# serovar
+```{r}
+"
+values of interest:
+Typhimurium
+
+"
+
+# this one is a headache. circle back to it after you've removed samples based on other variables
+# same with sub species 
+```
+
+# lab host
+```{r}
+"
+Sus scrofa (gnotobiotic piglets)
+"
+```
+
+```{r}
+
+```
+
+
+
+
+
+# common name
+```{r}
+"
+many descriptors here for uncultured bacteria. 
+check with Jess for how to proceed with these samples
+if the sample is from an identified species, should it be excluded? 
+same with `Inferred taxonomy`, `genus`, and `species`
+"
+```
+
+# organism modifier note
+```{r}
+"
+vancomycin resistant enterococci
+"
+
+```
+
+
+
+# component organism
+```{r}
+# Aeromonas caviae
+```
+
+

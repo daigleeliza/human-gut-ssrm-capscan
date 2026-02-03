@@ -1,0 +1,82 @@
+---
+title: "hitInfoBySample_02"
+output: html_document
+---
+
+# find which samples are missing between the two dataset
+``` {r}
+# find which samples from the hitInfoBySample_02 data are not in the combined_metadata
+setdiff(hitInfoBySample_02$sample_id, combined_biosample_metadata_02242022_02$sample_id)
+
+length(setdiff(combined_biosample_metadata_02242022_02$sample_id, hitInfoBySample_02$sample_id))
+
+## RESULT: all of the samples from the hit info dataset are in the metadata. So just need to merge!
+```
+
+# merge datasets for metadata and taxon/species info
+# jk don't do this
+``` {r}
+# how to merge datasets?
+# hitInfoBySample_02: has species columns; rows only for hits
+# combined_biosample_metadata: has metadata columns; all rows
+# both datasets have sample_id column
+
+sample_metadata <- combined_biosample_metadata_02242022_02
+
+sample_hitInfo_data <- hitInfoBySample_02
+
+joined <- full_join(sample_metadata, sample_hitInfo_data, by = "sample_id")
+taxon_list <- colnames(hitInfoBySample_02[,2:ncol(hitInfoBySample_02)])
+
+sample_metadata_hitInfo_joined_02 <- joined %>% mutate_at(vars(taxon_list), ~replace_na(.,0))
+
+#complete!
+# next: calculate and add "total species" column!
+```
+
+# add total species/taxons column!
+``` {r}
+# find which columns in the joined 21 and 22 df are leaf-level taxons!
+# colnames(joined_21and22)
+# [11:45]
+# [146:158]
+# [448:454]
+
+# change NA values to 0 for OTUS
+# column_indeces <- 448:454
+# 
+# for (index in column_indeces){
+#   dataset21and22[index][is.na(dataset21and22[index])] <- 0
+# }
+# sum(is.na(dataset21and22[column_indeces]))
+
+# dataset21and22$"n_leaf-level_OTUs_11to45" <- rowSums(dataset21and22[11:45])
+# dataset21and22$"n_leaf-level_OTUs_146to158" <- rowSums(dataset21and22[146:158])
+# dataset21and22$"n_leaf-level_OTUs_448to454" <- rowSums(dataset21and22[448:454])
+
+dataset21and22$"n_leaf-level_OTUs" <- rowSums(dataset21and22[457:459])
+
+# that was a lot easier than i thought it would be...
+```
+
+# time to combine old sample metadata
+# jk don't do this
+``` {r}
+# first, rename the tot_species column in the old df to total_taxon_hits
+# sample_metadata_2021 <- rename(sample_metadata_2021, total_taxon_hits = tot_species)
+
+#next, find number of different samples between the old (2021) and new (2022) dfs
+
+# number of samples in old but not new
+nrow(sample_metadata_2021)
+length(setdiff(sample_metadata_2021$sample_id, sample_metadata_hitInfo_joined_02$sample_id))
+# number of samples in new but not old
+nrow(sample_metadata_hitInfo_joined_02)
+length(setdiff(sample_metadata_hitInfo_joined_02$sample_id, sample_metadata_2021$sample_id))
+
+```
+
+# SRM present vs. absent column!
+``` {r}
+dataset21and22$SRM_present <- dataset21and22$`n_leaf-level_OTUs` > 0
+```

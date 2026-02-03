@@ -1,0 +1,12 @@
+---
+title: "uncultured_firm"
+output: html_document
+---
+
+```{r}
+# subjects <- as.vector(subset(subject_species_matrix$...1, subject_species_matrix$`uncultured Firmicute from industrial environment AY751286` == 1))
+
+df <- subset(hgm_subject_df$country, hgm_subject_df$merged_subject_id %in% subjects)
+
+View(table(df))
+```

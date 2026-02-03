@@ -1,0 +1,225 @@
+---
+title: "metadata_significance_analysis_bySubject"
+output: html_document
+---
+
+# Sex vs. SRM Presence
+```{r}
+
+# Pearson's Chi Square Test
+
+# contigency table of SRM presence vs. sex
+table(hgm_subject_df$sex_all, hgm_subject_df$SRM_present)
+chistest_sex <- chisq.test(hgm_subject_df$sex_all, hgm_subject_df$SRM_present)
+chistest_sex
+
+# Fisher's exact test
+contigency_table <- table(hgm_subject_df$sex_all, hgm_subject_df$SRM_present)
+fishertest <- fisher.test(contigency_table)
+fishertest$p.value
+
+# Expected values for all cells > 5 count
+# Assumptions for Chi-Square are met
+
+# p-value for 1 df = 1
+# Fail to reject the null hypothesis at the 0.05 significance level. No significant difference in SRM presence vs. sex.
+
+```
+
+# Age vs. SRM Presence
+```{r}
+# nonparametric test to compare mean age (years) of SRM present vs. absent groups
+# distribution of ages is not normal, so must use non-parametric test
+# Signifance test: Mann-Whitney U / Wilcoxon-rank-sum Test
+# bc not normal distribution, can only compare means and not medians
+
+# wilcox.test(data = hgm_subject_df, age_years ~ SRM_present, alternative = c("less"))
+
+# p-value < 2.2e-16
+# Reject the null hypothesis at the 0.05 significance level!
+
+# check correlation adults (> 5 years)?
+
+# ggplot() +
+# geom_boxplot(data = subset(hgm_subject_df, bin_5yrCutoff == "[5,110)"), aes(x = age_years, y = SRM_present))
+pink = brewer.pal(name = "RdPu", 2)[2]
+grey = brewer.pal(name = "Greys", 4)[3]
+
+plot <- ggplot(data = hgm_subject_df, aes(x = age_years, y = SRM_present, color = SRM_present))+
+  geom_violin() +
+  geom_boxplot(width = 0.1) +
+  # ggtitle("Age vs. SRM Presence") +
+  scale_color_manual(values = c(pink, grey)) +
+  # xlab("Age (years)") +
+  # ylab("dsrAB Detected") +
+  guides(color = "none") +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(0,90, 10)) +
+  geom_signif(comparisons = list(c("FALSE", "TRUE")), test = "wilcox.test", map_signif_level = T, color = "black") +
+  theme(axis.text.y = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_text(size = 11))
+
+ggsave(plot = plot, file = "age_v_SRMpresence.jpeg", width = 6, height = 4)
+
+# ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff)), aes(x = bin_5yrCutoff, fill = SRM_present)) +
+# geom_bar(position = "fill", alpha = 0.8) +
+# xlab("Age Bin (years)") +
+# ggtitle("Proportion of SRM-Present Subjects by Age, Binned at 5 y.o.") +
+#   ylab("Proportion") +
+#   theme_bw() +
+#   geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.6, size = 4) +
+#   scale_fill_manual(values = c("cornflowerblue", "darkorange"), name = "dsrAB Detected") +
+#   guides(alpha = "none")
+# geom_signif(comparisons = list(c("[0,5)", "[5,110)")), test = "fisher.test")
+  
+# ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff)), aes(x = bin_5yrCutoff, fill = SRM_present)) +
+# geom_bar(alpha = 0.8, position = ) +
+# xlab("Age Bin (years)") +
+# ggtitle("Proportion of SRM-Present Subjects by Age, Binned at 5 y.o.") +
+#   ylab("Proportion") +
+#   theme_bw() +
+#   # geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.6, size = 4) +
+#   scale_fill_manual(values = c("cornflowerblue", "darkorange"), name = "dsrAB Detected") +
+#   guides(alpha = "none")
+  
+```
+# comparison of proportion of SRM present vs absent subjects in high vs. low age groups
+```{r}
+# use Fischer test
+# it's the nonparametric equivalent of the two-proportion Z test
+
+contigency_table <- table(hgm_subject_df$bin_5yrCutoff, hgm_subject_df$SRM_present)
+fisher.test(contigency_table)$p.value
+
+# now add significance layer to plot
+# data <- subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff))
+
+# ggplot(data = data, aes(x = bin_5yrCutoff, fill = SRM_present)) +
+# geom_bar(position = "fill", alpha = 0.8) +
+# xlab("Age Bin (years)") +
+# ggtitle("Proportion of SRM-Present Subjects by Age, Binned at 5 y.o.") +
+#   ylab("Proportion") +
+#   theme_bw() +
+#   geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.6, size = 4) +
+#   scale_fill_manual(values = c("cornflowerblue", "darkorange"), name = "dsrAB Detected") +
+#   guides(alpha = "none") +
+#   geom_signif(comparisons = list(c("[0,5)", "[5,110)")), test = "fisher.test", aes(y = stat(count/sum(count))))
+
+data %>%
+    group_by(x = bin_5yrCutoff) %>%
+    count(y = SRM_present) %>%
+    # mutate(Freq = n / sum(n)) %>%
+    ggplot() +
+    aes(x, n, fill = y) +
+    geom_col(position = position_dodge(0.9)) +
+    geom_signif(
+        comparisons = list(c("[0,5)", "[5,110)")),
+        map_signif_level = TRUE
+    )
+
+```
+
+# Country vs. SRM Presence
+```{r}
+
+# subset by countries with SRM
+ggplot()+
+  geom_bar(data = subset(hgm_subject_df, country %in% c("USA", "Sweden", "Russia", "Luxembourg", "Estonia", "Denmark", "China", "Austria", "Germany")), aes(y = country, fill = SRM_present), position = "fill") +
+  xlab("proportion") +
+  ggtitle("SRM Presence vs. Country (countries w/ > 5 subjects w/ SRM)")
+
+# subset by countries with > 50 subjects
+ggplot()+
+  geom_bar(data = subset(hgm_subject_df, country %in% c("USA", "China", "Sweden", "Fiji", "Denmark", "Spain", "Russia", "Estonia", "Finland", "Austria")), aes(y = country, fill = SRM_present), position = "fill") +
+  xlab("proportion") +
+  ggtitle("SRM Presence vs. Country (countries w/ > 50 subjects total)")
+
+# What question do we want to test for significance in the data?
+# Ex: Does the US have a higher rate of SRM-present guts than other countries around the world?
+
+```
+
+```{r}
+ggplot(data = subset(hgm_subject_df,!is.na(age_years) & country == "Denmark"), aes(x = age_years)) +
+  geom_boxplot(show.legend = FALSE) +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country for subjects with SRM") +
+  # facet_wrap(~SRM_present) +
+  scale_x_continuous(breaks = seq(0,80, 10))
+```
+
+# proportion test for 5 y.o. bin category by SRM presence
+```{r}
+# using infer packages
+# library(infer)
+
+# prop_test(hgm_subject_df, bin_5yrCutoff ~ SRM_present)  
+
+# quantiles for hgm_subject_fd for age distribution in SRM present vs absent groups
+# percentage of subjects under 5 without SRM
+(nrow(subset(hgm_subject_df, age_years < 5 & SRM_present == F)) / nrow(subset(hgm_subject_df, !is.na(age_years) & SRM_present == F))) * 100
+
+```
+
+# point biserial correlation test for age (continuous) vs. SRM presence (binary)
+```{r}
+age_df <- subset(hgm_subject_df, !is.na(age_years))
+
+age_df$SRM_present_binary <- ifelse(age_df$SRM_present == TRUE,
+                                    1, 
+                                    0
+                                    )
+
+age_cor <- cor.test(age_df$age_years, age_df$SRM_present_binary)
+age_cor$p.value
+age_cor
+
+# for sex
+# jk this is not point-biserial, we gotta use a fisher's exact test
+
+# sex_df <- subset(hgm_subject_df, !is.na(sex_all))
+# 
+# sex_df$SRM_present_binary <- ifelse(sex_df$SRM_present == TRUE,
+#                                     1, 
+#                                     0
+#                                     )
+# 
+# age_cor <- cor.test(age_df$age_years, age_df$SRM_present_binary)
+# age_cor$p.value
+# age_cor
+```
+
+
+# binning at 3 years
+```{r}
+# subject_df <- subject_df %>%
+#   mutate(bin_3yrCutoff = cut(age_years, breaks = c(0,3,110), right = FALSE))
+
+ggplot(data = subset(subject_df, !is.na(subject_df$bin_3yrCutoff)), aes(x = bin_3yrCutoff, fill = SRM_present)) +
+geom_bar(position = "fill", alpha = 0.8) +
+xlab("Age Bin (years)") +
+ggtitle("Proportion of SRM-Present Subjects by Age, Binned at 5 y.o.") +
+  ylab("Proportion") +
+  theme_bw() +
+  geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.6, size = 4) +
+  scale_fill_manual(values = c("cornflowerblue", "darkorange"), name = "dsrAB Detected") +
+  guides(alpha = "none")
+
+```
+
+# sex
+```{r}
+
+plot <- ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$sex_all)), aes(x = sex_all, fill = SRM_present)) +
+geom_bar(position = "fill", alpha = 0.7, width = 0.4) +
+  theme_bw() +
+  geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.6, size = 4) +
+  scale_fill_manual(values = c(pink, grey), name = "dsrAB Detected") +
+  guides(alpha = "none", fill = "none") +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank(), title = element_blank(), axis.text = element_text(size = 11))
+
+ggsave(plot = plot, file = "sex_v_SRMpresence.jpeg", width = 5, height = 5)
+
+```
+
+# FIGURE 2: use grid function (grid arrange?) to make one panel output for all of figure 2
+# age = c, sex = B, get rid of A, change age panel to 3 yr bins

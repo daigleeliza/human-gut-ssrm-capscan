@@ -1,0 +1,60 @@
+---
+title: "tree_panel_plot"
+output: html_document
+date: "2024-06-21"
+---
+
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(ape)
+library(phytools)
+library(readr)
+library(RColorBrewer)
+
+taxa_groups_df <- read_csv("taxa_groups_df.csv", 
+    col_types = cols(...1 = col_skip()))
+
+tax_df_closest_hits <- read_csv("tax_df_closest_hits.csv", 
+    col_types = cols(...1 = col_skip()))
+
+closest_hits_tree <- read.tree("closest_hits_tree.newick")
+
+groupInfo <- split(taxa_groups_df$tip_label, taxa_groups_df$tax_5)
+
+```
+
+
+# Plotty McPlotPlot
+```{r}
+# "N Hits" column units: number of HMMER hits including duplicates that pass score threshold associated with each reference sequence (shortest branch distance) 
+# "N sample" units: number of biosamples that contained each reference seq (and all dups etc etc)
+# Tree branch length units: mean number of substitutions / site
+# (high bc of high variance between tips and root for this tree... very diverse indeed)
+
+palette <- c(brewer.pal(9, "RdPu"), "grey")
+
+dsrAB_tree_with_bar <- ggtree(groupOTU(closest_hits_tree, groupInfo), aes(fill = group, color = group)) %<+%
+  tax_df_closest_hits +
+  geom_tiplab(size = 2.5, aes(label = names_for_tree), offset = 0.1) +
+  geom_tippoint(aes(shape = source), size = 2) +
+  xlim_tree(5) +
+  geom_facet(data = data.frame(otu_hits_table), panel = "N Hits", geom = geom_bar, mapping = (aes(x = Freq)), orientation = "y", stat = "identity") +
+  geom_facet(data = subset(data.frame(sample_hits_table), !is.na(tip_label)), panel = "N Samples", geom = geom_bar, mapping = (aes(x = n_samples)), orientation = "y", stat = "identity") +
+guides(fill = guide_legend(title = "family-level dsrAB taxon", nrow = 3, title.position = "top"), color = "none", shape = guide_legend(title = "sequence source", nrow = 2, title.position = "top")) +
+  theme_classic() +
+  scale_color_manual(values = palette) +
+    scale_fill_manual(values = palette) +
+
+  theme(legend.position = "bottom", 
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 9),
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank())
+  
+pdf("../figures/dsrAB_hits_tree_with_barchart.pdf", width = 9)
+
+facet_widths(dsrAB_tree_with_bar, widths = c(3, 1, 1))
+
+```

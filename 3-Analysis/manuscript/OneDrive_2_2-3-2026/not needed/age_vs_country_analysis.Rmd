@@ -1,0 +1,51 @@
+---
+title: "age_vs_country_analysis"
+output: html_document
+---
+
+# analysis to determine confounding factors between country and age data 
+
+# histogram of age vs. country
+```{r}
+
+# ggplot(data = subset(dataset21and22, !is.na(dataset21and22$country) & dataset21and22$SRM_present == TRUE), aes(x = age_years, fill = country)) +
+#   geom_histogram(binwidth = 10) +
+#   scale_x_continuous(breaks = seq(0, 110, 10)) +
+#   ggtitle("Age Distribution by Country + SRM Presence") +
+#   xlab("Age (years)") +
+#   theme_light()
+
+# ggplot(data = subset(dataset21and22, !is.na(dataset21and22$country)), aes(x = age_years, color = country, alpha = SRM_present)) +
+#   geom_histogram(binwidth = 10) +
+#   scale_x_continuous(breaks = seq(0, 110, 10)) +
+#   ggtitle("Age Distribution by Country + SRM Presence") +
+#   xlab("Age (years)") +
+#   theme_light()
+
+# ok this plot isn't very useful
+
+# next: plot with a boxplot?
+
+ggplot(data = subset(dataset21and22, !is.na(dataset21and22$country) & !is.na(dataset21and22$age_years) & dataset21and22$SRM_present == TRUE), aes(x = age_years, y = country, color = country)) +
+  geom_boxplot(show.legend = FALSE) +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country for samples with SRM") +
+  scale_x_continuous(breaks = seq(0,80, 10))
+
+ggplot(data = subset(dataset21and22, !is.na(dataset21and22$country) & !is.na(dataset21and22$age_years) & (dataset21and22$country == c("USA", "Sweden", "Spain", "Singapore", "Russia", "Luxembourg", "Finland", "Fiji", "Estonia", "Denmark", "China", "Austria"))), aes(x = age_years, y = country, color = SRM_present)) +
+  geom_boxplot() +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country for countries w/ SRM") +
+  scale_x_continuous(breaks = seq(0,80, 10))
+
+
+# result: this is the same as before.
+
+```
+
+```{r}
+
+  
+
+```
+

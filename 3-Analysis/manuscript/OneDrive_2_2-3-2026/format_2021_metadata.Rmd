@@ -1,0 +1,502 @@
+---
+title: "format_2021_metadata"
+output: html_document
+---
+
+# so I'm trying to combine the sample data from 2021 to the current sample data....
+# first: combine both dataframes into one new dataframe by "sample_id", retaining info from the 2022 data
+
+# find number of sample ID's that are in both df
+```{r}
+nrow(sample_metadata_2022)
+ncol(sample_metadata_2022)
+nrow(sample_metadata_2021)
+ncol(sample_metadata_2021)
+# 
+# length(setdiff(sample_metadata_2022$sample_id, sample_metadata_2021$sample_id))
+# 
+# length(setdiff(sample_metadata_2021$sample_id, sample_metadata_2022$sample_id))
+
+# result: 2,513 samples from 2021 are not in 2022
+# expected result from merging: 72,501 rows
+
+# view different variables between 2021 and 2022 data
+
+# setdiff(colnames(sample_metadata_2021), colnames(sample_metadata_2022))
+# setdiff(colnames(sample_metadata_2022), colnames(sample_metadata_2021))
+```
+
+# merge together 2021 and 2022 dfs by sample_id 
+# what happens to the columns that overlap?
+```{r}
+# 2,513 samples from 2021 are not in 2022
+# expected result from merging: 72,501 rows
+
+# joined <- merge(sample_metadata_2021, sample_metadata_2022, by = "sample_id", all = TRUE)
+# 
+# View(joined)
+# nrow(joined)
+# ncol(joined)
+
+# ok... so merging by sample_id works
+# next, change the names of the leaf-level OTUs 
+
+# try anti-join
+antijoined <- biosample_metadata_2021 %>% anti_join(sample_metadata_2022, by = "sample_id")
+nrow(antijoined)
+# antijoined is the samples that are only in 2021 and not in 2022
+# new strategy: completely format the antijoined df and then ... just basically append/add these rows to the old df
+
+# joined2 <- merge(antijoined, sample_metadata_2022, by = c("sample_id", "Bilophila_wadsworthia__BilWads6"), all = TRUE)
+
+# sum(antijoined$Bilophila_wadsworthia__BilWads6)
+# sum(sample_metadata_2022$Bilophila_wadsworthia__BilWads6)
+# sum(joined2$Bilophila_wadsworthia__BilWads6)
+# merging by two columns seems to work!
+
+# next: make a vector of all the columns you want to merge by. this includes: sample_id, leaf-level OTUs (that are in common), and country, age, and sex data, if it's the same as the 2022 dataframe. If it's not the same, make sure these variables are specified with "_2021" in the column name. We can work on formatting this data in a later step. 
+# side note: rename OTUs from 2021 data to match 2022 data!
+
+# first, take a look at all the variable names:
+# write.xlsx(colnames(antijoined), file = "colNames_2021data.xlsx")
+# write.xlsx(colnames(sample_metadata_2022), file = "colNames_2022data.xlsx")
+# write.xlsx(setdiff(colnames(antijoined), colnames(sample_metadata_2022)), file = "colNames_in21not22data.xlsx")
+# write.xlsx(setdiff(colnames(sample_metadata_2022), colnames(antijoined)), file = "colNames_in22not21data.xlsx")
+```
+
+```{r}
+# from now on, antijoined is the working version of sample_metadata_21not22
+# antijoined is the temporary but not working version
+
+# check that rename_with works with a vector for old and new names
+# old name = 21 name
+# new name = 22 name
+old_OTUs <- c("Desulfitobacterium_sp_PCE1__DstSpe13", 
+         "Anaerobic_bacterium_skprop8__Bv2Prop2",
+         "Bilophila_sp_4_1_30__BilSpec3",
+         "Gordonibacter_pamelaeae_7101b__FP929047",
+         "Desulfovibrio_sp_3_1_syn3__DsvSp230",
+         "Desulfovibrio_sp_6_1_46AFAA__DsvSp231",
+         "Desulfovibrio_desulfuricans_subsp_desulfuricans_str_ATCC_27774__CP001358",
+         "Desulfovibrio_sp_Dsv1__DsvSp233")
+
+new_OTUs <- c("Desulfitobacterium_sp._PCE-1__DstSpe13",
+         "Anaerobic_bacterium_sk.prop8__Bv2Prop2",
+         "Bilophila_sp._4_1_30__BilSpec3",
+         "Gordonibacter_pamelaeae_7-10-1-b__FP929047",
+         "Desulfovibrio_sp._3_1_syn3__DsvSp230",
+         "Desulfovibrio_sp._6_1_46AFAA__DsvSp231",
+         "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358",
+         "Desulfovibrio_sp._Dsv1__DsvSp233")
+
+dataset21 <- dataset21 %>% rename_with(~ new_OTUs, all_of(old_OTUs))
+# works for vectors!
+
+```
+
+```{r}
+# check that OTU sums stay the same when 21 and 22 dfs are merged by OTU column names and sample_id
+
+# check the column names that are teh same between 21 and 22, then make a vector of the OTUs that are in common
+common_OTUs <- intersect(colnames(dataset21), colnames(dataset))[11:45]
+# 
+# columns_to_join <- c("sample_id", "country", "geographic location", "sex_all", "age_years")
+# 
+# columns_to_join <- append(columns_to_join, common_OTUs)
+
+# actually. I'm just going to merge by all columns in common
+
+# columns_to_join <- intersect(colnames(dataset21), colnames(dataset))
+# 
+# joined_21and22 <- merge(dataset21, sample_metadata_2022, by = columns_to_join, all = TRUE, suffixes = c("_21", "_22"))
+
+for (OTU in common_OTUs) {
+  sum_21_22 <- sum(dataset21[,OTU]) + sum(sample_metadata_2022[,OTU])
+  if (sum_21_22 != sum(joined2[,OTU])) {
+    print(paste(OTU, "is not the same!"))
+  }
+  else{
+    print("all good!")
+  }
+}
+
+# column sums for OTUs is all good!
+
+# next: time to add info for country, sex, and age ...
+
+```
+
+# first, sex!
+# check for discrepancies
+```{r}
+# there seems to be some discrepancies with the sex count... let's check
+
+sum(!is.na(antijoined$sex))
+sum(!is.na(antijoined$`host sex`))
+sum(!is.na(antijoined$sex)) + sum(!is.na(antijoined$`host sex`))
+sum(!is.na(antijoined$sex) & !is.na(antijoined$`host sex`))
+sum(!is.na(antijoined$`host sex`) & !is.na(antijoined$sex))
+
+# nrow(subset(antijoined, antijoined$sex == "female" & antijoined$`host sex` == "male"))
+# df <- subset(antijoined, antijoined$sex == "female" & antijoined$`host sex` == "male")
+# df[,c("sample_id", "sex", "host sex")]
+
+# ok, so there are discrepancies. they only seem to show up when the CSV file is read as a df into R tho; the actual CSV is normal. try using guess_max when reading in the file (thx Neil)
+
+# fixed!
+```
+
+# next, add sex and host sex values to sex_all column in dataset21
+```{r}
+# i'm just going t ocopy the code for when I did this for the 22 data....
+
+# only do this part at the beginning!
+# dataset21$sex_all <- NA
+# dataset21$sex_all <- as.character(dataset21$sex_all)
+
+for (n_row in 1:nrow(dataset21)) {
+  # check that value exists for "host sex"
+  if (!is.na(dataset21[n_row,"host sex"])) {
+    if (dataset21[n_row,"host sex"] != "pooled male and female") {
+      dataset21[n_row, "sex_all"] <- dataset21[n_row, "host sex"]
+    }
+  }
+}
+
+sum(!is.na(dataset21$sex_all))
+
+# done :) hehhee 
+# next: geographic location. Ugh.
+```
+
+# identify and define NA values for columns related to geographic location and age
+```{r}
+
+# first, let's check out all the available metadata variables and pinpoint ones related to geographic location and age
+# View(colnames(dataset21))
+
+# then, we're gonna identify and define NA values. let's just steal this code from what I used previously...
+
+column_names <- c("geographic location",
+                  "geographic location (latitude)",
+                  "geographic location (longitude)",
+                  "NATION",
+                  "latitude and longitude",
+                  "age",
+                  "host age",
+                  "host_day_of_life")
+
+# all values for "NATION" are NA, so let's ignore this one
+# next, let's take a look at the values of these columns and see what should be added to our "NA" keywords list
+
+# for (name in "column_names") {
+#   View(table(dataset21[,name]))
+# }
+
+na_values <- c("missing",
+               "Missing", 
+               "", 
+               " ",
+               "not collected",
+               "not applicable", 
+               "Not Applicable", 
+               "Not Collected", 
+               "N/A", 
+               "n/a",
+               "not collected",
+               "not determined",
+               "not provided",
+               "Unknown",
+               "unknown",
+               "not available",
+               "Not collected",
+               "Not applicable",
+               "Not available",
+               "na",
+               "NOT COLLECTED")
+
+# nothing new to add to the NA keywords list
+# next, let's change the NA keywords to NA in the df!
+
+for (variable in column_names) {
+  for (replace_value in na_values) {
+    dataset21[[variable]] <- replace(dataset21[[variable]], dataset21[[variable]] == replace_value, NA)
+  }
+}
+
+```
+
+# geographic location time!
+```{r}
+# first, let's get some summary statistics for the columns related to geographic location and see what we're dealing with 
+
+# location_columns <- c("geographic location",
+#                   "geographic location (latitude)",
+#                   "geographic location (longitude)", 
+#                   "latitude and longitude")
+# 
+# for (name in location_columns) {
+#   print(name)
+#   print(sum(!is.na(dataset21[,name])))
+# }
+
+# sum(subset(is.na(dataset21$`geographic location`), !is.na(dataset21$`geographic location (latitude)`)))
+# sum(subset(is.na(dataset21$`geographic location (latitude)`), !is.na(dataset21$`geographic location`)))
+# sum(subset(is.na(dataset21$`geographic location`), !is.na(dataset21$`latitude and longitude`)))
+
+# all of the rows that have a value for lat/long also have a value for geographic location, so we don't really need to do anything with the lat/long data. just format the geographic location data and add it to the country column!
+
+```
+
+# geographic location --> country
+```{r}
+# holy eff. i'm so grateful i already did this before. AND i actually annotated my code for once. thanks past RC
+
+countries_list <- c("Afghanistan",
+                    "Algeria",
+                    "Angola",
+                    "Argentina",
+                    "Australia",
+                    "Austria",
+                    "Bangladesh",
+                    "Barbados",
+                    "Belarus",
+                    "Belgium",
+                    "Bolivia",
+                    "Brazil",
+                    "Bulgaria",
+                    "Burkina Faso",
+                    "Cambodia",
+                    "Cameroon",
+                    "Canada",
+                    "Chad",
+                    "Chile",
+                    "China",
+                    "Colombia",
+                    "Costa Rica",
+                    "Cote d'Ivoire",
+                    "Czech Republic",
+                    "Democratic Republic of the Congo",
+                    "Denmark",
+                    "Djibouti",
+                    "Dominican Republic",
+                    "Ecuador",
+                    "Egypt",
+                    "El Salvador",
+                    "Estonia",
+                    "Ethiopia",
+                    "Fiji",
+                    "Finland",
+                    "France",
+                    "Gambia",
+                    "Georgia",
+                    "Germany",
+                    "Greece",
+                    "Guadeloupe",
+                    "Guatemala",
+                    "Guinea-Bissau",
+                    "Guinea",
+                    "Haiti",
+                    "Honduras",
+                    "Honduras",
+                    "Hong Kong",
+                    "Hungary",
+                    "India",
+                    "Indonesia",
+                    "Iran",
+                    "Iraq",
+                    "Ireland",
+                    "Israel",
+                    "Italy",
+                    "Japan",
+                    "Jordan",
+                    "Kazakhstan",
+                    "Kenya",
+                    "Korea",
+                    "Kuwait",
+                    "Laos",
+                    "Lebanon",
+                    "Malawi",
+                    "Malaysia",
+                    "Mali",
+                    "Mauritania",
+                    "Maritius",
+                    "Mexico",
+                    "Mongolia",
+                    "Morocco",
+                    "Mozambique",
+                    "Myanmar",
+                    "Nepal",
+                    "Netherlands",
+                    "New Zealand",
+                    "Nicaragua",
+                    "Nigeria",
+                    "Norway",
+                    "Pakistan",
+                    "Papua New Guinea", 
+                    "Paraguay",
+                    "Peru",
+                    "Poland",
+                    "Portugal",
+                    "Qatar",
+                    "Reunion",
+                    "Romania",
+                    "Russia",
+                    "Saudi Arabia",
+                    "Senegal",
+                    "Singapore",
+                    "Slovenia",
+                    "South Africa",
+                    "South Korea",
+                    "Spain",
+                    "Sri Lanka",
+                    "Sweden",
+                    "Switzerland",
+                    "Syria",
+                    "Taiwan",
+                    "Tanzania",
+                    "Thailand",
+                    "Turkey",
+                    "Turkmenistan",
+                    "Uganda",
+                    "Ukraine",
+                    "United Kingdom",
+                    "Uruguay",
+                    "USA",
+                    "Uzbekistan",
+                    "Venezuela",
+                    "Zambia",
+                    "Zimbabwe",
+                    "Luxembourg")
+
+# we don't need to add any additional countries to the list!
+
+# reset country column to all NAs (character type)
+
+dataset21$country <- NA
+dataset21$country <- as.character(dataset21$country)
+
+# add geographic location to country column row by row
+
+for (n_row in 1:nrow(dataset21)) {
+  for (country in countries_list) {
+    if (grepl(country, dataset21[n_row, 'geographic location'], 
+              ignore.case = TRUE)) {
+      dataset21[n_row, "country"] <- country
+              }
+  }
+}
+
+sum(!is.na(dataset21$country))
+sum(!is.na(dataset21$`geographic location`))
+
+# hmm... not all values for geographic location were captured. let's check out what's happening
+# 52 rows to be exact
+
+# resolved! check code below to see how 
+# now i can add "country" and "geographic location" to the merge columns
+```
+
+# check which geographic location values were not captured in the country column
+```{r}
+df <- subset(dataset21, is.na(dataset21$country))
+View(table(df$`geographic location`))
+
+# Luxembourg is the one left out...
+# adding to the country list now!
+
+```
+
+# NEEEXT .... age ..........
+```{r}
+age_columns <- c("age",
+                 "host age",
+                 "host_day_of_life")
+
+for (name in age_columns) {
+  print(name)
+  print(sum(!is.na(dataset21[,name])))
+  View(table(dataset21[,name]))
+}
+
+# ok. the host_day_of_life values are weird, but checks out from NCBI. so i guess roll with it?
+```
+
+# create age_years column
+```{r}
+dataset21$age_years <- NA
+dataset21$age_years <- as.numeric(dataset21$age_years)
+```
+
+# add host age data
+```{r}
+# all data in host age is in years, except for one value (22) without a unit
+
+for (n_row in 1:nrow(dataset21)) {
+  # check that host age has value
+  if (!is.na(dataset21[n_row, "host age"])) 
+    {
+    # check for "years" unit (y), excluding values with "-" and "day"
+    # if (grepl("y", dataset21[n_row, "host age"], ignore.case=TRUE)) {
+    #   dataset21[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21[n_row, "host age"]))
+    # }
+    dataset21[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21[n_row, "host age"]))
+  }
+} 
+
+sum(!is.na(dataset21$`host age`))
+sum(!is.na(dataset21$age_years))
+# View(table(dataset21$age_years))
+
+# manually check samples with "22" for host age and no unit
+# NCBI check: no reason to not think it's in years? go ahead and add to age_years
+
+```
+
+# add host_day_of_life
+# ... bc it's easy ...
+```{r}
+
+for (n_row in 1:nrow(dataset21)) {
+  # check has value
+  if (!is.na(dataset21[n_row, "host_day_of_life"])) 
+    {
+    dataset21[n_row, "age_years"] <- round(dataset21[n_row, "host_day_of_life"] / 365)
+  }
+} 
+
+sum(!is.na(dataset21$`host age`))
+sum(!is.na(dataset21$host_day_of_life))
+sum(!is.na(dataset21$`host age`)) + sum(!is.na(dataset21$host_day_of_life))
+sum(!is.na(dataset21$age_years))
+
+```
+
+# add age column
+```{r}
+
+for (n_row in 1:nrow(dataset21)) {
+  # check has value
+  if (!is.na(dataset21[n_row, "age"])) { 
+    if (grepl("month", dataset21[n_row, "age"], ignore.case=TRUE)) {
+      # calculate months -> years
+      age_months <- as.numeric(gsub("[^0-9.]", "", dataset21[n_row, "age"]))
+      dataset21[n_row, "age_years"] <- round(age_months / 12)
+    }
+    if (grepl("newborn", dataset21[n_row, "age"], ignore.case=TRUE)) {
+      # just add newborns as age_years = 0
+      dataset21[n_row, "age_years"] <- 0
+  }
+  }
+}
+  
+sum(!is.na(dataset21$`age`))
+sum(!is.na(dataset21$`host age`)) + sum(!is.na(dataset21$host_day_of_life)) + sum(!is.na(dataset21$`age`))
+sum(!is.na(dataset21$age_years))
+
+# DONE WITH AGE!!! 
+# that wasn't so bad 
+# now, add "age_years" column to the columns to bind
+```
+
+

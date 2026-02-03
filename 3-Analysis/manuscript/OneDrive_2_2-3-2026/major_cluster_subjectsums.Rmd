@@ -1,0 +1,42 @@
+---
+title: "major_clusters_subjectsums"
+output: html_document
+---
+
+```{r}
+# setdiff(colnames(subject_species_matrix), unique(Christensen2023_dsrABproject_SupplementaryTable1$cluster))
+# 
+# desulfo_clusters <- unique(subset(Christensen2023_dsrABproject_SupplementaryTable1$cluster, Christensen2023_dsrABproject_SupplementaryTable1$supercluster == "Deltaproteobacteria (Desulfovibrionaceae family)"))
+# 
+# faca_clusters <- unique(subset(Christensen2023_dsrABproject_SupplementaryTable1$cluster, Christensen2023_dsrABproject_SupplementaryTable1$supercluster == "Firmicutes group sensu lato"))
+
+subj_desulfo <- subject_species_matrix %>%
+  # as.data.frame() #%>%
+  select(desulfo_clusters) %>%
+  # rowwise() %>%
+  mutate(desulfo_sum = rowSums(.)) %>%
+  filter(desulfo_sum > 0)
+
+# percentage of subjects with SRM who had Desulfovibrionaceae 
+(nrow(subj_desulfo) / nrow(subject_species_matrix)) * 100
+
+subj_faca <- subject_species_matrix %>%
+  select(faca_clusters) %>%
+  # rowwise() %>%
+  mutate(faca_sum = rowSums(.)) %>%
+  filter(faca_sum > 0)
+
+# percentage of subjects with SRM who had Firmicutes
+(nrow(subj_faca) / nrow(subject_species_matrix)) * 100
+
+no_bil <- desulfo_clusters[!(desulfo_clusters %in% c("Bilophila wadsworthia")) == T]
+
+subj_no_bil <- subject_species_matrix %>%
+  select(no_bil) %>%
+  # rowwise() %>%
+  mutate(no_bil_sum = rowSums(.)) %>%
+  filter(no_bil_sum > 0)
+
+(nrow(subj_no_bil) / nrow(subject_species_matrix)) * 100
+
+```

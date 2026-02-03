@@ -1,0 +1,70 @@
+---
+title: "OTU_diversity"
+output: html_document
+---
+
+# create df for OTU frequency
+```{r}
+
+# find which columns in the joined 21 and 22 df are leaf-level taxons!
+# colnames(joined_21and22)
+# [11:45]
+# [146:158]
+# [448:454]
+
+# OTU_names <- colnames(subject_df[11:45])
+# OTU_names <- append(OTU_names, colnames(subject_df[146:158]))
+# OTU_names <- append(OTU_names, colnames(subject_df[448:454]))
+
+n_subjects <- c()
+
+for (OTU in OTU_names) {
+  n_subjects <- append(n_subjects, sum(subject_df[,OTU]))
+}
+
+OTU_sum_df <- data.frame(OTU_names,n_subjects)
+View(OTU_sum_df)
+
+
+# exported as an excel spreadsheet and manually input closest characterized species and genera
+# write.xlsx(OTU_sum_df, file = "OTU_sum_df_bySubject.xlsx")
+```
+
+# regroup data by closest named species
+```{r}
+
+species_n_subjects <- OTU_sum_df_bySubject %>%
+  group_by(`closest characterized species`) %>%
+  summarize(n_subjects = sum(n_subjects))
+
+View(species_n_subjects)
+
+genus_n_subjects <- OTU_sum_df_bySubject %>%
+  group_by(Genus) %>%
+  summarize(n_subjects = sum(n_subjects))
+
+View(genus_n_subjects)
+
+# now use this for the below bar plot
+```
+
+# bar plot for characterized species!
+``` {r}
+
+ggplot(data = species_n_subjects, aes(y = reorder(`closest characterized species`, n_subjects), x = n_subjects, label = n_subjects)) +
+  geom_bar(stat = "identity", fill = "white", color = "grey") +
+  geom_text(hjust = 0.3, color = "black", size = 3) +
+  ylab("closest characterized species") +
+  xlab("number of subjects") +
+  ggtitle("Number of Subjects / Characterized Species")
+
+ggplot(data = genus_n_subjects, aes(y = reorder(Genus, n_subjects), x = n_subjects, label = n_subjects)) +
+  geom_bar(stat = "identity", fill = "white", color = "grey") +
+  geom_text(hjust = 0.3, color = "black", size = 3) +
+  ylab("genus") +
+  xlab("number of subjects") +
+  ggtitle("Number of Subjects / genus")
+
+```
+
+

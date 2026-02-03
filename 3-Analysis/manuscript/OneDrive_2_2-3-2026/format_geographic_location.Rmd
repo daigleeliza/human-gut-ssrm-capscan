@@ -1,0 +1,224 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# check how many samples have values for: geographic location [08], latitude and longitude [17], both, and neither
+```{r}
+
+"N samples with geographic location:"
+sum(!is.na(dataset$`geographic location`))
+"N samples with lat and long"
+sum(!is.na(dataset$`latitude and longitude`))
+"N samples with lat and long AND geographic location: "
+sum(!is.na(subset(dataset$`latitude and longitude`, !is.na(dataset$`geographic location`))))
+"N samples with geographic location and NO lat and long: "
+sum(!is.na(subset(dataset$`geographic location`, is.na(dataset$`latitude and longitude`))))
+"N samples with lat and long and NO geographic location"
+sum(!is.na(subset(dataset$`latitude and longitude`, is.na(dataset$`geographic location`))))
+
+# results: 65,036 samples have geographic location. 8 of the samples that don't have geographic location have latitude and longitude. 
+# next steps: convert geographic location (and lat and long for the 8 samples w/o geo. location) to 'country' in new column
+
+```
+
+# create list of country names (taken from dataset: VarSum_8_...)
+```{r}
+
+countries_list <- c("Afghanistan",
+                    "Algeria",
+                    "Angola",
+                    "Argentina",
+                    "Australia",
+                    "Austria",
+                    "Bangladesh",
+                    "Barbados",
+                    "Belarus",
+                    "Belgium",
+                    "Bolivia",
+                    "Brazil",
+                    "Bulgaria",
+                    "Burkina Faso",
+                    "Cambodia",
+                    "Cameroon",
+                    "Canada",
+                    "Chad",
+                    "Chile",
+                    "China",
+                    "Colombia",
+                    "Costa Rica",
+                    "Cote d'Ivoire",
+                    "Czech Republic",
+                    "Democratic Republic of the Congo",
+                    "Denmark",
+                    "Djibouti",
+                    "Dominican Republic",
+                    "Ecuador",
+                    "Egypt",
+                    "El Salvador",
+                    "Estonia",
+                    "Ethiopia",
+                    "Fiji",
+                    "Finland",
+                    "France",
+                    "Gambia",
+                    "Georgia",
+                    "Germany",
+                    "Greece",
+                    "Guadeloupe",
+                    "Guatemala",
+                    "Guinea-Bissau",
+                    "Guinea",
+                    "Haiti",
+                    "Honduras",
+                    "Honduras",
+                    "Hong Kong",
+                    "Hungary",
+                    "India",
+                    "Indonesia",
+                    "Iran",
+                    "Iraq",
+                    "Ireland",
+                    "Israel",
+                    "Italy",
+                    "Japan",
+                    "Jordan",
+                    "Kazakhstan",
+                    "Kenya",
+                    "Korea",
+                    "Kuwait",
+                    "Laos",
+                    "Lebanon",
+                    "Malawi",
+                    "Malaysia",
+                    "Mali",
+                    "Mauritania",
+                    "Maritius",
+                    "Mexico",
+                    "Mongolia",
+                    "Morocco",
+                    "Mozambique",
+                    "Myanmar",
+                    "Nepal",
+                    "Netherlands",
+                    "New Zealand",
+                    "Nicaragua",
+                    "Nigeria",
+                    "Norway",
+                    "Pakistan",
+                    "Papua New Guinea", 
+                    "Paraguay",
+                    "Peru",
+                    "Poland",
+                    "Portugal",
+                    "Qatar",
+                    "Reunion",
+                    "Romania",
+                    "Russia",
+                    "Saudi Arabia",
+                    "Senegal",
+                    "Singapore",
+                    "Slovenia",
+                    "South Africa",
+                    "South Korea",
+                    "Spain",
+                    "Sri Lanka",
+                    "Sweden",
+                    "Switzerland",
+                    "Syria",
+                    "Taiwan",
+                    "Tanzania",
+                    "Thailand",
+                    "Turkey",
+                    "Turkmenistan",
+                    "Uganda",
+                    "Ukraine",
+                    "United Kingdom",
+                    "Uruguay",
+                    "USA",
+                    "Uzbekistan",
+                    "Venezuela",
+                    "Zambia",
+                    "Zimbabwe")
+
+## to replace:
+# USSR -> Russia
+# Viet Nam -> Vietnam
+
+```
+
+```{r}
+# reset country column to all NAs (character type)
+
+dataset$country <- NA
+dataset$country <- as.character(dataset$country)
+
+```
+
+
+```{r}
+# add geographic location to country column row by row
+
+for (n_row in 1:nrow(dataset)) {
+  for (country in countries_list) {
+    if (grepl(country, dataset[n_row, 'geographic location'], 
+              ignore.case = TRUE)) {
+      dataset[n_row, "country"] <- country
+              }
+  }
+  # replace USSR with Russia
+  if (grepl("USSR", dataset[n_row, 'geographic location'], 
+              ignore.case = TRUE)) {
+    dataset[n_row, "country"] <- "Russia"
+  }
+  # replace Viet Nam with Vietnam
+  if (grepl("Viet", dataset[n_row, 'geographic location'], 
+              ignore.case = TRUE)) {
+    dataset[n_row, "country"] <- "Vietnam"
+  }
+}
+```
+
+```{r}
+# add latitude and longitude data to country
+# since there's only 8 samples with lat/long data (and without geographic location), I'll just identify these samples by row and manually add the country from a Google search
+
+# iterate dataset by row to identify samples of interest:
+for (nrow in 1:nrow(dataset)) {
+  # check that geographic location is NA
+  if (is.na(dataset[nrow, 'geographic location'])) {
+    # check that latitude and longitude is available
+    if (!is.na(dataset[nrow, 'latitude and longitude'])) {
+      # print row information (sample ID and lat/long info)
+      print(nrow)
+    }
+  }
+}
+
+```
+
+```{r}
+# manually input country info for with lat/long data but no geographic location (total 8 rows)
+# 57: 26.67 N 81.95 W
+# USA
+dataset[57,'country'] <- "USA"
+
+# 141: 59.33 N 18.067 E
+# Sweden
+dataset[141,'country'] <- "Sweden"
+
+# 49433: 42.85 N 41.67 E
+# Georgia
+dataset[49433,'country'] <- "Georgia"
+
+# 64733-7: 24.61 N 118.30 E
+# China
+dataset[64733,'country'] <- "China"
+dataset[64734,'country'] <- "China"
+dataset[64735,'country'] <- "China"
+dataset[64736,'country'] <- "China"
+dataset[64737,'country'] <- "China"
+```
+
+
+

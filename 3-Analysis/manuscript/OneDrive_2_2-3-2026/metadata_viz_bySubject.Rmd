@@ -1,0 +1,292 @@
+---
+title: "metadata_viz_bySubject"
+output: html_document
+---
+# Summary Statistics for Metadata by Subject
+
+# Hit Summary
+```{r}
+# # n subjects = 4,228
+nrow(hgm_subject_df)
+# 
+# # n subjects with SRM = 1,294
+sum(hgm_subject_df$SRM_present == TRUE)
+# 
+# # n subjects without SRM = 2,934
+sum(hgm_subject_df$SRM_present == FALSE)
+# 
+# proportion of subjects w/ SRM = 30.6%
+(sum(hgm_subject_df$SRM_present == TRUE) / nrow(hgm_subject_df))*100
+
+ggplot(subset(hgm_subject_df, hgm_subject_df$`n_leaf-level_OTUs` != 0), aes(x = as.factor(`n_leaf-level_OTUs`))) +
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+  ggtitle("Number of Subjects by Number of Leaf-Level OTUs") +
+  xlab("Number of Leaf-Level OTUs") +
+  ylab("Number of Subjects")
+
+```
+
+# Sex Summary
+```{r}
+# n subjects w/ age data = 179
+# sum(!is.na(hgm_subject_df$sex_all))
+
+# n female = 107
+# n male = 72
+# table(hgm_subject_df$sex_all)
+
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$sex_all)), aes(x = sex_all, fill = SRM_present)) +
+  geom_bar(position = "fill", width = 0.4) +
+  xlab("Sex at Birth") +
+  ylab("Proportion") +
+  ggtitle("Proportion of SRM-Present Subjects by Sex") +
+  scale_fill_manual(values = brewer.pal(n = 4, name = "Set2")[3:4], name = "dsrAB Detected") +
+  theme_bw() +
+  geom_text(aes(label = signif((..count.. / tapply(..count.., ..x.., sum)[as.character(..x..)]), digits = 3)), stat = "count", position = "fill", vjust = 1.8, size = 4) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
+
+# ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$sex_all)), aes(x = SRM_present, fill = sex_all)) +
+#   geom_bar(position = "fill", color = "black", alpha = 0.5) +
+#   ggtitle("Proportion of male and female subjects by SRM Presence") +
+#   ylab("proportion") +
+#   scale_fill_viridis_d()
+
+
+# results:
+# wow. equal proportions for female and males. like... EQUAL.
+```
+
+# Age Summary - Continuous
+```{r}
+# n subjects w/ continuous age data (age in exact years) = 907
+sum(!is.na(hgm_subject_df$age_years))
+
+# histogram of "age_years" data (excluding exceptions from "host age")
+ggplot(data = hgm_subject_df, aes(x=hgm_subject_df$"age_years")) +
+  geom_histogram(binwidth = 5, fill = "grey", color = "black") +
+  xlab("age in years") +
+  ylab("subject count") +
+  ggtitle("Histogram of Host Age (Years)") +
+  scale_x_continuous(breaks = seq(0,110, 5)) +
+  stat_bin(binwidth = 5, geom="text", aes(label=..count..), vjust=-0.5, size = 3, color="red")
+
+# same histogram, but for subjects with SRM_present
+ggplot(data = subset(hgm_subject_df, hgm_subject_df$SRM_present == TRUE), aes(x = subset(hgm_subject_df$age_years, hgm_subject_df$SRM_present == TRUE))) +
+geom_histogram(binwidth = 5, fill = "grey", color = "black") +
+  xlab("age in years") +
+  ylab("subject count") +
+  ggtitle("Histogram of Host Age for Subjects w/ SRM") +
+  scale_x_continuous(breaks = seq(0,110, 5)) +
+  stat_bin(binwidth = 5, geom="text", aes(label=..count..), vjust=-0.5, size = 3, color="red")
+
+ggplot() +
+  geom_histogram(binwidth = 5, data = subset(hgm_subject_df, SRM_present == FALSE), aes(x = age_years) , fill = "yellow", alpha = 0.5, color = "black") +
+  geom_histogram(binwidth = 5, data = subset(hgm_subject_df, SRM_present == TRUE), aes(x = age_years) , fill = "purple", alpha = 0.7, color = "black") +
+  xlab("age in years") +
+  ylab("subject count") +
+  ggtitle("Histogram of Host Age (Years)") +
+  scale_x_continuous(breaks = seq(0,110, 5)) +
+  scale_fill_discrete(name = "SRM Present?")
+
+ggplot()+
+  geom_boxplot(data = hgm_subject_df, aes(x = age_years, y = SRM_present, color = SRM_present)) +
+  ggtitle("Age vs. SRM Presence") +
+  xlab("age (years)")
+  
+```
+
+# Age Summary - Binned at 9 Years
+```{r}
+# ALL subjects:
+# # bin: 9 year range
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_9yrSize)), aes(x = factor(bin_9yrSize, levels = c("[0,10)", "[10,20)", "[20,30)", "[30,40)", "[40,50)", "[50,60)", "[60,70)", "[70,80)", "[80,90)", "[90,100)", "[100,110]")))) +
+  geom_bar(fill = "grey", color = "black") +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+  xlab("Age Range (years)") +
+  ggtitle("subject ages: 9 year bins (all subjects)")
+
+# subjects with SRM:
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_9yrSize) & hgm_subject_df$SRM_present == TRUE), aes(x = factor(bin_9yrSize, levels = c("[0,10)", "[10,20)", "[20,30)", "[30,40)", "[40,50)", "[50,60)", "[60,70)", "[70,80)", "[80,90)", "[90,100)", "[100,110]")))) +
+  geom_bar(fill = "grey", color = "black") +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+  xlab("Age Range (years)") +
+  ggtitle("subject ages: 9 year bins for SRM Present subjects")
+
+# compare SRM present and absent 
+ggplot() +
+  geom_bar(data = subset(hgm_subject_df, !is.na(bin_9yrSize) & SRM_present == FALSE), aes(x = factor(bin_9yrSize, levels = c("[0,10)", "[10,20)", "[20,30)", "[30,40)", "[40,50)", "[50,60)", "[60,70)", "[70,80)", "[80,90)", "[90,100)", "[100,110]"))), fill = "yellow", alpha = 0.5, color = "black") +
+  geom_bar(data = subset(hgm_subject_df, !is.na(bin_9yrSize) & SRM_present == TRUE), aes(x = factor(bin_9yrSize, levels = c("[0,10)", "[10,20)", "[20,30)", "[30,40)", "[40,50)", "[50,60)", "[60,70)", "[70,80)", "[80,90)", "[90,100)", "[100,110]"))), fill = "purple", alpha = 0.7, color = "black") +
+  xlab("Age Range (years)") +
+  ylab("subject count") +
+  ggtitle("9 year bins for all subjects: count SRM present vs. absent")
+
+# as a proportion
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_9yrSize) ), aes(x = factor(bin_9yrSize, levels = c("[0,10)", "[10,20)", "[20,30)", "[30,40)", "[40,50)", "[50,60)", "[60,70)", "[70,80)", "[80,90)", "[90,100)", "[100,110]")), fill = SRM_present)) +
+  geom_bar(position = "fill") +
+  xlab("Age Bin (years)") +
+  ylab("proportion") +
+  ggtitle("9 year bins for all subjects: proportion SRM present vs. absent")
+
+```
+
+# Age Summary: Binned at 5 Year Cutoff
+```{r}
+# ALL SAMPLES:
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff)), aes(x = bin_5yrCutoff)) +
+geom_bar(fill = "grey", color = "black") +
+geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+xlab("Age Range (years)") +
+ggtitle("5 year cutoff for all subjects")
+
+# subjects with SRM:
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff) & hgm_subject_df$SRM_present == TRUE), aes(x = bin_5yrCutoff)) +
+geom_bar(fill = "grey", color = "black") +
+geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="red") +
+xlab("Age Range (years)") +
+ggtitle("5 year cutoff for SRM Present subjects")
+
+# Compare subjects with and without SRM
+ggplot() +
+geom_bar(data = subset(hgm_subject_df, !is.na(bin_5yrCutoff) & SRM_present == FALSE), aes(x = bin_5yrCutoff), fill = "yellow", alpha = 0.5, color = "black") +
+  geom_bar(data = subset(hgm_subject_df, !is.na(bin_5yrCutoff) & SRM_present == TRUE), aes(x = bin_5yrCutoff), fill = "purple", alpha = 0.7, color = "black") +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5, color="black") +
+xlab("Age Range (years)") +
+ggtitle("SRM Presence vs. age: 5 year cutoff") +
+  ylab("subject count")
+
+# as a proportion
+ggplot(data = subset(hgm_subject_df, !is.na(hgm_subject_df$bin_5yrCutoff)), aes(x = bin_5yrCutoff, fill = SRM_present)) +
+geom_bar(position = "fill") +
+xlab("Age Bin (years)") +
+ggtitle("SRM Presence vs. age: 5 year cutoff as a porportion") +
+  ylab("proportion")
+
+```
+
+# Country Frequency - make df
+```{r}
+# create a country frequency df from the subject df
+country_frequency_bySubject <- as.data.frame(table(hgm_subject_df$country))
+# 
+# country_frequency_SRM_present_bySubject <- as.data.frame(table(subset(hgm_subject_df$country, hgm_subject_df$SRM_present == TRUE)))
+
+# create country code column 
+library(countrycode)
+
+for (n_row in 1:nrow(country_frequency_bySubject)) {
+  country_frequency_bySubject[n_row, "code"] <- countrycode(country_frequency_bySubject[n_row, "Var1"], origin="country.name", destination="iso3c")
+}
+```
+
+# Country Summary
+```{r}
+# n subjects w/ country data = 3,800
+sum(!is.na(hgm_subject_df$country))
+
+ggplot(data = subset(country_frequency_bySubject, country_frequency_bySubject$Freq > 5), aes(y = reorder(Var1, Freq), x = Freq)) + 
+  geom_bar(stat = "identity", fill = "light blue") +
+  geom_text(aes(label = Freq), colour = "black", size = 3) +
+  xlab("Number of Subjects") +
+  ylab("Country") +
+  theme_light() +
+  ggtitle("Number of Subjects / Country (subjects > 5)")
+
+ggplot(data = country_frequency_SRM_present_bySubject, aes(y = reorder(Var1, Freq), x = Freq)) + 
+  geom_bar(stat = "identity", fill = "light blue") +
+  geom_text(aes(label = Freq), colour = "black", size = 3) +
+  xlab("Number of Subjects") +
+  ylab("Country") +
+  theme_light() +
+  ggtitle("Number of Subjects with SRM present / Country")
+
+ggplot()+
+  geom_bar(data = subset(hgm_subject_df, country %in% c("USA", "Sweden", "Spain", "Russia", "Luxembourg", "Estonia", "Denmark", "China", "Austria", "Germany")), aes(y = country, fill = SRM_present), position = "fill") +
+  xlab("proportion") +
+  ggtitle("SRM Presence vs. Country")
+
+```
+
+# Heatmap of the World!
+```{r}
+# Heatmap of worldmap by number of samples
+library(rworldmap)
+
+# all subejcts
+mapped_data <- joinCountryData2Map(country_frequency_bySubject, joinCode = "ISO3", nameJoinColumn = "code")
+
+mapCountryData(mapped_data, nameColumnToPlot = "Freq", catMethod = "logFixedWidth", mapTitle = "Heatmap of Number of Subjects (log transformation)")
+
+mapCountryData(mapped_data, nameColumnToPlot = "Freq", catMethod = "fixedWidth", mapTitle = "Heatmap of Number of Subjects")
+
+# for subjects with SRM
+mapped_data_SRM_present <- joinCountryData2Map(country_frequency_SRM_present_bySubject, joinCode = "ISO3", nameJoinColumn = "code")
+
+mapCountryData(mapped_data_SRM_present, nameColumnToPlot = "Freq", catMethod = "logFixedWidth", mapTitle = "Heatmap of Number of Subjects w/ SRM (log transformation) ")
+
+mapCountryData(mapped_data_SRM_present, nameColumnToPlot = "Freq", catMethod = "fixedWidth", mapTitle = "Heatmap of Number of Subjects w/ SRM")
+
+```
+
+# Cross Analysis between Age and Country
+```{r}
+# boxplot of age by country
+
+ggplot(data = subset(hgm_subject_df, !is.na(country) & !is.na(age_years) & SRM_present == TRUE), aes(x = age_years, y = country, color = country)) +
+  geom_boxplot(show.legend = FALSE) +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country for subjects with SRM") +
+  scale_x_continuous(breaks = seq(0,80, 10))
+
+ggplot(data = subset(hgm_subject_df, !is.na(country) & !is.na(age_years) & country == "Denmark"), aes(x = age_years, y = country, color = country)) +
+  geom_boxplot(show.legend = FALSE) +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country for subjects with SRM") +
+  facet_wrap(~SRM_present) +
+  scale_x_continuous(breaks = seq(0,80, 10))
+
+ggplot(data = subset(hgm_subject_df, !is.na(country) & !is.na(age_years)), aes(x = age_years, y = country)) +
+  geom_boxplot() +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country (all subjects and countries)") +
+  scale_x_continuous(breaks = seq(0,80, 10))
+
+ggplot(data = subset(hgm_subject_df, !is.na(country) & !is.na(age_years) & country %in% c("USA", "Sweden", "Spain", "Russia", "Luxembourg", "Estonia", "Denmark", "China", "Austria")), aes(x = age_years, color = SRM_present)) +
+  facet_wrap(~country) +
+  geom_boxplot() +
+  xlab("Age in years") +
+  ggtitle("Age distribution by country (all subjects and countries)") +
+  scale_x_continuous(breaks = seq(0,80, 10))
+# SRM present not showing up for this plot
+
+```
+
+# Prevalence
+```{r}
+# data <- hgm_subject_df
+# df <- data %>%
+#   group_by(SRM_present) %>% # Variable to be transformed
+#   count() %>%
+#   ungroup() %>%
+#   mutate(perc = `n` / sum(`n`)) %>%
+#   arrange(perc) %>%
+#   mutate(labels = scales::percent(perc))
+
+
+
+ggplot(df, aes(y = perc, x = SRM_present, fill = SRM_present)) +
+  geom_col(width = 0.4) +
+  # geom_text(aes(label = labels)) +
+  scale_fill_manual(values = brewer.pal(n = 4, name = "Set2")[3:4]) +
+  theme_bw() +
+  xlab("") +
+  ylab("") +
+  guides(fill = "none") +
+  # theme_void() +
+  theme(axis.ticks = element_blank(), axis.title = element_blank(), axis.text.x = element_blank()) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.03)))
+  
+# ggsave(plot, "prevalence_barchart.pdf", width = 4, height = 4)
+
+```
+

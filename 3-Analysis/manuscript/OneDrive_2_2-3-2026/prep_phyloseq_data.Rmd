@@ -1,0 +1,138 @@
+---
+title: "prep_phyloseq_data"
+output: html_document
+---
+
+```{r}
+# OTU = otu_table(otu_subject_matrix, taxa_are_rows = TRUE)
+# phyloseq <- phyloseq(OTU)
+# plot_bar(phyloseq)
+
+# read in tree
+# tree_file <- "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/dsrAB_Biosample_Metadata_Analysis/combine_IDs_forHits/RAxML_labelledTree_noBootstrap_rooted.newick"
+# tree <- ape::read.tree(tree_file)
+# plot(tree)
+
+# merge otu table, subject_data, and tree into new phyloseq object
+# phyloseq2 <- merge_phyloseq(phyloseq, subject_data_forphyloseq, tree)
+
+# plotting fun
+
+# plot_heatmap(phyloseq)
+
+# format subject data for coercion to phyloseq object
+# first: change all NA values to 0. b/c phyloseq can't handle NA for some reason ... 
+
+# weird column data types
+# values <- c("INSDC first public", "INSDC last update")
+# subject_data_forphyloseq %>%
+#   mutate_all(as.character)
+
+# um ok we're ignoring this for now...
+```
+
+
+```{r}
+
+# plot_tree(phyloseq_pruned, label.tips="taxa_names", color = "samples")
+
+# plot_tree(tip_glom(phyloseq_pruned, h = 1), label.tips="taxa_names", color = "samples", size = "abundance")
+
+# phyloseq <- phyloseq(OTU, sample_data(subject_data_forphyloseq), tree)
+
+# phyloseq_pruned <- prune_taxa(taxa_names(phyloseq)[2500:3000], phyloseq)
+
+plot_tree(tip_glom(phyloseq_pruned, h = 5), color = "country", label.tips = "taxa_names")
+
+```
+
+# prep reference phyloseq object
+```{r}
+# Overall, I want to tip_glom the result query tree at approximately the species level. To do that, I'm going to first visualize the reference tree (without any query sequences) and the taxon table for the reference tree. Then, I'm going to approximate the branch length (tip_glom "h") that corresponds to the tax_glom at the species level (and genus level too, while I'm at it). Then, I'm going to visualize the result tree using the tip_glom value determined from the previous step, and also label ONLY reference tips (the query labels are just not useful). Off we go!
+
+# ref_tree_file <- "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/raxmlOutputFinal/RAxML_originalLabelledTree_noBootstrap.newick"
+# ref_tree <- ape::read.tree(ref_tree_file)
+# # plot(ref_tree)
+# 
+# # ugh ok. first i gotta root this bad boy
+# out_group = as.vector(archaeaRootsetIDs$X1)
+# 
+# rooted_ref_tree <-root(ref_tree, out_group, r = TRUE)
+# # plot(rooted_ref_tree)
+# 
+# phy_ref <- phyloseq(rooted_ref_tree)
+
+# plot_tree(phy_ref, label.tips = "taxa_names")
+
+# NICE. you did the bare minimum!
+# next: make a taxon table from the FASTA file descriptions for each reference sequence. we're gonna do this in python...
+
+# # format taxa_table!
+# rownames(taxa_table) <- taxa_table$OTU
+# taxa_table <- as.matrix(taxa_table)
+# taxa_table <- taxa_table[,-c(1:2)]
+
+# TAX = tax_table(taxa_table)
+
+# ref_phyloseq <- phyloseq(rooted_ref_tree, TAX)
+
+# umm so phyloseq apparently required an otu table
+# i'm going to make a fake otu table for now just to visualize everything, and then make a real otu table with subject by closest reference sequence to the query sequence
+
+# ref_otu_matrix <- matrix(data = 1, nrow = nrow(taxa_table))
+# rownames(ref_otu_matrix) <- rownames(taxa_table)
+# colnames(ref_otu_matrix) <- c("sample1")
+# OTU = otu_table(ref_otu_matrix, taxa_are_rows = TRUE)
+# ref_phyloseq <- phyloseq(rooted_ref_tree, TAX, OTU)
+
+# NICE. now time to visualize
+
+```
+
+# visualize reference tree as phyloseq object
+```{r}
+plot_tree(tax_glom(ref_phyloseq, taxrank = "level1_taxon"), label.tips = "level1_taxon")
+
+plot_tree(tip_glom(ref_phyloseq, h = 1.2), label.tips = "level1_taxon")
+
+# Branch lengths (and therefore, mutation rates) aren't consistent with taxonomical classifications, so tip_glom and tax_glom don't accurately translate over and we can't approximate an "h" value on tip_glom to estimate taxonomical classification.
+# Try making an otu table (by subject) using only reference otus
+# Re-categorize query otus to their closest reference otu (using branch lengths)
+```
+
+# prep otu_table for reference tree
+```{r}
+# format otu table
+df <- otu_subject_matrix_ref
+df <- df[,-1]
+rownames(df) <- otu_subject_matrix_ref$...1
+# OTU <- otu_table(df, taxa_are_rows = TRUE)
+
+# make phyloseq object
+# ref_phyloseq <- phyloseq(rooted_ref_tree, TAX, OTU, sample_data(subject_data_forphyloseq))
+
+```
+
+# visualize reference tree w/ subject info
+```{r}
+# phyloseq_pruned <- prune_taxa(taxa_names(ref_phyloseq)[250:400], ref_phyloseq)
+# plot_tree(tax_glom(phyloseq_pruned, taxrank = "level3_taxon"), label.tips = "level3_taxon")
+plot_tree(tip_glom(phyloseq_pruned, h = 0.1), label.tips = "taxa_names")
+# plot_tree(phyloseq_pruned, label.tips = "taxa_names")
+
+```
+
+
+```{r}
+ggplot(data, aes(y = Var1, x = Freq)) +
+  geom_col()
+
+```
+
+```{r}
+
+ggplot(data, aes(x = distance)) +
+  geom_histogram(fill = "white", color = "black")
+
+```
+

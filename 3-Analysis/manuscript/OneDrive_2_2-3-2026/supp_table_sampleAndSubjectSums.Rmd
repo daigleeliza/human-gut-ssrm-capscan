@@ -1,0 +1,84 @@
+---
+title: "supp_table_sampleAndSubjectSums"
+output: html_document
+---
+
+# data prep!
+# sample matrix: removing archaeoglobus samples (1 -> 0) 
+# subject matrix: rename the first column in the subject matrix
+```{r}
+
+samples_archpos <- subset(dataset21and22_withNayfachData_distanceFiltered$sample_id, dataset21and22_withNayfachData_distanceFiltered$Archaeoglobus_sulfaticallidus__ArgSulfa == 1)
+
+length(samples_archpos)
+sum(sample_otu_matrix$Archaeoglobus_sulfaticallidus__ArgSulfa)
+sample_otu_matrix$Archaeoglobus_sulfaticallidus__ArgSulfa <- 0
+sample_otu_matrix$Archaeoglobus_sulfaticallidus__ArgSulfa <- ifelse(sample_otu_matrix$sample_id %in% samples_archpos, 
+                                                                    1, 
+                                                                    0)
+sum(sample_otu_matrix$Archaeoglobus_sulfaticallidus__ArgSulfa)
+
+write.csv(sample_otu_matrix, "sample_otu_matrix.csv")
+
+subject_OTU_matrix <- subject_OTU_matrix %>%
+  rename("subject_id" = `...1`)
+```
+
+# sample and subject-level + otu-level
+# column sums for all numerical columns
+```{r}
+# otu sums
+subject_otu_sums <- as.data.frame(colSums(subject_OTU_matrix[,-1]))
+subject_otu_sums$otu <- rownames(subject_otu_sums)
+
+# subject_otu_sums$otu <- gsub("-", ".", subject_otu_sums$otu)
+# subject_otu_sums$otu <- gsub("sp-", "sp.", subject_otu_sums$otu)
+# subject_otu_sums$otu <- gsub("sk-", "sk.", subject_otu_sums$otu)
+# subject_otu_sums$otu <- gsub("str-", "str.", subject_otu_sums$otu)
+
+colnames(subject_otu_sums) <- c("n_subjects", "reference_leaf")
+
+sample_otu_sums <- as.data.frame(colSums(sample_otu_matrix[,-1]))
+sample_otu_sums$otu <- rownames(sample_otu_sums)
+
+sample_otu_sums$otu <- gsub("-", ".", sample_otu_sums$otu)
+sample_otu_sums$otu <- gsub("sp-", "sp.", sample_otu_sums$otu)
+sample_otu_sums$otu <- gsub("sk-", "sk.", sample_otu_sums$otu)
+sample_otu_sums$otu <- gsub("str-", "str.", sample_otu_sums$otu)
+
+colnames(sample_otu_sums) <- c("n_samples", "reference_leaf")
+
+hit_otus <- unique(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)
+hit_otus <- gsub("-", ".", hit_otus)
+hit_otus <- gsub("sp-", "sp.", hit_otus)
+hit_otus <- gsub("sk-", "sk.", hit_otus)
+hit_otus <- gsub("str-", "str.", hit_otus)
+
+hit_otu_sums <- as.data.frame(table(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref))
+colnames(hit_otu_sums) <- c("reference_leaf", "n_hit_sequences")
+hit_otu_sums$reference_leaf <- gsub("-", ".", hit_otu_sums$reference_leaf)
+hit_otu_sums$reference_leaf <- gsub("sp-", "sp.", hit_otu_sums$reference_leaf)
+hit_otu_sums$reference_leaf <- gsub("sk-", "sk.", hit_otu_sums$reference_leaf)
+hit_otu_sums$reference_leaf <- gsub("str-", "str.", hit_otu_sums$reference_leaf)
+
+# setdiff(sample_otu_sums$reference_leaf, subject_otu_sums$reference_leaf)
+# setdiff(subject_otu_sums$reference_leaf, sample_otu_sums$reference_leaf)
+# setdiff(hit_otus, sample_otu_sums$reference_leaf)
+
+
+# subset sums df by column name in hit otu list
+sample_otu_sums <- subset(sample_otu_sums, reference_leaf %in% hit_otus)
+subject_otu_sums <- subset(subject_otu_sums, reference_leaf %in% hit_otus)
+hit_otu_sums <- subset(hit_otu_sums, reference_leaf %in% hit_otus)
+
+#check
+# setdiff(sample_otu_sums$reference_leaf, subject_otu_sums$reference_leaf)
+# setdiff(subject_otu_sums$reference_leaf, sample_otu_sums$reference_leaf)
+# good to go
+
+# merge df by reference leaf name
+
+sample_subject_otu_sums <- merge(sample_otu_sums, subject_otu_sums, by = "reference_leaf")
+# sample_subject_otu_sums <- merge(sample_subject_otu_sums, hit_otu_sums, by = "reference_leaf")
+View(sample_subject_otu_sums)
+```

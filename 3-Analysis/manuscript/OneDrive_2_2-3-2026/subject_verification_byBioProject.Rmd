@@ -1,0 +1,210 @@
+---
+title: "subject_verification_byBioProject"
+output: html_document
+---
+# add project accessions to df
+```{r}
+df <- select(dataset21and22, -merged_project_accession)
+projects_df <- sample_projects
+# let's find the sample_ids that overlap in the projects_df df and the df and merge the two dfs
+
+samples <- intersect(projects_df$sample_id, df$sample_id)
+print(paste("number of samples in projects_df (with project accessions): ",
+            sum(!is.na(projects_df$merged_project_accession))))
+print(paste("number of samples in hgm_df: ", length(df$sample_id)))
+print(paste("number of samples in hgm_df in projects_df file: ", length(samples)))
+
+# # time to merge
+df <- left_join(df, subset(projects_df, projects_df$sample_id %in% samples), by = "sample_id")
+
+# UPDATES AFTER MERGING
+# n samples with a project accession = 609
+print(paste("number of samples with a project accession: ", sum(!is.na(df$merged_project_accession))))
+
+# n projects in the df
+print(paste("number of projects in the df: ", length(unique(df$merged_project_accession))))
+
+# n samples with a project accession but no subject ID
+print(paste("number of samples with a project accession but no subject id: ", 
+            sum(!is.na(df$merged_project_accession) & is.na(df$merged_subject_id))))
+
+# n samples with a subject_id
+print(paste("number of samples with a subject_id: ", sum(!is.na(df$merged_subject_id))))
+
+# n samples with subject_id or project_acc
+print(paste("number of samples with a subject_id or project_acc: ", 
+            sum(!is.na(df$merged_subject_id) | !is.na(df$merged_project_accession))))
+
+```
+
+# add subject_id to samples that are in the approved projects
+```{r}
+# working df: df
+projects <- as.vector(unique(df$merged_project_accession))
+
+projects_to_add_subjectIDs <- as.vector(subset(project_accessions_in_hgm_df$project_accession, project_accessions_in_hgm_df$`treat samples as subjects?` == "yes"))
+
+# add biosample ID as subject ID if project accession is in the above vector^
+
+# n samples that will be assigned a subject_id based on projects in the list
+print(paste("number of samples that will be assigned a subject_id based if they are in the projects list: ",
+            sum(df$merged_project_accession %in% projects_to_add_subjectIDs)))
+# n samples with a subject_id before adding new subject_ids
+print(paste("number of samples with a subject_id (before adding new subject IDs): ",
+            sum(!is.na(df$merged_subject_id))))
+# expected n samples w/ subject_id after adding samples w/ project in list
+print(paste("expected number of samples w/ subject_id after adding samples w/ project in list: ", 
+            sum((df$merged_project_accession %in% projects_to_add_subjectIDs) & is.na(df$merged_subject_id)) +
+              sum(!is.na(df$merged_subject_id))))
+
+
+# if subject_id is NA AND the project accession is in the list of projects to add, assigned the sample_id as the subject_id
+df$merged_subject_id <-
+ifelse(is.na(df$merged_subject_id),
+       ifelse(df$merged_project_accession %in% projects_to_add_subjectIDs,
+             df$sample_id,
+             NA),
+       df$merged_subject_id)
+
+print(paste("observed number of samples w/ subject_id after adding samples w/ project in list: ",
+            sum(!is.na(df$merged_subject_id))))
+
+# updated_projects_list_toresearch <- setdiff(projects, projects_to_add_subjectIDs)
+# print(paste("next project to research: ", updated_projects_list_toresearch[1]))
+```
+
+# remake hgm_subject_df with new subject IDs!
+```{r}
+print(paste("number of unique subject_ids (after adding project info): ", length(unique(df$merged_subject_id))))
+
+# set leaf-level OTU names
+OTU_names <- colnames(df[11:45])
+OTU_names <- append(OTU_names, colnames(df[146:158]))
+OTU_names <- append(OTU_names, colnames(df[448:454]))
+
+# make empty df with column names from original df
+hgm_subject_df <- data.frame(matrix(nrow = 0, ncol = ncol(df)))
+colnames(hgm_subject_df) <- colnames(df)
+
+# iterate over rows in original df and add rows with subject ID's one at a time
+for (n_row in 1:nrow(df)) 
+  {
+  # check that there is a value for subject id
+  if (!is.na(df[n_row, "merged_subject_id"])) 
+    {
+    subject_id <- as.character(df[n_row, "merged_subject_id"])
+    subject_ids_in_subjectdf <- as.vector(hgm_subject_df$merged_subject_id)
+    # add row to hgm_subject_df if subject id isn't already in there
+    if (!subject_id %in% subject_ids_in_subjectdf)
+      {
+      hgm_subject_df <- rbind(hgm_subject_df, df[n_row,])
+    }
+    # if subject id already in df, append sample_id to sample_id column and iterate over OTU names (retain TRUE)
+    else if (subject_id %in% subject_ids_in_subjectdf)
+      {
+      sampleIDs_in_subjectdf <- as.vector(hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == subject_id])
+      new_sample_id <- as.character(df[n_row, "sample_id"])
+      sample_ids <- append(sampleIDs_in_subjectdf, new_sample_id)
+
+      hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == subject_id] <- toString(sample_ids)
+      # retain TRUE ("1") values for OTUs
+      for (OTU in OTU_names) {
+        # check that OTU = 1 in original df
+        if (df[n_row, OTU] == 1) {
+          # check that OTU = 0 in subject df
+          row_number = which(hgm_subject_df$merged_subject_id == subject_id)
+          if (hgm_subject_df[row_number, OTU] == 0) {
+            # change OTU 0 --> 1 in subject df
+            # hgm_subject_df[,OTU][hgm_subject_df$merged_subject_id == df[n_row, "merged_subject_id"]] <- 1
+            hgm_subject_df[row_number, OTU] <- 1
+          }
+        }
+      }
+    }
+  }
+}
+
+# sanity check?
+
+print(paste("number of rows in subject df: ", nrow(hgm_subject_df)))
+
+```
+
+# recalculate total num OTUs per subject (in subject df)
+```{r}
+# (just copy the code used to calculate total num OTUs per sample ...)
+
+hgm_subject_df$"n_leaf-level_OTUs_11to45" <- rowSums(hgm_subject_df[11:45])
+hgm_subject_df$"n_leaf-level_OTUs_146to158" <- rowSums(hgm_subject_df[146:158])
+hgm_subject_df$"n_leaf-level_OTUs_448to454" <- rowSums(hgm_subject_df[448:454])
+
+hgm_subject_df$"n_leaf-level_OTUs" <- rowSums(hgm_subject_df[457:459])
+
+hgm_subject_df$SRM_present <- hgm_subject_df$`n_leaf-level_OTUs` > 0
+```
+
+# troubleshooting building subject_df
+```{r}
+# load in practice df 
+# OTU_names <- c("bacteria1", "bacteria2", "bacteria3")
+OTU_names <- colnames(df[11:45])
+OTU_names <- append(OTU_names, colnames(df[146:158]))
+OTU_names <- append(OTU_names, colnames(df[448:454]))
+
+# make empty df with column names from original df
+hgm_subject_df <- data.frame(matrix(nrow = 0, ncol = ncol(df)))
+colnames(hgm_subject_df) <- colnames(df)
+
+# iterate over rows in original df and add rows with subject ID's one at a time
+for (n_row in 1:nrow(df)) 
+  {
+  # check that there is a value for subject id
+  if (!is.na(df[n_row, "merged_subject_id"])) 
+    {
+    subject_id <- as.character(df[n_row, "merged_subject_id"])
+    subject_ids_in_subjectdf <- as.vector(hgm_subject_df$merged_subject_id)
+    # add row to hgm_subject_df if subject id isn't already in there
+    if (!subject_id %in% subject_ids_in_subjectdf)
+      {
+      hgm_subject_df <- rbind(hgm_subject_df, df[n_row,])
+    }
+    # if subject id already in df, append sample_id to sample_id column and iterate over OTU names (retain TRUE)
+    else if (subject_id %in% subject_ids_in_subjectdf)
+      {
+      sampleIDs_in_subjectdf <- as.vector(hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == subject_id])
+      new_sample_id <- as.character(df[n_row, "sample_id"])
+      sample_ids <- append(sampleIDs_in_subjectdf, new_sample_id)
+
+      hgm_subject_df$sample_id[hgm_subject_df$merged_subject_id == subject_id] <- toString(sample_ids)
+      # retain TRUE ("1") values for OTUs
+      for (OTU in OTU_names) {
+        # check that OTU = 1 in original df
+        if (df[n_row, OTU] == 1) {
+          # check that OTU = 0 in subject df
+          row_number = which(hgm_subject_df$merged_subject_id == subject_id)
+          if (hgm_subject_df[row_number, OTU] == 0) {
+            # change OTU 0 --> 1 in subject df
+            # hgm_subject_df[,OTU][hgm_subject_df$merged_subject_id == df[n_row, "merged_subject_id"]] <- 1
+            hgm_subject_df[row_number, OTU] <- 1
+          }
+        }
+      }
+    }
+  }
+}
+
+# holy eff. i finally did it. i can sleep peacefully now.
+
+# View(practice_subject_df)
+```
+
+# changing merged_subject_id of samples in project PRJNA301903 to integers 
+```{r}
+# working df: df
+
+df$merged_subject_id <- ifelse(df$merged_project_accession == "PRJNA301903",
+                               as.integer(df$merged_subject_id),
+                               df$merged_subject_id)
+
+```
+

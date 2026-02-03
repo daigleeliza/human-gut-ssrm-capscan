@@ -1,0 +1,23 @@
+---
+title: "tree_viz_aesthetics"
+output: html_document
+---
+
+# perc samples and perc subjects
+```{r}
+# subject_df <- subject_OTU_matrix
+# 
+# subject_sums <- as.data.frame(colSums(subject_df))
+# subject_sums$perc_subj <- (subject_sums$`colSums(subject_df)` / nrow(subject_df) * 100)
+# View(subject_sums)
+
+# sample_df <- dataset21and22_withNayfachData
+# 
+# otu_columns <- intersect(colnames(subject_df), colnames(sample_df))
+# sample_sums <- as.data.frame(colSums(sample_df[otu_columns]))
+# View(sample_sums)
+sample_sums <- subset(otu_all_table, Var1 %in% otu_hits_table$Var1)
+sample_sums$perc_sample <- (sample_sums$updated_freq / nrow(dataset21and22_withNayfachData) * 100)
+  
+```
+

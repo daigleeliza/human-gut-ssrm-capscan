@@ -1,0 +1,262 @@
+---
+title: "Biosample per Subject"
+output: html_document
+---
+
+# Let's make subject_df  from dataset21and22!
+
+```{r}
+# first, let's take a look at the available metadata variables and single out the one's related to subject ID 
+
+# View(colnames(dataset21and22))
+
+variables_related_to_subject <- c("label",
+                                  "sample name",
+                                  "unique ID",
+                                  "host subject id",
+                                  "description",
+                                  "Replication #",
+                                  "Test person",
+                                  "biospecimen repository",
+                                  "submitted subject id",
+                                  "patient_name",
+                                  "Patient_name",
+                                  "sample_alias",
+                                  "ID",
+                                  "patient",
+                                  "individual name",
+                                  "individual",
+                                  "subject_id")
+
+for (variable in variables_related_to_subject[17]){
+  View(table(dataset21and22[,variable]))
+}
+
+# check out the samples
+subset(dataset21and22$sample_id, dataset21and22$`subject_id` == "ERP005989|mother_64")
+
+# unique ID possibly may be of interest -- need to look in to the studies
+# should be used to identify single subjects:
+subject_variables <- c(
+  "host subject id",
+  "Test person",
+  "submitted subject id",
+  "patient_name",
+  "Patient_name",
+  "patient",
+  "individual name",
+  "individual",
+  "subject_id"
+)
+
+# now that we have a list of variables with subject information, we can add those samples to a df with row = subject ID
+# first, let's figure out how many samples have overlapping data for the variables, and decide which variable should have priority when parsing the data
+
+```
+
+```{r}
+# first, let's figure out how many samples have overlapping data for the variables, and decide which variable should have priority when parsing the data
+
+# sum(!is.na(dataset21and22$`host subject id`) & !is.na(dataset21and22$`individual name`))
+
+# create "merged_subject_id" column and add data for all variables in subject_variables list
+# make sure there are no "missing" values -- change these to NA!
+
+# na_values <- c("missing",
+#                "Missing", 
+#                "", 
+#                " ",
+#                "not collected",
+#                "not applicable", 
+#                "Not Applicable", 
+#                "Not Collected", 
+#                "N/A", 
+#                "n/a",
+#                "not collected",
+#                "not determined",
+#                "not provided",
+#                "Unknown",
+#                "unknown",
+#                "not available",
+#                "Not collected",
+#                "Not applicable",
+#                "Not available",
+#                "na",
+#                "NOT COLLECTED")
+# 
+# for (variable in subject_variables) {
+#   for (replace_value in na_values) {
+#     dataset21and22[[variable]] <- replace(dataset21and22[[variable]], dataset21and22[[variable]] == replace_value, NA)
+#   }
+# }
+
+# dataset21and22$merged_subject_id <- NA
+
+subject_variables <- c(
+  "host subject id",
+  "Test person",
+  "submitted subject id",
+  "patient_name",
+  "Patient_name",
+  "patient",
+  "individual name",
+  "individual",
+  "subject_id"
+)
+
+# for (variable in subject_variables){
+#   for (n_row in 1:nrow(dataset21and22)) {
+#     if (is.na(dataset21and22[n_row, "merged_subject_id"])) {
+#       if (!is.na(dataset21and22[[n_row, variable]])) {
+#         dataset21and22[n_row, "merged_subject_id"] <- dataset21and22[[n_row, variable]]
+#       }
+#     }
+#   }
+# }
+
+sum(!is.na(dataset21and22$merged_subject_id))
+# 7159 samples with subject id
+
+length(unique(dataset21and22$merged_subject_id))
+# 2079 unique subject ids! not that bad, but i suppose it really depends on the available metadata...
+```
+
+```{r}
+# create new df with subject id as row
+
+OTU_names <- colnames(dataset[11:45])
+OTU_names <- append(OTU_names, colnames(dataset[146:158]))
+OTU_names <- append(OTU_names, colnames(dataset[448:454]))
+
+# make empty df with column names from original dataset
+subject_df <- data.frame(matrix(nrow = 0, ncol = ncol(dataset)))
+colnames(subject_df) <- colnames(dataset)
+
+# iterate over rows in original dataset and add rows with subject ID's one at a time
+for (n_row in 1:nrow(dataset)) {
+  # check that there is a value for subject id
+  if (!is.na(dataset[n_row, "merged_subject_id"])) {
+    # add row to subject_df if subject id isn't already in there
+    if (!dataset[n_row, "merged_subject_id"] %in% as.list(subject_df$merged_subject_id)){
+      subject_df <- rbind(subject_df, dataset[n_row,])
+    }
+    # if subject id already in df, append sample_id to sample_id column and iterate over OTU names (retain TRUE)
+    else if (dataset[n_row, "merged_subject_id"] %in% as.list(subject_df$merged_subject_id)) {
+      sample_ids <- append(subject_df$sample_id[subject_df$merged_subject_id == dataset[n_row, "merged_subject_id"]], dataset[n_row, "sample_id"])
+      subject_df$sample_id[subject_df$merged_subject_id == dataset[n_row, "merged_subject_id"]] <- toString(sample_ids)
+      # retain TRUE ("1") values for OTUs
+      for (OTU in OTU_names) {
+        # check that OTU = 1 in original df
+        if (dataset[n_row, OTU] == 1) {
+          # check that OTU = 0 in subject df
+          if (subject_df[,OTU][subject_df$merged_subject_id == dataset[n_row, "merged_subject_id"]] == 0) {
+            # change OTU 0 --> 1 in subject df
+            subject_df[,OTU][subject_df$merged_subject_id == dataset[n_row, "merged_subject_id"]] <- 1
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+
+```{r}
+# recalculate total num OTUs per subject (in subject df)
+# (just copy the code used to calculate total num OTUs per sample ...)
+
+subject_df$"n_leaf-level_OTUs_11to45" <- rowSums(subject_df[11:45])
+subject_df$"n_leaf-level_OTUs_146to158" <- rowSums(subject_df[146:158])
+subject_df$"n_leaf-level_OTUs_448to454" <- rowSums(subject_df[448:454])
+
+subject_df$"n_leaf-level_OTUs" <- rowSums(subject_df[457:459])
+
+subject_df$SRM_present <- subject_df$`n_leaf-level_OTUs` > 0
+
+```
+
+# finding project accession for every. damn. biosample.
+# yes, you heard me right
+```{r}
+# working df = data (copy of dataset21and22)
+
+# # next, let's get a list of the samples that fall into this category
+# samples <- as.vector(dataset21and22$sample_id)
+
+# and now, we check if these samples have any metadata variables related to a project number
+# sum(!is.na(data$ProjectAccession))
+# 731 biosamples have info for project accession, so we can add these directly to the nmerged project_accession column
+
+# welp. none of the samples have a project accession. 
+# new strategy: 
+# step 1: manually find project accession for sample 
+# step 2: download list of samples associated with that project 
+# step 3: match samples from list in step 2 ("project_samples") with samples in "samples" and add to "matched_samples" list
+# step 4: add project accession to new "project_accession" column for matched samples dataset21and22
+# step 5: remove matched samples from "samples" -- wash rinse repeat
+
+# first, add all values from ProjectAccession to merged_project_accession
+# data$merged_project_accession <- data$ProjectAccession
+
+PRJDB8054 <- read_csv("Bioproject_Biosample_Lists/PRJDB8054.txt", col_names = FALSE, show_col_types = FALSE)
+projects <- c(PRJNA514245, PRJNA442434, PRJNA178162, PRJEB26092, PRJDB4597, PRJDB6127, PRJDB6498, PRJDB6872, PRJDB7521, PRJDB7714, PRJDB8054)
+project_accession <- "PRJDB8054"
+project_samples <- as.vector(tail(projects, 1)[[1]])
+
+matched_samples <- intersect(project_samples, samples)
+
+# first project
+# data$merged_project_accession <- ifelse(data$sample_id %in% matched_samples, project_accession, NA)
+
+# subsequent projects
+data$merged_project_accession <-
+ifelse(is.na(data$merged_project_accession),
+         ifelse(data$sample_id %in% matched_samples, project_accession, NA), data$merged_project_accession)
+
+length(matched_samples)
+# View(table(data$merged_project_accession))
+sum(!is.na(data$merged_project_accession))
+
+samples <- as.vector(subset(data$sample_id, is.na(data$merged_project_accession)))
+samples[1]
+```
+
+
+```{r}
+# projects with only one sample
+
+sample <- samples[1]
+proj_acc <- "PRJDB4440"
+
+data[data$sample_id == sample, "merged_project_accession"] <- proj_acc
+
+sum(!is.na(data$merged_project_accession))
+
+samples <- as.vector(subset(data$sample_id, is.na(data$merged_project_accession)))
+samples[1]
+```
+
+
+## OKAY. we are not doing this. i finally learned how to use NCBI's eUtils, so I wrote a bash script parser to get the project for every sample!!! exciting 
+# so while that's running, i'm gonna run the same code on a shorter list of samples for samples that: 1) do not have a merged_subject_id and 2) have a value for age_years or one of the binned age columns
+# so this code is to get that list of samples!
+```{r}
+# n samples that have merged_subject_id = 7,159
+length(as.vector(subset(dataset21and22$sample_id, !is.na(dataset21and22$merged_subject_id))))
+
+# n samples that have merged_subject_id and age_years = 4,405
+length(as.vector(subset(dataset21and22$sample_id, !is.na(dataset21and22$merged_subject_id) & (!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_9yrSize) | !is.na(dataset21and22$bin_5yrCutoff)))))
+
+# n samples that have merged_subject_id but not age_years = 2,754
+7159 - 4405
+
+# n samples that have age_years, bin_9yrSize, or bin_5yrCutoff but not merged_subject_id = 4,703
+length(as.vector(subset(dataset21and22$sample_id, is.na(dataset21and22$merged_subject_id) & (!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_9yrSize) | !is.na(dataset21and22$bin_5yrCutoff)))))
+
+samples <- as.vector(subset(dataset21and22$sample_id, is.na(dataset21and22$merged_subject_id) & (!is.na(dataset21and22$age_years) | !is.na(dataset21and22$bin_9yrSize) | !is.na(dataset21and22$bin_5yrCutoff))))
+
+write_lines(samples, file = "biosample_accession_withAgeData_noSubjectID.txt", sep = "\n")
+
+```
+
+

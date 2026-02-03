@@ -1,0 +1,153 @@
+---
+title: "tree_by_e_acceptor_sources"
+output: html_document
+---
+#packages to load
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+```
+
+
+# prepping metadata table on electron sources!
+# input excel file: sulfite_sources_for_reference_OTUs
+```{r}
+data <- sulfite_sources_for_reference_OTUs
+
+otus_to_add <- setdiff(tree$tip.label, otu_all_table$Var1)
+otu_data_to_bind <- data.frame(OTU = otus_to_add, 
+                               sulfate = NA, sulfite = NA, nitrate = NA, nitrite = NA, 
+                               elemental_sulfur = NA, thiosulfate = NA, taurine = NA, 
+                               isethionate = NA, DHPS = NA, Fe_III = NA, fumarate = NA)
+
+data <- rbind(data, otu_data_to_bind)
+
+otu_eacceptor_sources <- data
+# done!
+
+# jk. gotta transform from wide to long
+row.names(otu_eacceptor_sources) <- otu_eacceptor_sources$OTU
+```
+
+# firmicutes tree
+```{r}
+tree_plot <- ggtree(firmicutes_subset_tree, layout = "slanted", aes(alpha = label %in% closest_ref_leaves, color = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 2, align = TRUE, offset = -0.5) +
+  scale_color_manual(values = c("grey", "black")) +
+  scale_alpha_manual(values = c(0.2, 1)) +
+  guides(color = "none", alpha = "none") +
+  geom_treescale(x = 0.09, y = 300, width = 0.5, fontsize = 4, color = "darkgray") +
+  
+  # reference leaf label
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Gordonibacter_pamelaeae__GrdPame5"), label = 'paste(italic("Gordonibacter pamelaeae"))', parse = T, fontsize = 4, offset = 0.0) +
+  
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Gordonibacter_pamelaeae_7-10-1-b__FP929047"), label = 'paste(italic("Gordonibacter pamelaeae"))', parse = T, fontsize = 4, offset = 0.0) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitibacter_alkalitolerans__DfiAlka2"), label = 'paste(italic("Desulfitibacter alkalitolerans"))', parse = T, fontsize = 4, offset = -.01) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitobacterium_hafniense_Y51__DsfHaf15"), label = 'paste(italic("Desulfitobacterium hafniense"))', parse = T, fontsize = 4, offset = 0.0) +
+
+    geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfitobacterium_sp._PCE-1__DstSpe13"), label = 'paste(italic("Desulfitobacterium "), "spp.")', parse = T, fontsize = 4, offset = -0.75) +
+
+    geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Desulfosporosinus_youngiae__DfpYoun5"), label = 'paste(italic("Desulfosporosinus youngiae"))', parse = T, fontsize = 4, offset = 0) +
+
+  geom_cladelabel(node = MRCA(firmicutes_subset_tree, "Thermodesulfobium_narugense__CP002690"), label = 'paste(italic("Thermodesulfobium narugense"))', parse = T, fontsize = 4, offset = 0)
+
+unclassified_bacteria <- c("Anaerobic_bacterium_sk.prop8__Bv2Prop2", "Anaerobic_bacterium_EtOH8__Bv2EtOH2", "MSW_digester_clone__Unc01cxc", "Deep_sea_sediment_clone__JN798931", "Bioreactor_clone__UncS2029", "Pearl_river_estuary_clone_TopDSR14__UncS2036", "Arctic_sediment_clone_AH5_5__AtcSed67", "Polluted_aquifer_clone_LGWK16__UncS1633")
+  
+for (node in unclassified_bacteria) {
+  tree_plot <- tree_plot +  geom_cladelabel(node = MRCA(firmicutes_subset_tree, node), label = "*", fontsize = 5, offset = 0)
+}
+```
+
+# lower desulfovibrionaceaea node
+```{r}
+dsl_tree_plot <- ggtree(dsl_subset_tree, aes(color = label %in% closest_ref_leaves, alpha = label %in% closest_ref_leaves)) +
+# geom_tiplab(aes(subset= label %in% closest_ref_leaves), size = 4, align = F) +
+  # geom_tiplab() +
+  scale_color_manual(values = c("grey", "darkorange1")) +
+  scale_alpha_manual(values = c(0.5, 1)) +
+  guides(color = "none", alpha = "none")
+
+dsl_tree_plot_lower <- dsl_tree_plot %>%
+  collapse(node = upperDisNode) +
+  geom_point2(aes(subset=(node==upperDisNode)), shape=23, size=3, fill='darkorange1', color = 'darkorange1', alpha = 1) +
+  
+  # labels
+    geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_vulgaris__DQ826729"), label = 'paste(italic("Desulfovibrio vulgaris"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+    geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+  geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_carbinoliphilus__JQ031012"), label = 'paste(italic("Desulfovibrio carbinoliphilus"))', parse = T, fontsize = 3, offset = 0, color = "darkorange1") +
+  geom_cladelabel(node = MRCA(dsl_subset_tree, "Desulfovibrio_desulfuricans__DslDes24"), label = 'paste(italic("Desulfovibrio desulfuricans"))', parse = T, fontsize = 3, offset = -0, color = "darkorange1") +
+  
+    geom_treescale(x = 0.06, y = 50, width = 0.1, fontsize = 3, color = "darkgray")
+
+  
+unclassified_bacteria <- c("Polluted_aquifer_clone__UncS1623")
+
+for (node in unclassified_bacteria) {
+  dsl_tree_plot_lower <- dsl_tree_plot_lower +  
+    geom_cladelabel(node = MRCA(dsl_subset_tree, node), label = "*", fontsize = 5, offset = 0, color = "darkorange1")
+}
+
+dsl_tree_plot_lower
+```
+
+# add metabolism data to tree plot
+```{r}
+# with dplyr
+# tree_plot %<+%
+#   otu_eacceptor_sources +
+#   geom_point2(aes(color = sulfate), na.rm = FALSE)
+
+subset_esources <- subset(otu_eacceptor_sources, (otu_eacceptor_sources$OTU %in% dsl_subset_tree$tip.label)==TRUE)
+
+# heatmap
+gheatmap(dsl_tree_plot_lower, subset_esources[,2:4], color = "white") +
+  scale_fill_manual(breaks=c("yes", "no", NA), values=c("red", "blue", "green"), name = "electron source")
+
+# gheatmap(dsl_tree_plot_lower, otu_eacceptor_sources[,2:4], offset=8, width=0.6, 
+#         colnames=FALSE, legend_title="genotype") +
+#    scale_x_ggtree() + 
+#     scale_y_continuous(expand=c(0, 0.3))
+
+# trying geom_raster/tile
+# dsl_tree_plot_lower +
+#   geom_tile(aes(fill = ))
+
+# with manual subsetting for geom_point2
+# it works!
+# ...... kind of ............
+
+# dsl_tree_plot_lower +
+#   geom_tiplab(aes(subset=(label %in% subset(otu_eacceptor_sources$OTU, otu_eacceptor_sources$sulfate == "yes"))), color = "green", size = 3) +
+#   geom_point2(aes(subset=(label %in% subset(otu_eacceptor_sources$OTU, otu_eacceptor_sources$sulfite == "yes"))), color = "yellow", size = 5, alpha = 0.5)
+```
+
+# tutorial practice for adding metadata to tree
+```{r}
+# library(ggimage)
+# library(ggtree)
+# library(TDbook)
+# 
+beast_file <- system.file("examples/MCC_FluA_H3.tree", package="ggtree")
+beast_tree <- read.beast(beast_file)
+
+genotype_file <- system.file("examples/Genotype.txt", package="ggtree")
+genotype <- read.table(genotype_file, sep="\t", stringsAsFactor=F)
+colnames(genotype) <- sub("\\.$", "", colnames(genotype))
+p <- ggtree(beast_tree, mrsd="2013-01-01") + 
+    geom_treescale(x=2008, y=1, offset=2) + 
+    geom_tiplab(size=2)
+gheatmap(p, genotype, offset=5, width=0.5, font.size=3, 
+        colnames_angle=-45, hjust=0) +
+    scale_fill_manual(breaks=c("HuH3N2", "pdm", "trig"), 
+        values=c("steelblue", "firebrick", "darkgreen"), name="genotype")
+
+
+```
+
+
+

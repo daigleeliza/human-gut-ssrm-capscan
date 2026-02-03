@@ -1,0 +1,301 @@
+---
+title: "age_metadata_analysis"
+output: html_document
+---
+
+# create new age_years column in dataset21and22
+```{r}
+dataset21and22$age_years <- NA
+dataset21and22$age_years <- as.numeric(dataset21and22$age_years)
+```
+
+# add "host age" data to "age_years" column
+# create table for data not added to "age_years" -> "host_age_exceptions_df"
+```{r}
+column_name <- "host age"
+
+# iterate by row
+for (n_row in 1:nrow(dataset21and22)) {
+  # check that host age has value
+  if (!is.na(dataset21and22[n_row, column_name])) 
+    {
+    ### YEARS ###
+    # check for "years" unit (y), excluding values with "-" and "day"
+    if (grepl("y", dataset21and22[n_row, column_name], ignore.case=TRUE) &
+        !grepl("-", dataset21and22[n_row, column_name]) &
+        !grepl("day", dataset21and22[n_row, column_name], ignore.case=TRUE) &
+        !grepl("m", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      dataset21and22[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, column_name]))
+    }
+    # add exception "10 year-old"
+    if (grepl("year-old", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      dataset21and22[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, column_name]))
+    }
+    # add exception "0-1 years" (-> 1 y.o.)
+    if (grepl("0-1 years", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      dataset21and22[n_row, "age_years"] <- 1
+    }
+    ### MONTHS ###
+    if (grepl("m", dataset21and22[n_row, column_name], ignore.case=TRUE) &
+        !grepl("y", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      # calculate months -> years
+        age_months <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, column_name]))
+        dataset21and22[n_row, "age_years"] <- round(age_months / 12)
+    }
+    ### DAYS ###
+    if (grepl("day", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      # calculate days -> years
+        age_days <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, column_name]))
+        dataset21and22[n_row, "age_years"] <- round(age_days / 365)
+    }
+    if (grepl("D", dataset21and22[n_row, column_name])) {
+      # calculate days -> years
+        age_days <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, column_name]))
+        dataset21and22[n_row, "age_years"] <- round(age_days / 365)
+    }
+    ### NEONATE EXCEPTION ###
+    # add to "age_years" as 0 years
+    if (grepl("neonate", dataset21and22[n_row, column_name], ignore.case=TRUE)) {
+      dataset21and22[n_row, "age_years"] <- 0
+    }
+  }
+} 
+
+sum(!is.na(dataset21and22$age_years))
+# host_age_exceptions_df <- subset(dataset21and22[,c(1,29)], !is.na(dataset21and22$`host age`) & is.na(dataset21and22$`age_years`))
+```
+
+
+# add "age" column data to "age_years" column
+```{r}
+# only exception is data with "days", so convert that to years and add to "age_years"
+# other than that, assume all numbers are in years (bc why else...)
+# iterate by row
+for (n_row in 1:nrow(dataset21and22)) {
+  # check that age_years hasn't been determined from host age
+  if (is.na(dataset21and22[n_row, "age_years"])) {
+    # check that "age" has value
+    if (!is.na(dataset21and22[n_row, "age"])) {
+      # check for values with "day" and convert to years
+      if (grepl("day", dataset21and22[n_row, "age"])) {
+        age_days <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "age"]))
+          dataset21and22[n_row, "age_years"] <- round(age_days / 365)
+      }
+      # directly transfer all other data from "age" to "age_years"
+      else {
+        dataset21and22[n_row, "age_years"] <- as.numeric(dataset21and22[n_row, "age"])
+      }
+        
+    }
+  }
+}
+
+```
+
+### for "host age" w/o unit, check BioProject manually to confirm unit. Download list of BioSample ID's for each project, then add age to age_years with appropriate unit
+```{r}
+# sum of age_years values BEFORE = 667
+# N samples w/ host age but not age_years = 1715 ; after list 0309 = 1563
+# N samples w/ age_years = 3826 ; after list 0309 = 3978
+
+# N samples w/ host age but not age_years = 1563 ; after list 0310 = 1445
+# N samples w/ age_years = 3978 ; after list 0310 = 4096
+
+# N samples w/ host age but not age_years = 1445 ; after list 0310_02 = 1389  
+# N samples w/ age_years = 4096 ; after list 0310_02 = 4152
+
+Bioproject = X0310_02_biosampleList_years
+age_unit = "years"
+
+# make list of samples in bioproject
+sampleIDs <- as.vector(Bioproject[[1]])
+
+n_y = 0
+n_m = 0
+n_d = 0
+
+for (n_row in 1:nrow(dataset21and22)) {
+  # check that there is a value in "host age"
+  if (!is.na(dataset21and22[n_row,"host age"])) {
+    #check that there is NOT a value in "age_years"
+    if (is.na(dataset21and22[n_row,"age_years"])) {
+      # check that value is "host age" is numeric (no dashes or words)
+      if (!is.na(as.numeric(dataset21and22[n_row,"host age"]))) {
+        # check if sample is in list of sample ID's for this bioproject
+        if (dataset21and22[n_row, "sample_id"] %in% sampleIDs) {
+          # if age unit is years, add "host age" directly to "age_years" column
+          if (age_unit == "years") {
+            dataset21and22[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "host age"]))
+            n_y = n_y + 1
+            # print(as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "host age"])))
+          }
+          # if age unit is months, convert to years then add to "age_years"
+          else if (age_unit == "months") {
+            age_months <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "host age"]))
+            dataset21and22[n_row, "age_years"] <- round(age_months / 12)
+            n_m = n_m + 1
+          }
+          # if age unit is days, convert to years then add to "age_years
+          else if (age_unit == "days") {
+            age_days <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "host age"]))
+            dataset21and22[n_row, "age_years"] <- round(age_days / 365)
+            n_d = n_d + 1
+          }
+        
+        # ONLY DO FOR AGE ASSUMPTION dataset21and22
+        # check if age is reasonably in years (from 1-100)
+        # if (as.numeric(dataset21and22[n_row,"host age"] >= 1 | as.numeric(dataset21and22[n_row,"host age"] <= 100))) {
+        #   dataset21and22[n_row, "age_years"] <- as.numeric(gsub("[^0-9.]", "", dataset21and22[n_row, "host age"]))
+        # }
+      }
+    }
+  }
+  }
+}
+
+# AFTER X01_biosampleList_days, sum of age_years values = 1484
+# ages added = 817
+
+# AFTER X01_biosampleList_years, sum of age_years values = 3487
+# ages added = 2003
+
+# AFTER X01=2_biosampleList_years, sum of age_years values = 3826
+# ages added = 339
+
+# AFTER age assumption, sum of age_years values = 4152
+# ages added = 326
+
+sum(!is.na(dataset21and22$age_years))
+sum(subset(is.na(dataset21and22$age_years), !is.na(dataset21and22$"host age")))
+host_age_exceptions_df <- subset(dataset21and22[,c(1,29)], !is.na(dataset21and22$`host age`) & is.na(dataset21and22$`age_years`))
+
+# View(host_age_exceptions_df)
+# View(table(host_age_exceptions_df$`host age`))
+
+print(n_y)
+print(n_m)
+print(n_d)
+```
+
+# retrieve biosample ID's for samples w/ unconfirmed "host age" unit AND "host age" value is numeric (no dashes/ not a binned age range)
+```{r}
+# create empty vector to append biosample ID's to
+biosample_ID_toCheckUnits <- list()
+
+# iterate by row
+for (n_row in 1:nrow(dataset21and22)) {
+  # check that age_years is NA
+  if (is.na(dataset21and22[n_row,"age_years"])) {
+    # check that host age unit is numeric
+    if (!is.na(as.numeric(dataset21and22[n_row,"host age"]))) {
+      biosample_ID_toCheckUnits <- append(biosample_ID_toCheckUnits, dataset21and22[n_row,1])
+    }
+  }
+}
+
+# export as xlsx file
+# write.xlsx(biosample_ID_toCheckUnits, file = "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/dsrAB_Biosample_Metadata_Analysis/biosample_ID_list_toCheckUnits_0310_02.xlsx")
+
+```
+
+# add "host age" and "age_years" values to binned age ranges
+# bin_9yrSize : binned ages in increments of 9 years (eg: 0-9, 10-19...)
+# bin_5yrCutoff : binned ages with cutoff of 5 (<5, >=5)
+```{r}
+# create new columns for binned ages
+subject_df$bin_9yrSize <- NA
+subject_df$bin_5yrCutoff <- NA
+
+# someone else's code to bin continuous numeric variable:
+# 9 year bin size:
+subject_df <- subject_df %>%
+mutate(bin_9yrSize = cut(age_years, breaks = seq(0,110, by=10), include.lowest = TRUE, right = FALSE))
+
+# 5 year cutoff: 
+subject_df <- subject_df %>%
+  mutate(bin_5yrCutoff = cut(age_years, breaks = c(0,5,110), right = FALSE))
+# it works beautifully. thank god for the internet. mental note: stop solving problems in R by iterating by row bc it's super slow
+
+# change to bin columns to character type AFTER binning age_years data
+subject_df$bin_9yrSize <- as.character(subject_df$bin_9yrSize)
+subject_df$bin_5yrCutoff <- as.character(subject_df$bin_5yrCutoff)
+
+# must iterate by row to add binned ages for "host age" value exceptions
+for (n_row in 1:nrow(subject_df)) {
+  # skip over values with a value for age_years
+  if (is.na(subject_df[n_row, "age_years"])) {
+    # check if "host age" value !is.na
+    if (!is.na(subject_df[n_row, "host age"])) {
+      # determine bin values
+      if (subject_df[n_row, "host age"] == "0-4" | 
+          subject_df[n_row, "host age"] == "<5") {
+        subject_df[n_row, "bin_9yrSize"] <- "[0,10)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[0,5)"
+      }
+      if (subject_df[n_row, "host age"] == "1 to 5") {
+        subject_df[n_row, "bin_9yrSize"] <- "[0,10)"
+      }
+      if (subject_df[n_row, "host age"] == "5-9") {
+        subject_df[n_row, "bin_9yrSize"] <- "[0,10)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "10-19") {
+        subject_df[n_row, "bin_9yrSize"] <- "[10,20)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "20-29" |
+          subject_df[n_row, "host age"] == "21 to 25") {
+        subject_df[n_row, "bin_9yrSize"] <- "[20,30)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "30-39") {
+        subject_df[n_row, "bin_9yrSize"] <- "[30,40)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "40-49") {
+        subject_df[n_row, "bin_9yrSize"] <- "[40,50)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "50-59" |
+          subject_df[n_row, "host age"] == "51 to 55") {
+        subject_df[n_row, "bin_9yrSize"] <- "[50,60)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "60-69" |
+          subject_df[n_row, "host age"] == "61 to 65") {
+        subject_df[n_row, "bin_9yrSize"] <- "[60,70)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "70-79" |
+          subject_df[n_row, "host age"] == "71 to 75") {
+        subject_df[n_row, "bin_9yrSize"] <- "[70,80)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "80-89") {
+        subject_df[n_row, "bin_9yrSize"] <- "[80,90)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      if (subject_df[n_row, "host age"] == "90-99") {
+        subject_df[n_row, "bin_9yrSize"] <- "[90,100)"
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+      # don't fit into a 9 year bin
+      if (subject_df[n_row, "host age"] == "26-30" |
+          subject_df[n_row, "host age"] == "26-55 years" |
+          subject_df[n_row, "host age"] == "35-44" |
+          subject_df[n_row, "host age"] == "45-54" |
+          subject_df[n_row, "host age"] == "55-64" |
+          subject_df[n_row, "host age"] == "56 to 60" |
+          subject_df[n_row, "host age"] == "65-74" |
+          subject_df[n_row, "host age"] == "76 to 80" |
+          subject_df[n_row, "host age"] == ">90") {
+        subject_df[n_row, "bin_5yrCutoff"] <- "[5,110)"
+      }
+    }
+  }
+}
+
+# SUCCESS!!! 
+
+```
+

@@ -37,7 +37,7 @@ rule estimateModelParams:
 rule runRAXML:
 	input:
 		seqAlignment=join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa"),
-		modelParams=join(config["modelParamsDir"], f"R AxML_binaryModelParameters.{config['treeFileExtensionNovel']}"),
+		modelParams=join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtensionNovel']}"),
 		refTree=join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtensionNovel']}")
 	params:
 		outputDir=config["raxmlOutputDir"],

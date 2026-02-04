@@ -22,6 +22,7 @@ blastDB: "workflow/out/sequenceSimilarity/db"
 # raxml input files
 #treeFileExtension: Christensen2024
 treeFileExtension: Daigle2026
+treeFileExtensionNovel: novelHits
 treeFileExtension_frag: Daigle2026_frag
 treeFileExtension_frag_capsule: Daigle2026_frag_capsule
 

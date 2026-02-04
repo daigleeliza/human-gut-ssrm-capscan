@@ -13,8 +13,41 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 ```{r}
-samples_unique_genes_with_names <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
+samples_unique_gene_casette <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
 ```
+
+# choose a representative subunit
+```{r}
+samples_unique_subunit_score <- samples_unique_gene_casette %>%
+  group_by(contig, sample) %>%
+  slice_max(Score, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+
+samples_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+  group_by(contig, sample) %>%
+  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  ungroup()
+```
+
+## checking to see if there is a big difference between selecting subunits based on bit score or RPKM
+```{r}
+in_score_only <- anti_join(samples_unique_subunit_score, 
+                           samples_unique_subunit_RPKM, 
+                           by = c("geneID", "sample"))
+
+in_rpkm_only <- anti_join(samples_unique_subunit_RPKM, 
+                          samples_unique_subunit_score, 
+                          by = c("geneID", "sample"))
+```
+
+```{r}
+difference_between_higherBitandHigherRPKM <- in_rpkm_only$RPKM-in_score_only$RPKM
+sum(difference_between_higherBitandHigherRPKM>2)
+## there are 31 samples with a difference in RPKM that is greater than 2 if I select by higher bit score
+## but all of the scores are still >200 if I select by higher RPKM. so I will go with that
+```
+
 
 
 #here making new plots
@@ -27,22 +60,13 @@ viridis_palette
 boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
-```
 
- # need to choose a representative subunit. need to think more on using the contig as the grouping mechanism because idk that we can assume that that is where all the subunits are found -> what if the assembler split contigs in between subunits?
-```{r}
-# Get median across contigs in each sample
-## need to choose between closest references for the contigs with two different ones if you want to use median for the species plots
-plot_RPKM_dsr_median <- samples_unique_genes_with_names %>%
-  group_by(subject, sample, Type, contig) %>%
-  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75))
-  
+set_colors <- c("grey", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#6F7042")
 ```
-
 
 # Plot the number of unique genes for each subject -> for comparing to asrABC
 ```{r}
-plot_count_dsr <- samples_unique_genes_with_names %>%
+plot_count_dsr <- samples_unique_subunit_RPKM %>%
 # find number of unique genes for each sample
   group_by(subject, sample, Type) %>%
   summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
@@ -130,9 +154,9 @@ species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" =
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
 ```
 
-# plot RPKM for every hit to compare between species; facet by location and subject
+# plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between species; facet by location and subject
 ```{r}
-samples_unique_genes_with_names %>%
+samples_unique_subunit_RPKM %>%
   ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -164,9 +188,9 @@ samples_unique_genes_with_names %>%
     plot.subtitle = element_text(size = 16, hjust = 0.5)
   )
 ```
-# plot RPKM for every hit to compare between location; facet by species and subject
+#  plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
 ```{r}
-samples_unique_genes_with_names %>%
+samples_unique_subunit_RPKM %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8) +
@@ -202,9 +226,10 @@ ggsave("dsrAB_RPKM.png",
        width = 16, height = 14, units = "in",   # increase for larger output
        dpi = 600)
 ```
-## now make a plot that combines the two D. piger and two B. wadsworthia species
+# plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
+# this plot combines the two D. piger and two B. wadsworthia species
 ```{r}
-samples_unique_genes_with_names %>%
+samples_unique_subunit_RPKM %>%
   #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   mutate(combine_species = case_when(
@@ -255,3 +280,56 @@ ggsave("dsrAB_RPKM_combine_species.png",
        width = 16, height = 14, units = "in",   # increase for larger output
        dpi = 600)
 ```
+# this takes the jitter box plot and adds coloring for the time of day for the capsule in which the hit was found
+# also orders the subjects based on whether they have d. piger or d. alkalitolerans
+```{r}
+samples_unique_subunit_RPKM %>%
+  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger", 
+                                            "uncultured_bacterium__EF645667",
+                                            "Bilophila_species",
+                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
+                                            "Gordonibacter_pamelaeae__GrdPame5",
+                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  ggplot(aes(x = Type, y = log10(RPKM))) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8) +
+  geom_jitter(aes(color = Set),
+            alpha = 0.9, size = 1,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = set_colors) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_grid(subject ~ combine_species, 
+             scale = "free_y",
+             labeller = labeller(combine_species = label_parsed)) +
+             #labeller = labeller(combine_species = species_labels_combine_species)) +
+  labs(
+    title = "RPKM for unique dsrAB genes by sample location across subjects and species",
+    x = "Sample Location",
+    y = "log10(RPKM)",
+    color = "Sample Location"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 10),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5)
+  )
+
+```
+

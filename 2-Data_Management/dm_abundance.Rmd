@@ -31,7 +31,7 @@ samples_unique_genes <- samples %>%
 # make subject a factor
   mutate(subject = factor(subject)) %>%
 # add capsule type (1,2,3,4, most proximal to most distal)
-  left_join(meta %>% select(samplename, Type), 
+  left_join(meta %>% select(samplename, Type, Set), 
             by = c("sample" = "samplename")) %>%
 # filter for unique genes in each sample
 # want to keep gene domain with the highest score, if there is a tie return just the first hit encountered

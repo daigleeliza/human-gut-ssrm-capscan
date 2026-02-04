@@ -27,7 +27,8 @@ treeFileExtension_frag_capsule: Daigle2026_frag_capsule
 
 paramName: "[date]"
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
-refTree: "workflow/out/modelParams/RAxML_result."
+#refTree: "workflow/out/modelParams/RAxML_result."
+hitAndRefResultTree: "workflow/out/raxmlOutputFinal/RAxML_labelledTree_noBootstrap_rooted.newick"
 raxmlOutputFileExtension: "raxml"
 
 scriptsDir: "workflow/scripts"

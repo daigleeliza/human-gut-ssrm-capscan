@@ -333,3 +333,128 @@ samples_unique_subunit_RPKM %>%
 
 ```
 
+
+
+
+# HEATMAPPING
+
+##need to normalize and convert to log2 first
+```{r}
+# read in MOIs df and remove columns without names and extra variables
+mois <- readRDS(paste0(data_dir, "/clean_data/moi_with_names.rds"))
+
+intensity_df <- mois %>% 
+  select(!contains("_pos") & !contains("_neg")) %>%
+  select(-(sample:is_nutrition)) %>%
+  column_to_rownames(., var = "Sample_ID")
+
+# normalize
+sample_intensity_sums <- rowSums(intensity_df)
+intensity_norm <- (intensity_df/sample_intensity_sums)*100
+
+# transform  
+intensity_norm_log <- (log2(intensity_norm)) %>%
+  as.matrix() %>% 
+  t()
+```
+
+```{r}
+# get info on child sex and abx
+ps <- readRDS(paste0(data_dir, "ps_tipglom_midline_public.RDS"))
+sex_abx <- sample_data(ps) %>% data.frame() %>% select(childid, sex, abx_times3mo) %>%
+  filter(childid %in% mois$childid) %>%
+  filter(str_detect(rownames(.), "M"))
+
+# for annotations of nutrition group, sex, and abx; df with sample ID as row names
+sample_ann <- mois %>% 
+  select(childid, Sample_ID, is_nutrition) %>%
+  left_join(., sex_abx, by = "childid") %>%
+  column_to_rownames(., var = "Sample_ID") %>%
+  mutate(`nutrition group` = is_nutrition) %>%
+# add variable for whether or not child took antibiotics
+  mutate(antibiotics = ifelse(abx_times3mo >= 1, TRUE, FALSE)) %>%
+  select(-c(is_nutrition, childid, abx_times3mo))
+
+# mapping annotations; shape for sex, color for nutrition and abx
+  
+sample_ann_heatmap = HeatmapAnnotation(`nutrition group` = as.character(sample_ann$`nutrition group`),
+                                       col = list(`nutrition group` = setNames(c("#1b6ab0", "#ffd25b"), 
+                                                                               c(TRUE, FALSE))),
+                                       which = "column", 
+                                       annotation_legend_param = list(`nutrition group` = 
+                                                                     list(title_gp = 
+                                                                            gpar(fontsize = 8),
+                                                                          labels_gp = 
+                                                                            gpar(fontsize = 6),
+                                                                          grid_height = unit(3, "mm"),
+                                                                          grid_width = unit(3, "mm"))),
+                                       show_legend = TRUE,
+                                    show_annotation_name = FALSE)
+# move nutrition group to anno_simple() and add pch to anno_simple to see which samples are from female children    #pch = ifelse(sample_ann$sex == "Female", "^", NA))
+# add abx
+#antibiotics = anno_simple(as.character(sample_ann$antibiotics), col = c("TRUE" = "transparent", "FALSE" = "transparent"), pch = ifelse(sample_ann$antibiotics == "TRUE", "^", NA), which = "column")
+```                                       
+
+# Grouping metabolites for color annotation
+```{r}
+# Name groups 
+# "Drugs" includes Anti-Arrhythmics, Aromatase Inhibitors + Cancer Drugs, Birth Control, Clotting or Anti-Clotting, Muscle Relaxants, and Parkinson's and Alzheimer's Drugs
+
+# extract metabolite names and add group names
+# for annotations, df with metabolites as row names
+metabolites <- data.frame(name = colnames(intensity_df)) %>%
+  mutate(group = group) %>%
+  column_to_rownames(var = "name")
+
+
+met_ann_heatmap = HeatmapAnnotation(`metabolite group` = metabolites$group,
+                                    col = list(`metabolite group` = setNames(
+                                        c("#9D8749", "#E9A571", "#4F988B", "#7ACD87", "#6F85CB", "#7CBFEB", "#C46686", "#F2FFFF"), 
+                                        c("Antibacterial, Antifungal, + Antiparasitic", 
+                                                        "Antihistamines",
+                                                        "Bile Acids + Conjugates", 
+                                                        "Crop + Manufacturing Additives",
+                                                        "Fungal Metabolites", 
+                                                        "Human Metabolites",
+                                                        "Terpenes + Natural Products", 
+                                                        "Drugs + Others"))),
+                                    which = "row", 
+                                    annotation_legend_param = list(`metabolite group` = 
+                                                                     list(title_gp = 
+                                                                            gpar(fontsize = 8),
+                                                                          labels_gp = 
+                                                                            gpar(fontsize = 6),
+                                                                          grid_height = unit(3, "mm"),
+                                                                          grid_width = unit(3, "mm"))),
+                                    show_legend = TRUE,
+                                    show_annotation_name = FALSE)
+```
+
+
+
+```{r}
+png("met_heatmap.png", width = 8, height = 9.5, units = "in", res = 300)
+hm <- ComplexHeatmap::pheatmap(intensity_norm_log,
+                   main = "Normalized log2 metabolite intensities across samples",
+                   color = viridis(50, begin = 0.1, end = 0.95),
+                   breaks = NA,
+                   cluster_rows = TRUE,
+                   cluster_cols = TRUE,
+                   clustering_distance_rows = "euclidean",
+                   clustering_distance_cols = "euclidean",
+                   clustering_method = 'ward.D',
+                   show_colnames = F,
+                   annotation_names_col = F,
+                   fontsize = 10,
+                   fontsize_row = 3,
+                   top_annotation = sample_ann_heatmap,
+                   right_annotation = met_ann_heatmap,
+                   treeheight_col = 0,
+                   treeheight_row = 0,
+                   heatmap_legend_param = list(title = "Norm log2(intensity)"))
+
+draw(hm, annotation_legend_side = "right", heatmap_legend_side = "right")
+
+dev.off()
+```
+

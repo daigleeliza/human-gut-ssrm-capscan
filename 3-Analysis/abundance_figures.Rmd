@@ -13,7 +13,7 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 ```{r}
-samples_unique_gene_casette <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
+samples_unique_gene_casette <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
 ```
 
 # choose a representative subunit
@@ -79,7 +79,9 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 
-set_colors <- c("grey", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#4477AA", "#AA3377", "#6F7042")
+
+#set 3+5 are after dinner and 2+4 are afternoon
+set_colors <- c("#fd8d3c", "light sky blue", "#d94701", "navy", "#6F7042")
 ```
 
 # Plot the number of unique genes for each subject -> for comparing to asrABC
@@ -118,40 +120,40 @@ plot_count_dsr %>%
     plot.title = element_text(size = 28, hjust = 0.5),
     plot.subtitle = element_text(size = 24, hjust = 0.5))
 
-plot_count_dsr %>%
-  ggplot(aes(x = Type, y = n)) +
-  geom_boxplot() + 
-  geom_jitter(aes(color = Type),
-              alpha = 0.7, 
-              size = 3,
-              position = position_jitter(width = 0.15, height = 0)) +
-  scale_color_manual(values = jitter_colors) +
-  facet_wrap(~ subject,
-              #scales = "free_y",
-              strip.position = "bottom",
-              labeller = labeller(subject = function(x) paste("Subject", x))) +
-  labs(
-    title = "Unique dsrAB gene count by sample type across subjects",
-    x = "Sample Type",
-    y = "Gene Count",
-    color = "Type"
-  ) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 24),
-    axis.title.x = element_text(size = 24),
-    axis.title.y = element_text(size = 24),
-    legend.text = element_text(size = 24),
-    legend.title = element_text(size = 24),
-    strip.placement = "outside",
-    strip.background = element_blank(),
-    plot.title = element_text(size = 28, hjust = 0.5),
-    plot.subtitle = element_text(size = 24, hjust = 0.5))
+# #plot_count_dsr %>%
+#  # ggplot(aes(x = Type, y = n) +
+#   geom_boxplot() + 
+#   geom_jitter(aes(color = Type),
+#               alpha = 0.7, 
+#               size = 3,
+#               position = position_jitter(width = 0.15, height = 0)) +
+#   scale_color_manual(values = jitter_colors) +
+#   facet_wrap(~ subject,
+#               #scales = "free_y",
+#               strip.position = "bottom",
+#               labeller = labeller(subject = function(x) paste("Subject", x))) +
+#   labs(
+#     title = "Unique dsrAB gene count by sample type across subjects",
+#     x = "Sample Type",
+#     y = "Gene Count",
+#     color = "Type"
+#   ) +
+#   theme_bw() +
+#   theme(
+#     axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
+#     axis.text.y = element_text(size = 24),
+#     axis.title.x = element_text(size = 24),
+#     axis.title.y = element_text(size = 24),
+#     legend.text = element_text(size = 24),
+#     legend.title = element_text(size = 24),
+#     strip.placement = "outside",
+#     strip.background = element_blank(),
+#     plot.title = element_text(size = 28, hjust = 0.5),
+#     plot.subtitle = element_text(size = 24, hjust = 0.5))
 ```
 # Change species labels
 ```{r}
-species <- unique(samples_unique_genes_with_names$single_closest_ref)
+species <- unique(samples_unique_subunit_RPKM$single_closest_ref)
 
 species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
                     "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
@@ -280,9 +282,9 @@ samples_unique_subunit_RPKM %>%
              #labeller = labeller(combine_species = species_labels_combine_species)) +
   labs(
     title = "RPKM for unique dsrAB genes by sample location across subjects and species",
-    x = "Sample Location",
+    x = "Sample location",
     y = "log10(RPKM)",
-    color = "Sample Location"
+    color = "Sample location"
   ) +
   theme_bw() +
   theme(
@@ -304,6 +306,7 @@ ggsave("dsrAB_RPKM_combine_species.png",
 samples_unique_subunit_RPKM %>%
   #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
@@ -324,7 +327,12 @@ samples_unique_subunit_RPKM %>%
             position = position_jitterdodge(
         jitter.width = 0.5,
         dodge.width = 0.8)) +
-  scale_color_manual(values = set_colors) +
+  scale_color_manual(values = set_colors, 
+                     labels = c("2" = "Afternoon", 
+                                "3" = "After dinner", 
+                                "4" = "Afternoon", 
+                                "5" = "After dinner", 
+                                "stool" = "Stool")) +
   #get rid of box fill
   scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
   guides(fill = "none") +
@@ -334,9 +342,9 @@ samples_unique_subunit_RPKM %>%
              #labeller = labeller(combine_species = species_labels_combine_species)) +
   labs(
     title = "RPKM for unique dsrAB genes by sample location across subjects and species",
-    x = "Sample Location",
+    x = "Sample location",
     y = "log10(RPKM)",
-    color = "Sample Location"
+    color = "Sample collection time"
   ) +
   theme_bw() +
   theme(
@@ -349,6 +357,9 @@ samples_unique_subunit_RPKM %>%
     plot.subtitle = element_text(size = 16, hjust = 0.5)
   )
 
+ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
+       width = 16, height = 14, units = "in",   # increase for larger output
+       dpi = 600)
 ```
 
 

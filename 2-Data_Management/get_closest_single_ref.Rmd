@@ -17,7 +17,7 @@ closestRefInfo_allScoreThresholdHits_capsule <- read_csv(paste0(treeInfoDir, "cl
 
 
 # this was made with all the same rules, but just inserting the MSA from the end of cleanHitsCapsule.smk and not adding the 2018 sequences. I will be using it to see what the Ley3 hits correspond to in the 2015 tree.
-closestRefInfo_allScoreThresholdHits_capsule_no_2018 <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv"))
+closestRefInfo_allScoreThresholdHits_capsule_2015 <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv"))
 ```
 
 # For hit sequences with multiple "closest ref sequences", select a single reference sequence as the representative. Choose the first of Mueller2015's sequences in the list. If none of Mueller2015's sequences are in the closest ref list, choose the first of Anantharaman2018's sequences.
@@ -70,12 +70,12 @@ write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule,
           row.names = FALSE)
 
 #CapScan no 2018 refs
-closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018 <- closestRefInfo_allScoreThresholdHits_capsule_no_2018 %>%
+closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015 <- closestRefInfo_allScoreThresholdHits_capsule_2015 %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
 # save as csv
-write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018,
-          paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"),
+write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015,
+          paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv"),
           row.names = FALSE)
 ```
 
@@ -83,7 +83,7 @@ write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018
 ```{r}
 ley3 <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule %>% filter(single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA", "QUERY___Ley3_66761_scaffold_1830_dsrB"))
 #look here to see what they hit in 2015
-ley3_2015_identity <- closestRefInfo_allScoreThresholdHits_capsule_no_2018 %>% filter(query_id %in% ley3$query_id)
+ley3_2015_identity <- closestRefInfo_allScoreThresholdHits_capsule_2015 %>% filter(query_id %in% ley3$query_id)
 ```
 
 

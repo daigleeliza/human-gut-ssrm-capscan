@@ -42,6 +42,7 @@ samples_unique_genes <- samples %>%
 # Read in closest reference leaf info; only 2015 references
 ```{r}
 closest_ref <-  read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
+closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv"))
 ```
 
 # Add a column to samples that has the single_closest_ref
@@ -52,6 +53,14 @@ samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 
 saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique_genes_with_names.rds"))
+
+
+samples_unique_genes_with_names_2015 <- samples_unique_genes %>% filter(geneLoc %in% closest_ref_2015$hit_id) %>%
+  left_join(closest_ref_2015 %>% select(hit_id, single_closest_ref),
+            by = c("geneLoc" = "hit_id")) %>% 
+  mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
+
+saveRDS(samples_unique_genes_with_names_2015, file = paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
 ```
 
 

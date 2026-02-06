@@ -48,6 +48,24 @@ sum(difference_between_higherBitandHigherRPKM>2)
 ## but all of the scores are still >200 if I select by higher RPKM. so I will go with that
 ```
 
+## get summary statistics
+```{r}
+stats_per_subject <- samples_unique_subunit_RPKM %>%
+  group_by(subject) %>%
+  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
+
+median(stats_per_subject$number_hits)
+mean(stats_per_subject$number_hits)
+
+stats_per_type <- samples_unique_subunit_RPKM %>%
+  group_by(Type) %>%
+  summarize(number_subjects=n_distinct(subject), number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
+  
+stats_overall <- samples_unique_subunit_RPKM %>%
+  summarize(number_hits=n(), median_hits_per_subject=(median(stats_per_subject$number_hits)), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
+```
+
+
 
 
 #here making new plots

@@ -15,7 +15,8 @@ closestRefInfo_allScoreThresholdHits <- read_csv(paste0(treeInfoDir, "closestRef
 
 closestRefInfo_allScoreThresholdHits_capsule <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_capsule.csv"))
 
-# only 2015 references
+
+# this was made with all the same rules, but just inserting the MSA from the end of cleanHitsCapsule.smk and not adding the 2018 sequences. I will be using it to see what the Ley3 hits correspond to in the 2015 tree.
 closestRefInfo_allScoreThresholdHits_capsule_no_2018 <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv"))
 ```
 
@@ -48,8 +49,9 @@ get_single_ref <- function(ref_list) {
 get_single_ref("['QUERY___Bilophila_wadsworthia_dsrA', 'QUERY___Bilophila_wadsworthia_dsrB', 'Bilophila_sp._4_1_30__BilSpec3', 'Bilophila_wadsworthia__BilWads6']")
 ```
 
-# add single_closest_refs for the NCBI and capsule dataframes
+# add single_closest_refs for the NCBI and CapScan dataframes
 ```{r}
+# NCBI
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef <- closestRefInfo_allScoreThresholdHits %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
@@ -58,6 +60,7 @@ write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef.csv"),
           row.names = FALSE)
 
+# CapScan
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule <- closestRefInfo_allScoreThresholdHits_capsule %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
@@ -66,9 +69,7 @@ write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"),
           row.names = FALSE)
 
-
-
-# for the capsule data with only 2015 references
+#CapScan no 2018 refs
 closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018 <- closestRefInfo_allScoreThresholdHits_capsule_no_2018 %>%
   mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
 
@@ -76,7 +77,16 @@ closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018 <- closes
 write.csv(closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018,
           paste0(dataDir,"closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"),
           row.names = FALSE)
-
-
 ```
+
+## what are the Ley3 hits?
+```{r}
+ley3 <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule %>% filter(single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA", "QUERY___Ley3_66761_scaffold_1830_dsrB"))
+#look here to see what they hit in 2015
+ley3_2015_identity <- closestRefInfo_allScoreThresholdHits_capsule_no_2018 %>% filter(query_id %in% ley3$query_id)
+```
+
+
+
+
 

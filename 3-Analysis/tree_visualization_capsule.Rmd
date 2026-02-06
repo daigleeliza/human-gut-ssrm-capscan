@@ -10,18 +10,15 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```
 
 
-# get trees
+# get tree
 ```{r}
-ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"))
-rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
-
-result_tree = read.tree(paste0(raxmlDir, "/RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"))
-rooted_result_tree <- root(result_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+rooted_ref_tree <- read.tree(paste0(dataDir, "/RAxML_labelledTree_2015_2018_noBootstrap_rooted.newick"))
 ```
 
 # get names of closest references and filter to remove gene duplicates
 ```{r}
-closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
+closest_ref <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
+
 
 # read in df that filters out gene duplicates in each sample (selects the domain with the highest bit score) 
 # this df is made in dm_abundance.Rmd
@@ -70,14 +67,15 @@ plot <- ggtree(rooted_ref_tree, layout = "circular")
     labels = c("Capsule or Stool sample", "No hits")
   ))
 
-species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
-                    "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
-                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
-                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
+species_labels <- c("QUERY___Desulfitibacter_alkalitolerans_dsrB" = "Desulfitibacter alkalitolerans",
+                    "QUERY___Bilophila_wadsworthia_dsrA" = "Bilophila wadsworthia",
+                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger",
+                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia",
                     "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
-                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
+                    "QUERY___Ley3_66761_scaffold_1025_dsrA" = "Ley3 dsrA",
+                    "QUERY___Ley3_66761_scaffold_1830_dsrB" = "Ley3 dsrB",
                     "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
+                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
 
 ggsave("capsule_tree_circular.png",
@@ -151,12 +149,13 @@ ggsave("capsule_tree_desulfovibrio.png",
 ```
 
 ```{r}
-final_plot <- (inset_firmicutes | full_plot | inset_desulfo) +
-  plot_layout(widths = c(1, 1, 1))
-final_plot
-ggsave("capsule_tree_with_insets.png",
-       width = 16, height = 10, units = "in",   # increase for larger output
-       dpi = 600)
+# need to get rid of the legend for one of them
+# final_plot <- (inset_firmicutes | full_plot | inset_desulfo) +
+#   plot_layout(widths = c(1, 1, 1))
+# final_plot
+# ggsave("capsule_tree_with_insets.png",
+#        width = 16, height = 10, units = "in",   # increase for larger output
+#        dpi = 600)
 ```
 
 

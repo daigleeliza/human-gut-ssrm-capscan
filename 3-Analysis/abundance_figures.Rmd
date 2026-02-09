@@ -487,6 +487,8 @@ hm <- ComplexHeatmap::pheatmap(matrix_norm_log,
                    show_rownames = T,
                    fontsize = 10,
                    fontsize_row = 10,
+                   show_row_dend = FALSE,
+                   show_column_dend = FALSE,
                    treeheight_col = 0,
                    treeheight_row = 0,
                    heatmap_legend_param = list(title = "Normalized log10(RPKM)"),
@@ -496,6 +498,206 @@ draw(hm, heatmap_legend_side = "right")
 
 dev.off()
 ```
+# Heatmap for capsule vs stool 
+```{r}
+#extract species, subject, RPKM columns to make a matrix that has subjects as row names and species as column names
+median_RPKM_by_sample_type <- samples_unique_subunit_RPKM %>%
+  # remove moorella thermoacetica, distance is too far
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # combine d. piger and bilophila species
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
+  group_by(subject_sample_type, combine_species) %>%
+  summarize(median_RPKM=median(RPKM))%>%
+  pivot_wider(
+    names_from = combine_species,
+    values_from = median_RPKM,
+    values_fill = 0) %>%
+    column_to_rownames(., var = "subject_sample_type")
+
+      
+# normalize ??
+subject_RPKM_sums_sample_type <- rowSums(median_RPKM_by_sample_type)
+matrix_norm_sample_type <- (median_RPKM_by_sample_type/subject_RPKM_sums_sample_type)*100 
+
+# transform  
+matrix_norm_sample_type_log <- round(log10(matrix_norm_sample_type+1),4) %>%
+  as.matrix()
+```
+
+```{r}
+row_subjects_2 <- sapply(strsplit(rownames(matrix_norm_sample_type_log), "_"), function(x) x[1])
+row_types_2 <- sapply(strsplit(rownames(matrix_norm_sample_type_log), "_"), function(x) x[2])
+
+
+
+species_labels_combine_species_no_moorella <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
+                    "Bilophila_species" = "italic(Bilophila)~species",
+                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
+col_labels_sample_type <- species_labels_combine_species_no_moorella[colnames(matrix_norm_sample_type_log)]
+col_labels_sample_type_parsed <- parse(text = col_labels_sample_type)
+```
+
+```{r}
+png("heatmap_sampleType.png", width = 8, height = 10, units = "in", res = 600)
+
+hm_sample_type <- ComplexHeatmap::pheatmap(matrix_norm_sample_type_log,
+                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample location")),
+                   color = viridis(50, begin = 0.1, end = 0.95),
+                   breaks = NA,
+                   row_split = row_types_2,
+                   row_gap = unit(2, "mm"),
+                   row_labels = row_subjects_2,
+                   labels_col = col_labels_sample_type_parsed,
+                   angle_col = "45",
+                   cluster_rows = TRUE,
+                   cluster_row_slices = FALSE,
+                   cluster_cols = TRUE,
+                   clustering_distance_rows = "euclidean",
+                   clustering_distance_cols = "euclidean",
+                   clustering_method = 'ward.D',
+                   show_colnames = T,
+                   show_rownames = T,
+                   fontsize = 10,
+                   fontsize_row = 10,
+                   show_row_dend = FALSE,
+                   show_column_dend = FALSE,
+                   treeheight_col = 0,
+                   treeheight_row = 0,
+                   heatmap_legend_param = list(title = "Normalized log10(RPKM)"),
+                   cellwidth = 50)
+
+draw(hm_sample_type, heatmap_legend_side = "right")
+
+dev.off()
+```
+# try getting these in one plot
+```{r}
+# Create stool and capsule matrices
+matrix_capsule <- matrix_norm_sample_type_log[row_types_2 == "Capsule", ]
+matrix_stool <- matrix_norm_sample_type_log[row_types_2 == "Stool", ]
+
+# Make sure columns are in the same order for both
+common_cols <- intersect(colnames(matrix_capsule), colnames(matrix_stool))
+
+subjects_capsule <- sapply(strsplit(rownames(matrix_capsule), "_"), function(x) x[1])
+subjects_stool <- sapply(strsplit(rownames(matrix_stool), "_"), function(x) x[1])
+
+# Use capsule subjects as the complete list (since it has 2 extra subjects)
+all_subjects <- subjects_capsule
+
+# Stool matrix already matches capsule dimensions, just needs to be expanded
+n_cols <- ncol(matrix_capsule)
+
+# Initialize stool matrix with zeros for all capsule subjects
+matrix_stool_complete <- matrix(0, nrow = length(all_subjects), ncol = n_cols)
+rownames(matrix_stool_complete) <- all_subjects
+colnames(matrix_stool_complete) <- colnames(matrix_stool)
+
+# Fill in the stool values that exist
+for(i in 1:length(subjects_stool)) {
+  subject <- subjects_stool[i]
+  if(subject %in% all_subjects) {
+    matrix_stool_complete[subject, ] <- matrix_stool[i, ]
+  }
+}
+
+# Capsule matrix just needs subject names
+rownames(matrix_capsule) <- subjects_capsule
+
+# Now matrix_capsule and matrix_stool_complete have the same dimensions
+# with 0 for subjects that don't appear in stool
+
+# Color functions for each group (using same scale for comparability)
+all_values <- c(as.vector(matrix_capsule), as.vector(matrix_stool_complete))
+min_val <- min(all_values, na.rm = TRUE)
+max_val <- max(all_values, na.rm = TRUE)
+
+col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 50), 
+                       viridis(50, begin = 0.1, end = 0.95))
+
+# Create custom cell function to draw split cells
+cell_func_hm <- function(j, i, x, y, width, height, fill) {
+  # Get values from both groups
+  val1 <- matrix_capsule[i, j]
+  val2 <- matrix_stool_complete[i, j]
+  
+  # Draw left half (capsule)
+  if(!is.na(val1)) {
+    grid.rect(x = x - width/4, y = y, 
+              width = width/2, height = height,
+              gp = gpar(col = NA, lwd = 0.5, fill = col_fun(val1)))
+  } else {
+    grid.rect(x = x - width/4, y = y,
+              width = width/2, height = height,
+              gp = gpar(col = NA, lwd = 0.5, fill = "gray80"))
+  }
+  
+  # Draw right half (stool)  
+  if(!is.na(val2)) {
+    grid.rect(x = x + width/4, y = y,
+              width = width/2, height = height,
+              gp = gpar(col = NA, lwd = 0.5, fill = col_fun(val2)))
+  } else {
+    grid.rect(x = x + width/4, y = y,
+              width = width/2, height = height,
+              gp = gpar(col = NA, lwd = 0.5, fill = "gray80"))
+  }
+  grid.rect(
+    x = x, y = y,
+    width = width, height = height,
+    gp = gpar(col = "white", lwd = 0.4, fill = NA))
+}
+
+# Prepare column labels
+col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorella[colnames(matrix_capsule)])
+
+```
+
+
+```{r}
+png("heatmap_split.png", width = 8, height = 10, units = "in", res = 600)
+
+hm_split <- pheatmap(
+  matrix_capsule,  # Use capsule as base (colors handled by cell_fun)
+  name = "Normalized log10(RPKM)",
+  cell_fun = cell_func_hm,
+  col = viridis(50, begin = 0.1, end = 0.95),  # For legend
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method = 'ward.D',
+
+  show_rownames = TRUE,
+  show_colnames = TRUE,
+  angle_col = "45",
+  labels_col = col_labels_parsed_split,
+  
+  show_row_dend = FALSE,
+  show_column_dend = FALSE,
+  
+  column_title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample type")),
+  
+  heatmap_legend_param = list(
+    title = "Normalized log10(RPKM)",
+    legend_height = unit(4, "cm"),
+    at = seq(min_val, max_val, length.out = 5)),
+  
+  border_color = "white"
+)
+
+draw(hm_split, heatmap_legend_side = "right")
+
+dev.off()
+```
+
 
 # Heatmap that combines all sample locations together
 ```{r}
@@ -571,7 +773,6 @@ dev.off()
 ```
 
 
-# Heatmap with subjects as the columns and species as the rows 
 
 
 

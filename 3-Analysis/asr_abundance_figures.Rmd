@@ -129,7 +129,7 @@ all_genes_counts %>%
     title = expression(paste("Count of ", italic(asrABC), " vs. ", italic(dsrAB), " gene clusters by sample location across subjects")),
     x = "Sample location",
     y = "Median gene cluster count per subject",
-    color = "Gene"
+    color = "Gene cluster"
   ) +
   guides(
     color = guide_legend(
@@ -165,7 +165,7 @@ all_genes <- bind_rows(
 # plot a box for each cluster for each type, facet by subject
 all_genes %>%
   #filter(subject==9) %>%
-  ggplot(aes(x = Type, y = log10(sum), fill = gene_cluster)) +
+  ggplot(aes(x = sample_type, y = log10(sum), fill = gene_cluster)) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8),
                width = 0.6,

@@ -1,0 +1,218 @@
+---
+title: "asrABC Capscan Analysis"
+date: "23 December 2025"
+author: "Elizabeth Daigle"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
+# read in unique dsr clusters
+```{r}
+dsr_unique <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
+```
+
+```{r}
+asr_unique <- readRDS(paste0(dataDir, "/asr_unique_cluster.rds"))
+```
+
+# Making color palettes for plots
+```{r}
+# Generate a viridis palette with 20 colors
+viridis_palette <- viridis(20)
+viridis_palette
+
+boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
+gene_colors <- c("#D98E21", "#6B8E23")
+
+jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
+```
+
+# How do counts of unique clusters and RPKMs compare to the dsrAB genes? 
+# Cannot plot total RPKM since asrABC protein has 3 subunits while dsrAB has 2.
+# Using median to account for this
+```{r}
+# Get median contigs for each subject
+plot_count_dsr <- dsr_unique %>%
+# find number of unique clusters for each sample
+  group_by(subject, sample, Type) %>%
+  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
+  group_by(subject, Type) %>% 
+  summarize(median_gene_set = median(n_contigs))
+
+plot_count_asr <- asr_unique %>%
+  group_by(subject, sample, Type) %>%
+  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
+  group_by(subject, Type) %>%
+  summarize(median_gene_set = median(n_contigs))
+
+# Get median RPKM across contigs in each sample
+plot_RPKM_dsr_median <- dsr_unique %>%
+  group_by(subject, sample, Type, contig) %>%
+  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75)) %>%
+  group_by(sample) %>%
+  summarize(sum=sum(median_RPKM)) %>%
+  left_join(dsr_unique %>%
+              select(sample, subject, Type, sample_type) %>%
+              distinct(), by = "sample")
+
+plot_RPKM_asr_median <- asr_unique %>%
+  group_by(subject, sample, Type, contig) %>%
+  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75)) %>%
+  group_by(sample) %>%
+  summarize(sum=sum(median_RPKM)) %>%
+  left_join(asr_unique %>%
+              select(sample, subject, Type, sample_type) %>%
+              distinct(), by = "sample")
+  
+```
+
+```{r}
+plot_count_asr %>%
+  ggplot(aes(x = Type, y = median_gene_set)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(color = Type),
+              alpha = 0.7, 
+              size = 3,
+              position = position_jitter(width = 0.15, height = 0)) +
+  scale_color_manual(values = jitter_colors) +
+  labs(
+    title = "Count of asrABC gene clusters across sample location",
+    x = "Sample Location",
+    y = "Median gene cluster count per subject",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 24, hjust = 0.5))
+
+```
+
+#box and jitter of both gene clusters
+```{r}
+# combine asr and dsr data
+all_genes_counts <- bind_rows(
+  dsr = plot_count_dsr,
+  asr = plot_count_asr,
+  .id = "gene_cluster")
+
+# plot a box for each gene for each type, facet by subject
+all_genes_counts %>%
+  ggplot(aes(x = Type, y = median_gene_set, fill = gene_cluster)) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8),
+               width = 0.6,
+               outlier.shape = NA) +
+  # Jitter points with viridis colors
+  geom_jitter(aes(color = gene_cluster),
+              alpha = 0.7, 
+              size = 1.6,
+              position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
+  scale_color_manual(values = gene_colors) +
+  scale_fill_manual(values = c("transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  labs(
+    title = expression(paste("Count of ", italic(asrABC), " vs. ", italic(dsrAB), " gene clusters by sample location across subjects")),
+    x = "Sample location",
+    y = "Median gene cluster count per subject",
+    color = "Gene"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 4)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    legend.position = "right",
+    legend.text  = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 12),
+    plot.title = element_text(size = 18, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5))
+
+ggsave("unique_asrABC_v_dsrAB_count.png",
+       width = 10, height = 6, units = "in",   # increase for larger output
+       dpi = 600)
+```
+#box and jitter of both gene clusters
+```{r}
+# combine asr and dsr data
+all_genes <- bind_rows(
+  dsr = plot_RPKM_dsr_median,
+  asr = plot_RPKM_asr_median,
+  .id = "gene_cluster")
+
+# plot a box for each cluster for each type, facet by subject
+all_genes %>%
+  #filter(subject==9) %>%
+  ggplot(aes(x = Type, y = log10(sum), fill = gene_cluster)) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8),
+               width = 0.6,
+               outlier.shape = NA) +
+  # Jitter points with viridis colors
+  geom_jitter(aes(color = gene_cluster),
+              alpha = 0.7, 
+              size = 1.6,
+              position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
+  scale_color_manual(values = gene_colors, labels = list(expression(italic(asrABC)), expression(italic(dsrAB)), parse = TRUE)) +
+  scale_fill_manual(values = c("transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_wrap(~ subject, 
+             #scales = "free_y",
+             strip.position = "top",
+             labeller = labeller(subject = function(x) paste("Subject", x))) +
+  labs(
+    title = expression(paste("Abundance of ", italic(asrABC), " vs. ", italic(dsrAB), " by sample location across subjects")),
+    subtitle = "Each point represents a sample",
+    x = "Sample location",
+    #median was taken across a contig to account for subunits
+    y = "log10(sum of median RPKMs)",
+    color = "Gene cluster"
+  ) +
+  theme_bw() +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 4)
+    )) +
+  theme(
+    axis.text.x = element_text(size = 11, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.position = "right",
+    legend.text  = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 12),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5))
+
+#
+#"median_RPKM_asrABC_v_dsrAB_sub9.png"
+ggsave("median_RPKM_asrABC_v_dsrAB.png",
+       width = 11, height = 8, units = "in",   # increase for larger output
+       dpi = 600)
+```
+

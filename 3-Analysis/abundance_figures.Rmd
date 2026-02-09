@@ -104,7 +104,7 @@ plot_count_dsr <- samples_unique_subunit_RPKM %>%
 
 plot_count_dsr %>%
   ggplot(aes(x = Type, y = median_gene_set)) +
-  geom_boxplot() + 
+  geom_boxplot(outlier.shape = NA) + 
   geom_jitter(aes(color = Type),
               alpha = 0.7, 
               size = 3,
@@ -189,7 +189,7 @@ samples_unique_subunit_RPKM %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
   geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
             alpha = 0.9, size = 2,
             position = position_jitterdodge(
@@ -226,7 +226,7 @@ samples_unique_subunit_RPKM %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
   ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
   geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Set),
             alpha = 0.9, size = 2,
             position = position_jitterdodge(
@@ -268,7 +268,7 @@ samples_unique_subunit_RPKM %>%
 samples_unique_subunit_RPKM %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
             alpha = 0.9, size = 2,
             position = position_jitterdodge(
@@ -321,7 +321,7 @@ samples_unique_subunit_RPKM %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
             alpha = 0.9, size = 1,
             position = position_jitterdodge(
@@ -376,7 +376,7 @@ samples_unique_subunit_RPKM %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8) +
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Set),
             alpha = 0.9, size = 1,
             position = position_jitterdodge(
@@ -418,108 +418,162 @@ ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
 ```
 
 # HEATMAPPING
+## facet by sample location
 ```{r}
 #extract species, subject, RPKM columns to make a matrix that has subjects as row names and species as column names
-median_RPKM_by_subject <- samples_unique_subunit_RPKM %>%
+median_RPKM_by_subject_type <- samples_unique_subunit_RPKM %>%
+  # remove moorella thermoacetica, distance is too far
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # combine d. piger and bilophila species
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
   mutate(subject_type=paste(subject,Type, sep = "_")) %>%
-  group_by(subject_type, single_closest_ref) %>%
-  summarize(median_RPKM=round(median(RPKM),2))%>%
+  group_by(subject_type, combine_species) %>%
+  summarize(median_RPKM=median(RPKM))%>%
   pivot_wider(
-    names_from = single_closest_ref,
+    names_from = combine_species,
     values_from = median_RPKM,
     values_fill = 0) %>%
     column_to_rownames(., var = "subject_type")
 
       
 # normalize ??
-subject_RPKM_sums <- rowSums(median_RPKM_by_subject)
-matrix_norm <- (median_RPKM_by_subject/subject_RPKM_sums)*100 
+subject_RPKM_sums <- rowSums(median_RPKM_by_subject_type)
+matrix_norm <- (median_RPKM_by_subject_type/subject_RPKM_sums)*100 
 
 # transform  
-matrix_norm_log <- (log10(matrix_norm+1)) %>%
+matrix_norm_log <- round(log10(matrix_norm+1),4) %>%
   as.matrix()
-matrix_norm_log[is.infinite(matrix_norm_log)] <- NA
 ```
 
 ```{r}
-png("met_heatmap.png", width = 8, height = 9.5, units = "in", res = 300)
+row_subjects <- sapply(strsplit(rownames(matrix_norm_log), "_"), function(x) x[1])
+row_types <- sapply(strsplit(rownames(matrix_norm_log), "_"), function(x) x[2])
+type_order <- c("Capsule 1", "Capsule 2", "Capsule 3", "Capsule 4", "Stool")
+row_types <- factor(row_types, levels = type_order)
+
+
+species_labels_combine_species_no_moorella <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
+                    "Bilophila_species" = "italic(Bilophila)~species",
+                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
+col_labels <- species_labels_combine_species_no_moorella[colnames(matrix_norm_log)]
+col_labels_parsed <- parse(text = col_labels)
+```
+
+```{r}
+png("heatmap_sampleLocation.png", width = 8, height = 10, units = "in", res = 600)
+
 hm <- ComplexHeatmap::pheatmap(matrix_norm_log,
-                   main = "Normalized log2 metabolite intensities across samples",
+                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample location")),
                    color = viridis(50, begin = 0.1, end = 0.95),
                    breaks = NA,
+                   row_split = row_types,
+                   row_gap = unit(2, "mm"),
+                   row_labels = row_subjects,
+                   labels_col = col_labels_parsed,
+                   angle_col = "45",
+                   cluster_rows = TRUE,
+                   cluster_row_slices = FALSE,
+                   cluster_cols = TRUE,
+                   clustering_distance_rows = "euclidean",
+                   clustering_distance_cols = "euclidean",
+                   clustering_method = 'ward.D',
+                   show_colnames = T,
+                   show_rownames = T,
+                   fontsize = 10,
+                   fontsize_row = 10,
+                   treeheight_col = 0,
+                   treeheight_row = 0,
+                   heatmap_legend_param = list(title = "Normalized log10(RPKM)"),
+                   cellwidth = 50)
+
+draw(hm, heatmap_legend_side = "right")
+
+dev.off()
+```
+
+# Heatmap that combines all sample locations together
+```{r}
+median_RPKM_by_subject <- samples_unique_subunit_RPKM %>%
+  # remove moorella thermoacetica, distance is too far
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # combine d. piger and bilophila species
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  group_by(subject, combine_species) %>%
+  summarize(median_RPKM=median(RPKM))%>%
+  pivot_wider(
+    names_from = combine_species,
+    values_from = median_RPKM,
+    values_fill = 0) %>%
+    column_to_rownames(., var = "subject")
+
+      
+# normalize ??
+subject_RPKM_sums_overall <- rowSums(median_RPKM_by_subject)
+matrix_norm_overall <- (median_RPKM_by_subject/subject_RPKM_sums_overall)*100 
+
+# transform  
+matrix_norm_log_overall <- round(log10(matrix_norm_overall+1),4) %>%
+  as.matrix()
+```
+
+```{r}
+species_labels_combine_species_no_moorella <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
+                    "Bilophila_species" = "italic(Bilophila)~species",
+                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
+col_labels_overall <- species_labels_combine_species_no_moorella[colnames(matrix_norm_log_overall)]
+col_labels_overall_parsed <- parse(text = col_labels_overall)
+```
+
+```{r}
+png("heatmap_overall.png", width = 14, height = 9.5, units = "in", res = 600)
+
+hm_overall <- ComplexHeatmap::pheatmap(matrix_norm_log_overall,
+                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species")),
+                   color = viridis(50, begin = 0.1, end = 0.95),
+                   breaks = NA,
+                   labels_col = col_labels_overall_parsed,
+                   fontsize_col = 12,
+                   angle_col = "45",
                    cluster_rows = TRUE,
                    cluster_cols = TRUE,
                    clustering_distance_rows = "euclidean",
                    clustering_distance_cols = "euclidean",
                    clustering_method = 'ward.D',
-                   show_colnames = F,
-                   annotation_names_col = F,
+                   show_colnames = T,
+                   show_rownames = T,
+                   row_title_gp = gpar(fontsize = 12),
+                   row_names_side = "left",
+                   row_title = "Subjects",
+                   row_title_side = "left",
                    fontsize = 10,
-                   fontsize_row = 3,
-                   #top_annotation = sample_ann_heatmap,
-                   #right_annotation = met_ann_heatmap,
+                   fontsize_row = 10,
+                   show_row_dend = FALSE,
+                   show_column_dend = FALSE,
                    treeheight_col = 0,
                    treeheight_row = 0,
-                   heatmap_legend_param = list(title = "Norm log2(intensity)"))
+                   heatmap_legend_param = list(title = "Normalized log10(RPKM)"))
 
-draw(hm, annotation_legend_side = "right", heatmap_legend_side = "right")
+draw(hm_overall, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "mm"))
 
 dev.off()
 ```
-```{r}
-# Extract Type from rownames (everything after the underscore)
-row_types <- sub(".*_", "", rownames(matrix_norm_log))
 
-# Create color function with gray for NA
-col_fun <- colorRamp2(
-  seq(min(matrix_norm_log, na.rm = TRUE), 
-      max(matrix_norm_log, na.rm = TRUE), 
-      length.out = 50),
-  viridis(50, begin = 0.1, end = 0.95)
-)
 
-# Create heatmap with row splitting by Type
+# Heatmap with subjects as the columns and species as the rows 
 
-hm <- Heatmap(
-  matrix_norm_log,
-  name = "Log10(Norm %)",
-  col = col_fun,
-  na_col = "gray80",  # Color for NA values
-  
-  # Split rows into 4 panels based on Type
-  row_split = row_types,
-  row_title_rot = 0,
-  row_gap = unit(2, "mm"),
-  
-  # Clustering
-  cluster_rows = TRUE,
-  cluster_columns = TRUE,
-  clustering_distance_rows = "euclidean",
-  clustering_distance_columns = "euclidean",
-  clustering_method_rows = "ward.D",
-  clustering_method_columns = "ward.D",
-  
-  # Display options
-  show_column_names = FALSE,
-  show_row_names = TRUE,
-  row_names_gp = gpar(fontsize = 8),
-  column_names_gp = gpar(fontsize = 8),
-  
-  # Tree heights
-  row_dend_width = unit(20, "mm"),
-  column_dend_height = unit(20, "mm"),
-  
-  # Legend
-  heatmap_legend_param = list(
-    title = "Log10(Norm %)",
-    legend_height = unit(4, "cm"),
-    at = seq(min(matrix_norm_log, na.rm = TRUE), 
-             max(matrix_norm_log, na.rm = TRUE), 
-             length.out = 5)
-  )
-)
 
-draw(hm, heatmap_legend_side = "right")
-```
+
 
 

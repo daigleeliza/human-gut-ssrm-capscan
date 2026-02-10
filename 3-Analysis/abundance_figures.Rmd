@@ -416,6 +416,69 @@ ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
        width = 16, height = 14, units = "in",   # increase for larger output
        dpi = 600)
 ```
+## sampling variability for subject 9 
+```{r}
+samples_unique_subunit_RPKM %>%
+  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
+  filter(subject == 9 ) %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger", 
+                                            "uncultured_bacterium__EF645667",
+                                            "Bilophila_species",
+                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
+                                            "Gordonibacter_pamelaeae__GrdPame5",
+                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  ggplot(aes(x = Type, y = log10(RPKM))) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
+  geom_jitter(aes(color = Set),
+            alpha = 0.9, size = 2,
+            position = position_jitterdodge(
+        jitter.width = 0.5,
+        dodge.width = 0.8)) +
+  scale_color_manual(values = set_colors, 
+                     labels = c("2" = "Afternoon day 1", 
+                                "3" = "After dinner day 1", 
+                                "4" = "Afternoon day 2", 
+                                "5" = "After dinner day 2", 
+                                "stool" = "Stool")) +
+  #get rid of box fill
+  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  facet_wrap(~combine_species, 
+             labeller = labeller(combine_species = label_parsed)) +
+             #labeller = labeller(combine_species = species_labels_combine_species)) +
+  labs(
+    title = expression(paste("Subject 9 ", italic("dsrAB"), " RPKMs by sampling event")),
+    x = "Sample location",
+    y = "log10(RPKM)",
+    color = "Sample collection time"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 10),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
+    plot.title = element_text(size = 18, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5),
+    plot.margin = margin(t=5, b=5, l = 20, r=10)
+  )
+
+ggsave("dsrAB_RPKM_combine_species_wCollectionTimes_sub9.png",
+       width = 12, height = 6, units = "in",   # increase for larger output
+       dpi = 600)
+
+```
+
 
 # HEATMAPPING
 ## facet by sample location

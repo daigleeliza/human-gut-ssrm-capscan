@@ -545,9 +545,11 @@ col_labels_sample_type_parsed <- parse(text = col_labels_sample_type)
 ```
 
 ```{r}
-png("heatmap_sampleType.png", width = 8, height = 10, units = "in", res = 600)
+png("heatmap_sampleType.png", width = 10, height = 10, units = "in", res = 600)
+
 
 hm_sample_type <- ComplexHeatmap::pheatmap(matrix_norm_sample_type_log,
+                   name = "hm_sample_type",
                    main = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample location")),
                    color = viridis(50, begin = 0.1, end = 0.95),
                    breaks = NA,
@@ -564,20 +566,26 @@ hm_sample_type <- ComplexHeatmap::pheatmap(matrix_norm_sample_type_log,
                    clustering_method = 'ward.D',
                    show_colnames = T,
                    show_rownames = T,
-                   fontsize = 10,
-                   fontsize_row = 10,
+                   fontsize = 12,
+                   fontsize_row = 12,
                    show_row_dend = FALSE,
                    show_column_dend = FALSE,
                    treeheight_col = 0,
                    treeheight_row = 0,
-                   heatmap_legend_param = list(title = "Normalized log10(RPKM)"),
-                   cellwidth = 50)
+                   heatmap_legend_param = list(title = "Normalized log10(RPKM)",
+                                               title_gp  = gpar(fontsize = 14), 
+                                               labels_gp = gpar(fontsize = 12),
+                                               legend_height = unit(4, "cm")),
+                   cellwidth = 50
+                   )
 
-draw(hm_sample_type, heatmap_legend_side = "right")
+draw(hm_sample_type, heatmap_legend_side = "right", padding = unit(c(5, 45, 5, 40), "mm"))
+
 
 dev.off()
 ```
 # try getting these in one plot
+# major lifting from claude and chat
 ```{r}
 # Create stool and capsule matrices
 matrix_capsule <- matrix_norm_sample_type_log[row_types_2 == "Capsule", ]
@@ -662,10 +670,10 @@ col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorel
 
 
 ```{r}
-png("heatmap_split.png", width = 8, height = 10, units = "in", res = 600)
+png("heatmap_split.png", width = 8, height = 6, units = "in", res = 600)
 
 hm_split <- pheatmap(
-  matrix_capsule,  # Use capsule as base (colors handled by cell_fun)
+  matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)
   name = "Normalized log10(RPKM)",
   cell_fun = cell_func_hm,
   col = viridis(50, begin = 0.1, end = 0.95),  # For legend
@@ -684,16 +692,20 @@ hm_split <- pheatmap(
   show_column_dend = FALSE,
   
   column_title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample type")),
+  row_names_side = "left",
+  row_title = "Subject",
+  row_title_side = "left",
   
   heatmap_legend_param = list(
     title = "Normalized log10(RPKM)",
     legend_height = unit(4, "cm"),
-    at = seq(min_val, max_val, length.out = 5)),
+    at = seq(min_val, max_val, length.out = 5),
+    labels = sprintf("%.2f", seq(min_val, max_val, length.out = 5))),
   
   border_color = "white"
 )
 
-draw(hm_split, heatmap_legend_side = "right")
+draw(hm_split, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "mm"))
 
 dev.off()
 ```
@@ -755,17 +767,20 @@ hm_overall <- ComplexHeatmap::pheatmap(matrix_norm_log_overall,
                    clustering_method = 'ward.D',
                    show_colnames = T,
                    show_rownames = T,
-                   row_title_gp = gpar(fontsize = 12),
+                   row_title_gp = gpar(fontsize = 16),
                    row_names_side = "left",
-                   row_title = "Subjects",
+                   row_title = "Subject",
                    row_title_side = "left",
-                   fontsize = 10,
-                   fontsize_row = 10,
+                   fontsize = 16,
+                   fontsize_row = 14,
                    show_row_dend = FALSE,
                    show_column_dend = FALSE,
                    treeheight_col = 0,
                    treeheight_row = 0,
-                   heatmap_legend_param = list(title = "Normalized log10(RPKM)"))
+                   heatmap_legend_param = list(title = "Normalized log10(RPKM)",
+                                               title_gp  = gpar(fontsize = 14), 
+                                               labels_gp = gpar(fontsize = 12),
+                                               legend_height = unit(4, "cm")))
 
 draw(hm_overall, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "mm"))
 

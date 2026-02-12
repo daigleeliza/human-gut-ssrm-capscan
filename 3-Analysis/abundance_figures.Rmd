@@ -50,12 +50,18 @@ sum(difference_between_higherBitandHigherRPKM>2)
 
 ## get summary statistics
 ```{r}
-stats_per_subject <- samples_unique_subunit_RPKM %>%
-  group_by(subject) %>%
-  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
+# for subject-level 
+samples_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+  group_by(contig, sample) %>%
+  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  ungroup()
+```
 
-median(stats_per_subject$number_hits)
-mean(stats_per_subject$number_hits)
+
+```{r}
+stats_per_subject <- samples_unique_subunit_RPKM %>%
+  group_by(subject, sample_type) %>%
+  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
 
 stats_per_type <- samples_unique_subunit_RPKM %>%
   group_by(Type) %>%
@@ -691,7 +697,8 @@ min_val <- min(all_values, na.rm = TRUE)
 max_val <- max(all_values, na.rm = TRUE)
 
 col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 50), 
-                       viridis(50, begin = 0.1, end = 0.95))
+                       viridis(50, begin = 0.95, end = 0.1))
+
 
 # Create custom cell function to draw split cells
 cell_func_hm <- function(j, i, x, y, width, height, fill) {
@@ -700,26 +707,27 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
   val2 <- matrix_stool_complete[i, j]
   
   # Draw left half (capsule)
-  if(!is.na(val1)) {
-    grid.rect(x = x - width/4, y = y, 
-              width = width/2, height = height,
-              gp = gpar(col = NA, lwd = 0.5, fill = col_fun(val1)))
-  } else {
-    grid.rect(x = x - width/4, y = y,
-              width = width/2, height = height,
-              gp = gpar(col = NA, lwd = 0.5, fill = "gray80"))
-  }
+
+  fill1 <- if (val1 == 0) {
+      "gray90"
+    } else {
+     col_fun(val1)
+   }
+  grid.rect(x = x - width/4, y = y, 
+            width = width/2, height = height,
+            gp = gpar(col = NA, lwd = 0.5, fill = fill1))
+  
   
   # Draw right half (stool)  
-  if(!is.na(val2)) {
-    grid.rect(x = x + width/4, y = y,
-              width = width/2, height = height,
-              gp = gpar(col = NA, lwd = 0.5, fill = col_fun(val2)))
-  } else {
-    grid.rect(x = x + width/4, y = y,
-              width = width/2, height = height,
-              gp = gpar(col = NA, lwd = 0.5, fill = "gray80"))
-  }
+  fill2 <- if (val2 == 0) {
+      "gray90"
+    } else {
+      col_fun(val2)
+    }
+  grid.rect(x = x + width/4, y = y,
+            width = width/2, height = height,
+            gp = gpar(col = NA, lwd = 0.5, fill = fill2))
+ 
   grid.rect(
     x = x, y = y,
     width = width, height = height,
@@ -739,7 +747,7 @@ hm_split <- pheatmap(
   matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)
   name = "Normalized log10(RPKM)",
   cell_fun = cell_func_hm,
-  col = viridis(50, begin = 0.1, end = 0.95),  # For legend
+  col = viridis(50, begin = 0.95, end = 0.1),  # For legend
   cluster_rows = TRUE,
   cluster_cols = TRUE,
   clustering_distance_rows = "euclidean",

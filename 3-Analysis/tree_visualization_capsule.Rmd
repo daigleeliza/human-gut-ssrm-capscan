@@ -237,7 +237,7 @@ inset_firmicutes_2015 <- firmicutes_subset_tree_plot_2015 %<+%
                   box.padding = 0.1,
                   segment.size = 0.25,
                   segment.linetype = "dashed") +
-  theme(legend.position = "left",
+  theme(legend.position = "right",
         plot.margin = margin(5, 10, 5, 5)) +  # Right margin for labels
   hexpand(0.2, direction = 1)
   

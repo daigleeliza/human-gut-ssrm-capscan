@@ -19,12 +19,14 @@ samples_unique_gene_casette <- readRDS(paste0(dataDir, "/samples_unique_genes_wi
 # choose a representative subunit
 ```{r}
 samples_unique_subunit_score <- samples_unique_gene_casette %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
   slice_max(Score, n = 1, with_ties = FALSE) %>%
   ungroup()
 
 
 samples_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
   ungroup()
@@ -50,25 +52,30 @@ sum(difference_between_higherBitandHigherRPKM>2)
 
 ## get summary statistics
 ```{r}
-# for subject-level 
-samples_unique_subunit_RPKM <- samples_unique_gene_casette %>%
-  group_by(contig, sample) %>%
+# for subject-level, we want to know how many unique hits they have within the entire coassembly (do not double-count contigs that show up in different samples)
+subject_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  group_by(subject, contig) %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
-  ungroup()
+  group_by(subject, sample_type) %>%
+  summarize(number_hits=n()) %>%
+  group_by(sample_type) %>%
+  summarize(median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75))
 ```
 
 
 ```{r}
-stats_per_subject <- samples_unique_subunit_RPKM %>%
+stats_per_subject_by_sample <- samples_unique_subunit_RPKM %>%
   group_by(subject, sample_type) %>%
   summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
 
+##figure 4A
 stats_per_type <- samples_unique_subunit_RPKM %>%
   group_by(Type) %>%
   summarize(number_subjects=n_distinct(subject), number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
   
 stats_overall <- samples_unique_subunit_RPKM %>%
-  summarize(number_hits=n(), median_hits_per_subject=(median(stats_per_subject$number_hits)), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
+  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
 
 stats_over_collection_time <- samples_unique_subunit_RPKM %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13, "Stool")) %>%

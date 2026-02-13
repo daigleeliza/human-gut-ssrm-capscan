@@ -39,6 +39,7 @@ jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```{r}
 # Get median contigs for each subject
 plot_count_dsr <- dsr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
 # find number of unique clusters for each sample
   group_by(subject, sample, Type) %>%
   summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
@@ -53,6 +54,7 @@ plot_count_asr <- asr_unique %>%
 
 # Get median RPKM across contigs in each sample
 plot_RPKM_dsr_median <- dsr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(subject, sample, Type, contig) %>%
   summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75)) %>%
   group_by(sample) %>%

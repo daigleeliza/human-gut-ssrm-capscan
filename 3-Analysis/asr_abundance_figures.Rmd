@@ -218,3 +218,116 @@ ggsave("median_RPKM_asrABC_v_dsrAB.png",
        dpi = 600)
 ```
 
+```{r}
+t_test_results <- all_genes %>%
+  mutate(log_sum = log10(sum)) %>%
+  group_by(sample_type, subject) %>%
+  summarise(
+    t_test = list(
+      tryCatch(
+        t.test(log_sum ~ gene_cluster),
+        error = function(e) NULL
+      )
+    ),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    statistic    = sapply(t_test, function(x) if (!is.null(x)) x$statistic  else NA),
+    p_value      = sapply(t_test, function(x) if (!is.null(x)) x$p.value    else NA),
+    df           = sapply(t_test, function(x) if (!is.null(x)) x$parameter  else NA),
+    mean_asr     = sapply(t_test, function(x) if (!is.null(x)) x$estimate[1] else NA),
+    mean_dsr     = sapply(t_test, function(x) if (!is.null(x)) x$estimate[2] else NA)
+  ) %>%
+  select(-t_test) %>%
+  mutate(p_adj = p.adjust(p_value, method = "BH"))
+
+print(t_test_results)
+
+library(ggsignif)
+
+# Create annotation dataframe from t-test results
+signif_labels <- t_test_results %>%
+  mutate(label = case_when(
+    p_adj < 0.001 ~ "***",
+    p_adj < 0.01  ~ "**",
+    p_adj < 0.05  ~ "*",
+    TRUE          ~ "ns"
+  ))
+
+# Get y position for brackets (just above the max value per group)
+y_positions <- all_genes %>%
+  mutate(log_sum = log10(sum)) %>%
+  group_by(sample_type, subject) %>%
+  summarise(y_pos = max(log_sum, na.rm = TRUE) + 0.2, .groups = "drop")
+
+signif_labels <- signif_labels %>%
+  left_join(y_positions, by = c("sample_type", "subject"))
+```
+
+```{r}
+all_genes <- bind_rows(
+  dsr = plot_RPKM_dsr_median,
+  asr = plot_RPKM_asr_median,
+  .id = "gene_cluster")
+
+# plot a box for each cluster for each type, facet by subject
+all_genes %>%
+  #filter(subject==9) %>%
+  ggplot(aes(x = sample_type, y = log10(sum), fill = gene_cluster)) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8),
+               width = 0.6,
+               outlier.shape = NA) +
+  # Jitter points with viridis colors
+  geom_jitter(aes(color = gene_cluster),
+              alpha = 0.7, 
+              size = 1.6,
+              position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
+  scale_color_manual(values = gene_colors, labels = list(expression(italic(asrABC)), expression(italic(dsrAB)), parse = TRUE)) +
+  scale_fill_manual(values = c("transparent", "transparent"), guide = "none") +
+  geom_signif(
+    data = signif_labels,
+    aes(
+      xmin = sample_type,     # same x since comparing within sample_type
+      xmax = sample_type,
+      annotations = label,
+      y_position = y_pos
+    ),
+    tip_length = 0,
+    manual = TRUE,
+    textsize = 5,
+    inherit.aes = FALSE
+  ) +
+  guides(fill = "none") +
+  facet_wrap(~ subject, 
+             #scales = "free_y",
+             strip.position = "top",
+             labeller = labeller(subject = function(x) paste("Subject", x))) +
+  labs(
+    title = expression(paste("Abundance of ", italic(asrABC), " vs. ", italic(dsrAB), " by sample location across subjects")),
+    subtitle = "Each point represents a sample",
+    x = "Sample location",
+    #median was taken across a contig to account for subunits
+    y = "log10(sum of median RPKMs)",
+    color = "Gene cluster"
+  ) +
+  theme_bw() +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 4)
+    )) +
+  theme(
+    axis.text.x = element_text(size = 11, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.position = "right",
+    legend.text  = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 12),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5))
+```
+

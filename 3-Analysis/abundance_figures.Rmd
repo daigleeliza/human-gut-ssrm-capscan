@@ -50,18 +50,51 @@ sum(difference_between_higherBitandHigherRPKM>2)
 ## but all of the scores are still >200 if I select by higher RPKM. so I will go with that
 ```
 
-## get summary statistics
+## get summary statistics for text
 ```{r}
-# for subject-level, we want to know how many unique hits they have within the entire coassembly (do not double-count contigs that show up in different samples)
-subject_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+# we want to know the number of unique hits in a coassembly (do not double-count contigs that show up in different samples)
+# so select one subunit per **coassembly**; this is accomplished by grouping by subject and contig
+unique_hits_summary <- samples_unique_gene_casette %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  group_by(subject, contig) %>%
+  group_by(subject, contig, sample_type) %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  # find the number of unique hits for each subject for stool and capsule
   group_by(subject, sample_type) %>%
   summarize(number_hits=n()) %>%
+  # take the median
   group_by(sample_type) %>%
-  summarize(median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75))
+  summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75))
 ```
+
+## get summary statistics for figure 4A 
+```{r}
+capsule_type_summary <- samples_unique_subunit_RPKM %>%
+  # find the number of genes in each sample and the sum of their RPKMs
+  group_by(sample, subject, Type) %>%
+  summarise(n_genes = n(), 
+            total_rpkm = sum(RPKM)) %>%
+  ungroup() %>% 
+  # find the median number of genes and median RPKM sum for all of the samples for a given subject and Type
+  # need this center chunk because different subjects have different numbers of samples!
+  group_by(subject, Type) %>%
+  summarise(n_median = median(n_genes),
+            median_total_rpkm = median(total_rpkm)) %>%
+  ungroup() %>%
+  # find the median number of genes and median RPKM sum for each Type
+  group_by(Type) %>% 
+  summarise(n_subjects=n_distinct(subject),
+            n_median_all_subj = round(median(n_median),2),
+            n_25pct = round(quantile(n_median, probs = 0.25),2),
+            n_75pct = round(quantile(n_median, probs = 0.75),2),
+            median_rpkm_all_subj = round(median(median_total_rpkm),2),
+            rpkm_25pct = round(quantile(median_total_rpkm, probs = 0.25),2),
+            rpkm_75pct = round(quantile(median_total_rpkm, probs = 0.75),2)) %>% 
+  mutate(n_genes_per_sample = paste0(n_median_all_subj, " (", n_25pct, ", ", n_75pct, ")"),
+         median_rpkm_per_sample = paste0(median_rpkm_all_subj, " (", rpkm_25pct, ", ", rpkm_75pct, ")")) %>%
+  select(Type, n_subjects, n_genes_per_sample, median_rpkm_per_sample)
+
+```
+
 
 
 ```{r}
@@ -69,7 +102,6 @@ stats_per_subject_by_sample <- samples_unique_subunit_RPKM %>%
   group_by(subject, sample_type) %>%
   summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
 
-##figure 4A
 stats_per_type <- samples_unique_subunit_RPKM %>%
   group_by(Type) %>%
   summarize(number_subjects=n_distinct(subject), number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
@@ -431,7 +463,7 @@ ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
 ```
 ## sampling variability for subject 9 
 ```{r}
-samples_unique_subunit_RPKM %>%
+plot_subj9 <- samples_unique_subunit_RPKM %>%
   #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
@@ -447,7 +479,23 @@ samples_unique_subunit_RPKM %>%
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
                                             "Gordonibacter_pamelaeae__GrdPame5",
                                             "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) 
+
+#Jess' code suggestion?
+ggplot(plot_subj9, 
+       aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = Type)) + 
+  geom_point() + 
+  geom_line() + 
+  facet_grid(combine_species~Type)
+
+
+
+
+
+
+
+##Eliza's code
+# %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +

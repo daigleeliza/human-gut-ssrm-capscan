@@ -690,6 +690,11 @@ rownames(matrix_capsule) <- subjects_capsule
 # Now matrix_capsule and matrix_stool_complete have the same dimensions
 # with 0 for subjects that don't appear in stool
 
+species_order <- names(species_labels_combine_species_no_moorella)
+
+matrix_capsule <- matrix_capsule[, species_order]
+matrix_stool_complete <- matrix_stool_complete[, species_order]
+
 # Color functions for each group (using same scale for comparability)
 all_values <- c(as.vector(matrix_capsule), as.vector(matrix_stool_complete))
 min_val <- min(all_values, na.rm = TRUE)
@@ -752,7 +757,6 @@ hm_split <- pheatmap(
   cluster_rows = TRUE,
   cluster_cols = FALSE,
   clustering_distance_rows = "euclidean",
-  clustering_distance_cols = "euclidean",
   clustering_method = 'ward.D',
 
   show_rownames = TRUE,
@@ -807,10 +811,10 @@ matrix_log_overall <- round(log10(median_RPKM_by_subject+1),4) %>%
 ```
 
 ```{r}
-species_labels_combine_species_no_moorella <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+species_labels_combine_species_no_moorella <- c("uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
                     "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
                     "Bilophila_species" = "italic(Bilophila)~species",
-                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
                     "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
 col_labels_overall <- species_labels_combine_species_no_moorella[colnames(matrix_log_overall)]

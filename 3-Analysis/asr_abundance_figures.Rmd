@@ -225,6 +225,7 @@ hist(plot_RPKM_dsr_median$sum)
 hist(plot_RPKM_asr_median$sum)
 # definitely not
 wilcoxon_dsr_asr = all_genes %>% 
+  # had to choose subjects with both genes present in stool and capsule
   filter(subject %in% c(2,3,6,7,9,11,12,13,14)) %>%
   group_by(subject, sample_type) %>% 
   do(w = wilcox.test(sum~gene_cluster, data=.)) %>% 

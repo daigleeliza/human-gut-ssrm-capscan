@@ -160,7 +160,7 @@ all_genes_counts %>%
                outlier.shape = NA) +
   # Jitter points with viridis colors
   geom_jitter(aes(color = gene_cluster),
-              alpha = 0.7, 
+              alpha = 0.9, 
               size = 1.6,
               position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
   scale_color_manual(values = gene_colors) +
@@ -174,20 +174,20 @@ all_genes_counts %>%
   ) +
   guides(
     color = guide_legend(
-      override.aes = list(size = 4)
+      override.aes = list(size = 5)
     )) +
   theme_bw() +
   theme(
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 14, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 14),
     axis.title.x = element_text(size = 16),
     axis.title.y = element_text(size = 16),
     legend.position = "right",
-    legend.text  = element_text(size = 12),
+    legend.text  = element_text(size = 14),
     legend.title = element_text(size = 14),
     strip.placement = "outside",
     strip.background = element_blank(),
-    strip.text.x = element_text(size = 12),
+    strip.text.x = element_text(size = 14),
     plot.title = element_text(size = 18, hjust = 0.5),
     plot.subtitle = element_text(size = 16, hjust = 0.5))
 
@@ -213,7 +213,7 @@ all_genes %>%
                outlier.shape = NA) +
   # Jitter points with viridis colors
   geom_jitter(aes(color = gene_cluster),
-              alpha = 0.7, 
+              alpha = 0.8, 
               size = 1.6,
               position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
   scale_color_manual(values = gene_colors, labels = list(expression(italic(asrABC)), expression(italic(dsrAB)), parse = TRUE)) +
@@ -234,11 +234,11 @@ all_genes %>%
   theme_bw() +
   guides(
     color = guide_legend(
-      override.aes = list(size = 4)
+      override.aes = list(size = 5)
     )) +
   theme(
-    axis.text.x = element_text(size = 11, angle = 60, hjust = 1),
-    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 14, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 14),
     axis.title.x = element_text(size = 20),
     axis.title.y = element_text(size = 20),
     legend.position = "right",
@@ -248,7 +248,7 @@ all_genes %>%
     strip.background = element_blank(),
     strip.text.x = element_text(size = 12),
     plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 12, hjust = 0.5))
+    plot.subtitle = element_text(size = 14, hjust = 0.5))
 
 #
 #"median_RPKM_asrABC_v_dsrAB_sub9.png"

@@ -16,6 +16,20 @@ source(paste0(here::here(), "/1-Config/config.R"))
 samples_unique_gene_casette <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
 ```
 
+```{r}
+#looking to see which contigs are mapping to several species
+contigs_multiple_refs <- samples_unique_gene_casette %>%
+  group_by(contig) %>%
+  filter(n_distinct(single_closest_ref) > 1)%>%
+  # filter out contigs where multiple species are both Bilophila species or both D. piger
+  # want to fix the contigs mapping to species that are farther apart on the tree
+  filter(!all(grepl("Bil|piger", single_closest_ref))) %>%
+  summarize(
+    n_refs = n_distinct(single_closest_ref),
+    refs = paste(unique(single_closest_ref), collapse = "; ")
+  )
+```
+
 # choose a representative subunit
 ```{r}
 samples_unique_subunit_score <- samples_unique_gene_casette %>%
@@ -464,8 +478,6 @@ ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
 ## sampling variability for subject 9 
 ```{r}
 plot_subj9 <- samples_unique_subunit_RPKM %>%
-  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
   filter(subject == 9 ) %>%
   mutate(combine_species = case_when(
@@ -481,12 +493,38 @@ plot_subj9 <- samples_unique_subunit_RPKM %>%
                                             "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) 
 
+# Get contigs per species
+contigs_by_species <- plot_subj9 %>%
+  group_by(combine_species) %>%
+  summarize(contigs = list(unique(contig))) 
+
+# Generate shades automatically
+contig_colors <- c(
+  setNames(
+    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[1]]), palette = "Greens", l = c(20, 80)),
+    contigs_by_species$contigs[[1]]
+  ),
+  setNames(
+    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[2]]), palette = "Reds", l = c(20, 80)),
+    contigs_by_species$contigs[[2]]
+  ),
+  setNames(
+    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[3]]), palette = "Oranges", l = c(20, 80)),
+    contigs_by_species$contigs[[3]]
+  )
+)
+
+
 #Jess' code suggestion?
 ggplot(plot_subj9, 
-       aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = Type)) + 
+       aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = contig)) + 
   geom_point() + 
   geom_line() + 
-  facet_grid(combine_species~Type)
+  facet_grid(combine_species~Type,
+             labeller = labeller(combine_species = label_parsed)) 
+
++
+  scale_color_manual(values = contig_colors)
 
 
 

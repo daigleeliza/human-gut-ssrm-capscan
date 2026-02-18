@@ -33,6 +33,45 @@ gene_colors <- c("#D98E21", "#6B8E23")
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```
 
+# get summary statistics for Figure 5A
+```{r}
+unique_hits_summary_dsr <- dsr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # find unique contigs in each coassembly
+  # don't care about how we are selecting a subunit here since we just want overall count. RPKM will be in figure part b
+  group_by(subject, contig, sample_type) %>%
+  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  ungroup %>%
+  # find how many contigs are in each capsule type and stool
+  group_by(subject, Type) %>%
+  summarize(number_hits=n()) %>%
+  group_by(Type) %>%
+  # add up all the hits found in each subject for a given Type. take the median and find IQR
+  summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75)) %>%
+  mutate(hits_per_subj = paste0(median_hits, " (", q_25, ", ", q_75, ")")) %>%
+  select(Type, n_hits_total, hits_per_subj)
+
+unique_hits_summary_asr <- asr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  group_by(subject, contig, sample_type) %>%
+  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  ungroup %>%
+  group_by(subject, Type) %>%
+  summarize(number_hits=n()) %>%
+  group_by(Type) %>%
+  summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75)) %>%
+  mutate(hits_per_subj = paste0(median_hits, " (", q_25, ", ", q_75, ")")) %>%
+  select(Type, n_hits_total, hits_per_subj)
+
+
+figure_5a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "Type", suffix = c("_dsr", "_asr"))
+```
+
+
+
+
+
+
 # How do counts of unique clusters and RPKMs compare to the dsrAB genes? 
 # Cannot plot total RPKM since asrABC protein has 3 subunits while dsrAB has 2.
 # Using median to account for this

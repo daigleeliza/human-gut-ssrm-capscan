@@ -43,28 +43,28 @@ unique_hits_summary_dsr <- dsr_unique %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
   ungroup %>%
   # find how many contigs are in each capsule type and stool
-  group_by(subject, Type) %>%
+  group_by(subject, sample_type) %>%
   summarize(number_hits=n()) %>%
-  group_by(Type) %>%
+  group_by(sample_type) %>%
   # add up all the hits found in each subject for a given Type. take the median and find IQR
   summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75)) %>%
   mutate(hits_per_subj = paste0(median_hits, " (", q_25, ", ", q_75, ")")) %>%
-  select(Type, n_hits_total, hits_per_subj)
+  select(sample_type, n_hits_total, hits_per_subj)
 
 unique_hits_summary_asr <- asr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(subject, contig, sample_type) %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
   ungroup %>%
-  group_by(subject, Type) %>%
+  group_by(subject, sample_type) %>%
   summarize(number_hits=n()) %>%
-  group_by(Type) %>%
+  group_by(sample_type) %>%
   summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75)) %>%
   mutate(hits_per_subj = paste0(median_hits, " (", q_25, ", ", q_75, ")")) %>%
-  select(Type, n_hits_total, hits_per_subj)
+  select(sample_type, n_hits_total, hits_per_subj)
 
 
-figure_5a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "Type", suffix = c("_dsr", "_asr"))
+figure_5a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "sample_type", suffix = c("_dsr", "_asr"))
 ```
 
 
@@ -224,11 +224,11 @@ all_genes %>%
              strip.position = "top",
              labeller = labeller(subject = function(x) paste("Subject", x))) +
   labs(
-    title = expression(paste("Abundance of ", italic(asrABC), " vs. ", italic(dsrAB), " by sample location across subjects")),
+    title = expression(paste("Abundance of ", italic(asrABC), " vs. ", italic(dsrAB), " by sample type across subjects")),
     subtitle = "Each point represents a sample",
-    x = "Sample location",
+    x = "Sample type",
     #median was taken across a contig to account for subunits
-    y = "log10(sum of median RPKMs)",
+    y = "log10(sum of RPKM)",
     color = "Gene cluster"
   ) +
   theme_bw() +

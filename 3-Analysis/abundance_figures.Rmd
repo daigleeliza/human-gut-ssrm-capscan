@@ -32,36 +32,19 @@ contigs_multiple_refs <- samples_unique_gene_casette %>%
 
 # choose a representative subunit
 ```{r}
-samples_unique_subunit_score <- samples_unique_gene_casette %>%
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  group_by(contig, sample) %>%
-  slice_max(Score, n = 1, with_ties = FALSE) %>%
-  ungroup()
+# manually select a subunit for the 6 contigs found in contigs_multiple_refs
+partial_genes <- c("Capsule_14.k141_153065_1", "Stool_14.k141_240693_1", "Stool_9.k141_270672_1")
+unknown_species <- c("Capsule_7.k141_250498_14", "Stool_7.k141_215370_50")
 
+samples_unique_subunit_manual <- samples_unique_gene_casette %>%
+  filter(!geneNum %in% partial_genes) %>%
+  filter(!geneNum %in% unknown_species)
 
-samples_unique_subunit_RPKM <- samples_unique_gene_casette %>%
+samples_unique_subunit_RPKM <- samples_unique_subunit_manual %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
   slice_max(RPKM, n = 1, with_ties = FALSE) %>%
   ungroup()
-```
-
-## checking to see if there is a big difference between selecting subunits based on bit score or RPKM
-```{r}
-in_score_only <- anti_join(samples_unique_subunit_score, 
-                           samples_unique_subunit_RPKM, 
-                           by = c("geneID", "sample"))
-
-in_rpkm_only <- anti_join(samples_unique_subunit_RPKM, 
-                          samples_unique_subunit_score, 
-                          by = c("geneID", "sample"))
-```
-
-```{r}
-difference_between_higherBitandHigherRPKM <- in_rpkm_only$RPKM-in_score_only$RPKM
-sum(difference_between_higherBitandHigherRPKM>2)
-## there are 31 samples with a difference in RPKM that is greater than 2 if I select by higher bit score
-## but all of the scores are still >200 if I select by higher RPKM. so I will go with that
 ```
 
 ## get summary statistics for text
@@ -110,34 +93,7 @@ capsule_type_summary <- samples_unique_subunit_RPKM %>%
 ```
 
 
-
-```{r}
-stats_per_subject_by_sample <- samples_unique_subunit_RPKM %>%
-  group_by(subject, sample_type) %>%
-  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
-
-stats_per_type <- samples_unique_subunit_RPKM %>%
-  group_by(Type) %>%
-  summarize(number_subjects=n_distinct(subject), number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
-  
-stats_overall <- samples_unique_subunit_RPKM %>%
-  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
-
-stats_over_collection_time <- samples_unique_subunit_RPKM %>%
-  filter(!Set %in% c(1,6,7,8,9,10,11,12,13, "Stool")) %>%
-  mutate(collection_time = case_when(
-    Set %in% c(2, 4) ~ "Afternoon",
-    Set %in% c(3, 5) ~ "After dinner")) %>%
-  group_by(collection_time) %>%
-  summarize(number_hits=n(), median_RPKM=round(median(RPKM),2), q_25_RPKM=round(quantile(RPKM, probs=0.25),2), q_75_RPKM=round(quantile(RPKM, probs=0.75),2), average_RPKM=round(mean(RPKM),2))
-  
-```
-
-
-
-
-#here making new plots
-Making viridis color palette for plots
+# color palettes for plots
 ```{r}
 # Generate a viridis palette with 20 colors
 viridis_palette <- viridis(20)
@@ -152,73 +108,6 @@ jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 set_colors <- c("#fd8d3c", "light sky blue", "#d94701", "navy", "#6F7042")
 ```
 
-# Plot the number of unique genes for each subject -> for comparing to asrABC
-```{r}
-plot_count_dsr <- samples_unique_subunit_RPKM %>%
-# find number of unique genes for each sample
-  group_by(subject, sample, Type) %>%
-  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
-  group_by(subject, Type) %>% 
-  summarize(median_gene_set = median(n_contigs))
-
-plot_count_dsr %>%
-  ggplot(aes(x = Type, y = median_gene_set)) +
-  geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(color = Type),
-              alpha = 0.7, 
-              size = 3,
-              position = position_jitter(width = 0.15, height = 0)) +
-  scale_color_manual(values = jitter_colors) +
-  labs(
-    title = expression(paste("Unique ", italic("dsrAB"), " gene clusters per subject")),
-    x = "Sample type",
-    y = "Median contig count across samples",
-    color = "Type"
-  ) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 24),
-    axis.title.x = element_text(size = 24),
-    axis.title.y = element_text(size = 24),
-    legend.text = element_text(size = 24),
-    legend.title = element_text(size = 24),
-    strip.placement = "outside",
-    strip.background = element_blank(),
-    plot.title = element_text(size = 28, hjust = 0.5),
-    plot.subtitle = element_text(size = 24, hjust = 0.5))
-
-# #plot_count_dsr %>%
-#  # ggplot(aes(x = Type, y = n) +
-#   geom_boxplot() + 
-#   geom_jitter(aes(color = Type),
-#               alpha = 0.7, 
-#               size = 3,
-#               position = position_jitter(width = 0.15, height = 0)) +
-#   scale_color_manual(values = jitter_colors) +
-#   facet_wrap(~ subject,
-#               #scales = "free_y",
-#               strip.position = "bottom",
-#               labeller = labeller(subject = function(x) paste("Subject", x))) +
-#   labs(
-#     title = "Unique dsrAB gene clusters by sample type across subjects",
-#     x = "Sample Type",
-#     y = "Gene Count",
-#     color = "Type"
-#   ) +
-#   theme_bw() +
-#   theme(
-#     axis.text.x = element_text(size = 24, angle = 45, hjust = 1),
-#     axis.text.y = element_text(size = 24),
-#     axis.title.x = element_text(size = 24),
-#     axis.title.y = element_text(size = 24),
-#     legend.text = element_text(size = 24),
-#     legend.title = element_text(size = 24),
-#     strip.placement = "outside",
-#     strip.background = element_blank(),
-#     plot.title = element_text(size = 28, hjust = 0.5),
-#     plot.subtitle = element_text(size = 24, hjust = 0.5))
-```
 # Change species labels
 ```{r}
 species <- unique(samples_unique_subunit_RPKM$single_closest_ref)
@@ -242,124 +131,7 @@ species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" =
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
 ```
 
-# plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between species; facet by location and subject
-```{r}
-samples_unique_subunit_RPKM %>%
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
-  geom_jitter(aes(color = Type),
-            alpha = 0.9, size = 2,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = jitter_colors) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  scale_x_discrete(labels = species_labels) + 
-  guides(fill = "none") +
-  facet_grid(subject ~ Type, scale = "free_y") +
-  labs(
-    title = expression(paste("RPKM for unique ", italic("dsrAB"), " gene clusters by species across subjects and sample locations")),
-    x = "Closest Reference",
-    y = "log10(RPKM)",
-    color = "Sample Location"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 14),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
-  )
-
-
-#change color to be time of day of sample collection
-samples_unique_subunit_RPKM %>%
-  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
-  ggplot(aes(x = single_closest_ref, y = log10(RPKM), fill = Type)) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
-  geom_jitter(aes(color = Set),
-            alpha = 0.9, size = 2,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = set_colors, 
-                     labels = c("2" = "Afternoon", 
-                                "3" = "After dinner", 
-                                "4" = "Afternoon", 
-                                "5" = "After dinner", 
-                                "stool" = "Stool")) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  scale_x_discrete(labels = species_labels) + 
-  guides(fill = "none") +
-  facet_grid(subject ~ Type, scale = "free_y") +
-  labs(
-    title = expression(paste("RPKM for unique ", italic("dsrAB"), " gene clusters by species across subjects and sample locations")),
-    x = "Closest Reference",
-    y = "log10(RPKM)",
-    color = "Sample collection time"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 14),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
-  )
-
-
-
-```
-#  plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
-```{r}
-samples_unique_subunit_RPKM %>%
-  ggplot(aes(x = Type, y = log10(RPKM))) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
-  geom_jitter(aes(color = Type),
-            alpha = 0.9, size = 2,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = jitter_colors) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  guides(fill = "none") +
-  facet_grid(subject ~ single_closest_ref, 
-             scale = "free_y",
-             labeller = labeller(single_closest_ref = species_labels)) +
-  labs(
-    title = expression(paste("RPKM for unique ", italic("dsrAB"), " gene clusters by sample location across subjects and species")),
-    x = "Sample Location",
-    y = "log10(RPKM)",
-    color = "Sample Location"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 10),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
-  )
-ggsave("dsrAB_RPKM.png",
-       width = 16, height = 14, units = "in",   # increase for larger output
-       dpi = 600)
-```
+# SUPP. FIG. 5
 # plot RPKM for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
 # this plot combines the two D. piger and two B. wadsworthia species
 ```{r}
@@ -378,11 +150,13 @@ samples_unique_subunit_RPKM %>%
                                             "Gordonibacter_pamelaeae__GrdPame5",
                                             "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  # order subjects based on heatmap order
+  mutate(subject = factor(subject, levels = c("12", "9", "14", "2", "13", "7", "3", "6", "4", "11", "1"))) %>%
   ggplot(aes(x = Type, y = log10(RPKM))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
-            alpha = 0.9, size = 1,
+            alpha = 1.6,
             position = position_jitterdodge(
         jitter.width = 0.5,
         dodge.width = 0.8)) +
@@ -390,92 +164,38 @@ samples_unique_subunit_RPKM %>%
   #get rid of box fill
   scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
   guides(fill = "none") +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 4)
+    )) +
   facet_grid(subject ~ combine_species, 
-             scale = "free_y",
+             #scale = "free_y",
              labeller = labeller(combine_species = label_parsed)) +
-             #labeller = labeller(combine_species = species_labels_combine_species)) +
   labs(
-    title = expression(paste("RPKM for unique ", italic("dsrAB"), " gene clusters by sample location across subjects and species")),
-    x = "Sample location",
+    title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by type")),
+    x = "Type",
     y = "log10(RPKM)",
-    color = "Sample location"
+    color = "Type"
   ) +
   theme_bw() +
   theme(
     strip.background = element_blank(),
-    strip.text = element_text(size = 10),
+    strip.text = element_text(size = 14),
     legend.text = element_text(size = 14),
     legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
+    axis.text.x = element_text(size = 14, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    plot.title = element_text(size = 20, hjust = 0.5)
   )
+#ggsave("dsrAB_RPKM_combine_species_free_y_axis.png",
 ggsave("dsrAB_RPKM_combine_species.png",
-       width = 16, height = 14, units = "in",   # increase for larger output
+       width = 18, height = 14, units = "in",   # increase for larger output
        dpi = 600)
 ```
-# this takes the jitter box plot and adds coloring for the time of day for the capsule in which the hit was found
-# also orders the subjects based on whether they have d. piger or d. alkalitolerans
-```{r}
-samples_unique_subunit_RPKM %>%
-  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
-  mutate(combine_species = case_when(
-    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
-    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
-  mutate(combine_species = factor(combine_species, 
-                                  levels = c("Desulfovibrio_piger", 
-                                            "uncultured_bacterium__EF645667",
-                                            "Bilophila_species",
-                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
-                                            "Gordonibacter_pamelaeae__GrdPame5",
-                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
-  ggplot(aes(x = Type, y = log10(RPKM))) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
-  geom_jitter(aes(color = Set),
-            alpha = 0.9, size = 1,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = set_colors, 
-                     labels = c("2" = "Afternoon", 
-                                "3" = "After dinner", 
-                                "4" = "Afternoon", 
-                                "5" = "After dinner", 
-                                "stool" = "Stool")) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  guides(fill = "none") +
-  facet_grid(subject ~ combine_species, 
-             scale = "free_y",
-             labeller = labeller(combine_species = label_parsed)) +
-             #labeller = labeller(combine_species = species_labels_combine_species)) +
-  labs(
-    title = expression(paste("RPKM for unique ", italic("dsrAB"), " gene clusters by sample location across subjects and species")),
-    x = "Sample location",
-    y = "log10(RPKM)",
-    color = "Sample collection time"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 10),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 20, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5)
-  )
 
-ggsave("dsrAB_RPKM_combine_species_wCollectionTimes.png",
-       width = 16, height = 14, units = "in",   # increase for larger output
-       dpi = 600)
-```
-## sampling variability for subject 9 
+## sampling variability for subject 9 FIGURE 5
 ```{r}
 plot_subj9 <- samples_unique_subunit_RPKM %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
@@ -515,7 +235,6 @@ contig_colors <- c(
 )
 
 
-#Jess' code suggestion?
 ggplot(plot_subj9, 
        aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = contig)) + 
   geom_point() + 
@@ -528,50 +247,6 @@ ggplot(plot_subj9,
 
 
 
-
-
-
-
-##Eliza's code
-# %>%
-  ggplot(aes(x = Type, y = log10(RPKM))) +
-  geom_boxplot(color = "black",
-               position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
-  geom_jitter(aes(color = Set),
-            alpha = 0.9, size = 2,
-            position = position_jitterdodge(
-        jitter.width = 0.5,
-        dodge.width = 0.8)) +
-  scale_color_manual(values = set_colors, 
-                     labels = c("2" = "Afternoon day 1", 
-                                "3" = "After dinner day 1", 
-                                "4" = "Afternoon day 2", 
-                                "5" = "After dinner day 2", 
-                                "stool" = "Stool")) +
-  #get rid of box fill
-  scale_fill_manual(values = c("transparent", "transparent", "transparent", "transparent", "transparent"), guide = "none") +
-  guides(fill = "none") +
-  facet_wrap(~combine_species, 
-             labeller = labeller(combine_species = label_parsed)) +
-             #labeller = labeller(combine_species = species_labels_combine_species)) +
-  labs(
-    title = expression(paste("Subject 9 ", italic("dsrAB"), " RPKMs by sampling event")),
-    x = "Sample location",
-    y = "log10(RPKM)",
-    color = "Sample collection time"
-  ) +
-  theme_bw() +
-  theme(
-    strip.background = element_blank(),
-    strip.text = element_text(size = 10),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12, angle = 60, hjust = 1),
-    plot.title = element_text(size = 18, hjust = 0.5),
-    plot.subtitle = element_text(size = 16, hjust = 0.5),
-    plot.margin = margin(t=5, b=5, l = 20, r=10)
-  )
-
 ggsave("dsrAB_RPKM_combine_species_wCollectionTimes_sub9.png",
        width = 12, height = 6, units = "in",   # increase for larger output
        dpi = 600)
@@ -579,83 +254,9 @@ ggsave("dsrAB_RPKM_combine_species_wCollectionTimes_sub9.png",
 ```
 
 
-# HEATMAPPING
-## facet by sample location
-```{r}
-#extract species, subject, RPKM columns to make a matrix that has subjects as row names and species as column names
-median_RPKM_by_subject_type <- samples_unique_subunit_RPKM %>%
-  # remove moorella thermoacetica, distance is too far
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  # combine d. piger and bilophila species
-  mutate(combine_species = case_when(
-    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
-    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
-  mutate(subject_type=paste(subject,Type, sep = "_")) %>%
-  group_by(subject_type, combine_species) %>%
-  summarize(sum_RPKM=sum(RPKM))%>%
-  pivot_wider(
-    names_from = combine_species,
-    values_from = sum_RPKM,
-    values_fill = 0) %>%
-    column_to_rownames(., var = "subject_type")
-
-# transform  
-matrix_log <- round(log10(median_RPKM_by_subject_type+1),4) %>%
-  as.matrix()
-```
-
-```{r}
-row_subjects <- sapply(strsplit(rownames(matrix_log), "_"), function(x) x[1])
-row_types <- sapply(strsplit(rownames(matrix_log), "_"), function(x) x[2])
-type_order <- c("Capsule 1", "Capsule 2", "Capsule 3", "Capsule 4", "Stool")
-row_types <- factor(row_types, levels = type_order)
-
-
-species_labels_combine_species_no_moorella <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
-                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
-                    "Bilophila_species" = "italic(Bilophila)~species",
-                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
-                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
-                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
-col_labels <- species_labels_combine_species_no_moorella[colnames(matrix_log)]
-col_labels_parsed <- parse(text = col_labels)
-```
-
-```{r}
-png("heatmap_sampleLocation.png", width = 8, height = 10, units = "in", res = 600)
-
-hm <- ComplexHeatmap::pheatmap(matrix_log,
-                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample location")),
-                   color = viridis(50, begin = 0.1, end = 0.95),
-                   breaks = NA,
-                   row_split = row_types,
-                   row_gap = unit(2, "mm"),
-                   row_labels = row_subjects,
-                   labels_col = col_labels_parsed,
-                   angle_col = "45",
-                   cluster_rows = TRUE,
-                   cluster_row_slices = FALSE,
-                   cluster_cols = TRUE,
-                   clustering_distance_rows = "euclidean",
-                   clustering_distance_cols = "euclidean",
-                   clustering_method = 'ward.D',
-                   show_colnames = T,
-                   show_rownames = T,
-                   fontsize = 10,
-                   fontsize_row = 10,
-                   show_row_dend = FALSE,
-                   show_column_dend = FALSE,
-                   treeheight_col = 0,
-                   treeheight_row = 0,
-                   heatmap_legend_param = list(title = "log10(sum of RPKM)"),
-                   cellwidth = 50)
-
-draw(hm, heatmap_legend_side = "right")
-
-dev.off()
-```
+# HEATMAP FIGURE 4B
 # Heatmap for capsule vs stool 
+# in one plot
 ```{r}
 #extract species, subject, RPKM columns to make a matrix that has subjects as row names and species as column names
 median_RPKM_by_sample_type <- samples_unique_subunit_RPKM %>%
@@ -678,8 +279,6 @@ median_RPKM_by_sample_type <- samples_unique_subunit_RPKM %>%
 # transform  
 matrix_sample_type_log <- round(log10(median_RPKM_by_sample_type + 1),4) %>%
   as.matrix()
-
-
 ```
 
 ```{r}
@@ -698,48 +297,6 @@ col_labels_sample_type <- species_labels_combine_species_no_moorella[colnames(ma
 col_labels_sample_type_parsed <- parse(text = col_labels_sample_type)
 ```
 
-```{r}
-png("heatmap_sampleType.png", width = 10, height = 10, units = "in", res = 600)
-
-
-hm_sample_type <- ComplexHeatmap::pheatmap(matrix_sample_type_log,
-                   name = "hm_sample_type",
-                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample location")),
-                   color = viridis(50, begin = 0.1, end = 0.95),
-                   breaks = NA,
-                   row_split = row_types_2,
-                   row_gap = unit(2, "mm"),
-                   row_labels = row_subjects_2,
-                   labels_col = col_labels_sample_type_parsed,
-                   angle_col = "45",
-                   cluster_rows = TRUE,
-                   cluster_row_slices = FALSE,
-                   cluster_cols = TRUE,
-                   clustering_distance_rows = "euclidean",
-                   clustering_distance_cols = "euclidean",
-                   clustering_method = 'ward.D',
-                   show_colnames = T,
-                   show_rownames = T,
-                   fontsize = 12,
-                   fontsize_row = 12,
-                   show_row_dend = FALSE,
-                   show_column_dend = FALSE,
-                   treeheight_col = 0,
-                   treeheight_row = 0,
-                   heatmap_legend_param = list(title = "log10(sum of RPKM)",
-                                               title_gp  = gpar(fontsize = 14), 
-                                               labels_gp = gpar(fontsize = 12),
-                                               legend_height = unit(4, "cm")),
-                   cellwidth = 50
-                   )
-
-draw(hm_sample_type, heatmap_legend_side = "right", padding = unit(c(5, 45, 5, 40), "mm"))
-
-
-dev.off()
-```
-# try getting these in one plot
-# major lifting from claude and chat
 ```{r}
 # Create stool and capsule matrices
 matrix_capsule <- matrix_sample_type_log[row_types_2 == "Capsule", ]
@@ -833,8 +390,6 @@ col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorel
 ```{r}
 png("heatmap_split.png", width = 8, height = 6, units = "in", res = 600)
 
-
-
 hm_split <- pheatmap(
   matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)
   name = "log10(sum of RPKM)",
@@ -871,82 +426,3 @@ draw(hm_split, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "m
 
 dev.off()
 ```
-
-
-# Heatmap that combines all sample locations together
-```{r}
-median_RPKM_by_subject <- samples_unique_subunit_RPKM %>%
-  # remove moorella thermoacetica, distance is too far
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  # combine d. piger and bilophila species
-  mutate(combine_species = case_when(
-    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
-    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
-  group_by(subject, combine_species) %>%
-  summarize(sum_RPKM=sum(RPKM))%>%
-  pivot_wider(
-    names_from = combine_species,
-    values_from = sum_RPKM,
-    values_fill = 0) %>%
-    column_to_rownames(., var = "subject")
-
-# transform  
-matrix_log_overall <- round(log10(median_RPKM_by_subject+1),4) %>%
-  as.matrix()
-```
-
-```{r}
-species_labels_combine_species_no_moorella <- c("uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
-                    "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
-                    "Bilophila_species" = "italic(Bilophila)~species",
-                    "Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
-                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
-                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
-col_labels_overall <- species_labels_combine_species_no_moorella[colnames(matrix_log_overall)]
-col_labels_overall_parsed <- parse(text = col_labels_overall)
-```
-
-```{r}
-png("heatmap_overall.png", width = 14, height = 9.5, units = "in", res = 600)
-
-hm_overall <- ComplexHeatmap::pheatmap(matrix_log_overall,
-                   main = expression(paste(italic("dsrAB"), " gene cluster abundance across species")),
-                   color = viridis(50, begin = 0.1, end = 0.95),
-                   breaks = NA,
-                   labels_col = col_labels_overall_parsed,
-                   fontsize_col = 12,
-                   angle_col = "45",
-                   cluster_rows = TRUE,
-                   cluster_cols = TRUE,
-                   clustering_distance_rows = "euclidean",
-                   clustering_distance_cols = "euclidean",
-                   clustering_method = 'ward.D',
-                   show_colnames = T,
-                   show_rownames = T,
-                   row_title_gp = gpar(fontsize = 16),
-                   row_names_side = "left",
-                   row_title = "Subject",
-                   row_title_side = "left",
-                   fontsize = 16,
-                   fontsize_row = 14,
-                   show_row_dend = FALSE,
-                   show_column_dend = FALSE,
-                   treeheight_col = 0,
-                   treeheight_row = 0,
-                   heatmap_legend_param = list(title = "log10(sum of RPKM)",
-                                               title_gp  = gpar(fontsize = 14), 
-                                               labels_gp = gpar(fontsize = 12),
-                                               legend_height = unit(4, "cm")))
-
-draw(hm_overall, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "mm"))
-
-dev.off()
-```
-
-
-
-
-
-
-

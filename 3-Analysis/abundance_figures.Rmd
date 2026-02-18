@@ -103,9 +103,11 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 
+species_colors <- c("#A290F3", "#E1BE6A", "#40B0A6")
 
-#set 3+5 are after dinner and 2+4 are afternoon
-set_colors <- c("#fd8d3c", "light sky blue", "#d94701", "navy", "#6F7042")
+
+# #set 3+5 are after dinner and 2+4 are afternoon
+# set_colors <- c("#fd8d3c", "light sky blue", "#d94701", "navy", "#6F7042")
 ```
 
 # Change species labels
@@ -147,8 +149,7 @@ samples_unique_subunit_RPKM %>%
                                             "uncultured_bacterium__EF645667",
                                             "Bilophila_species",
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
-                                            "Gordonibacter_pamelaeae__GrdPame5",
-                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   # order subjects based on heatmap order
   mutate(subject = factor(subject, levels = c("12", "9", "14", "2", "13", "7", "3", "6", "4", "11", "1"))) %>%
@@ -209,45 +210,57 @@ plot_subj9 <- samples_unique_subunit_RPKM %>%
                                             "uncultured_bacterium__EF645667",
                                             "Bilophila_species",
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
-                                            "Gordonibacter_pamelaeae__GrdPame5",
-                                            "Anaerobic_bacterium_sk.prop8__Bv2Prop2"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) 
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
 
-# Get contigs per species
-contigs_by_species <- plot_subj9 %>%
-  group_by(combine_species) %>%
-  summarize(contigs = list(unique(contig))) 
+# # Get contigs per species
+# contigs_by_species <- plot_subj9 %>%
+#   group_by(combine_species) %>%
+#   summarize(contigs = list(unique(contig))) 
 
-# Generate shades automatically
-contig_colors <- c(
-  setNames(
-    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[1]]), palette = "Greens", l = c(20, 80)),
-    contigs_by_species$contigs[[1]]
-  ),
-  setNames(
-    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[2]]), palette = "Reds", l = c(20, 80)),
-    contigs_by_species$contigs[[2]]
-  ),
-  setNames(
-    colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[3]]), palette = "Oranges", l = c(20, 80)),
-    contigs_by_species$contigs[[3]]
-  )
-)
+# # Generate shades automatically
+# contig_colors <- c(
+#   setNames(
+#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[1]]), palette = "Greens", l = c(40, 90)),
+#     contigs_by_species$contigs[[1]]
+#   ),
+#   setNames(
+#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[2]]), palette = "Blues", l = c(30, 80)),
+#     contigs_by_species$contigs[[2]]
+#   ),
+#   setNames(
+#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[3]]), palette = "Oranges", l = c(20, 80)),
+#     contigs_by_species$contigs[[3]]
+#   )
+# )
 
 
-ggplot(plot_subj9, 
-       aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = contig)) + 
+ggplot(plot_subj9,
+       aes(x = Set, y = log10(RPKM), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
-  facet_grid(combine_species~Type,
-             labeller = labeller(combine_species = label_parsed)) 
+  facet_wrap(~Type, nrow = 1, scale = "free_x") +
+  scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
+  labs(
+    title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by type")),
+    x = "Set",
+    y = "log10(RPKM)",
+    color = "Species"
+  ) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    plot.title = element_text(size = 20, hjust = 0.5)
+  )
 
-+
-  scale_color_manual(values = contig_colors)
-
-
-
-ggsave("dsrAB_RPKM_combine_species_wCollectionTimes_sub9.png",
+ggsave("sample_variability.png",
        width = 12, height = 6, units = "in",   # increase for larger output
        dpi = 600)
 

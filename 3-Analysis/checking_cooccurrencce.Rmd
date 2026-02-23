@@ -1,0 +1,157 @@
+---
+title: "checking_cooccurrencce"
+output: html_document
+---
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+#get single reference function
+```{r}
+get_single_ref <- function(ref_list) {
+  ref_list <- gsub("\\]", "", ref_list)
+  ref_list <- gsub("\\[", "", ref_list)
+  ref_list <- gsub(" ", "", ref_list)
+  ref_list <- gsub("'", "", ref_list)
+  ref_list <- strsplit(ref_list, ",")[[1]]
+  
+  # check if all of the closest ref sequences are Anantharaman2018 seqs
+  if (length(grep("QUERY", ref_list)) == length(ref_list)) {
+    # single ref is assigned as first seq in list
+    return(ref_list[1])
+  }
+  
+  # case if there is a non-Anantharaman2018 seq in the list of closest_ref
+  if (length(grep("QUERY", ref_list)) != length(ref_list)) {
+    single_ref_index <- grep("QUERY", ref_list, invert = T)[[1]]
+    return(ref_list[single_ref_index])
+  }
+}
+
+```
+
+#get hits with closest references and scores, so we can see how filtering was done
+```{r}
+#both files from the main folder in the sharepoint
+
+# get info on hits
+#closestRefInfo_allScoreThresholdHits.csv
+NCBI <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_2-20.csv"))
+
+# get score info
+#compiled_dsrAB_hits_scoreThreshold.csv
+score_info <- read_csv(paste0(dataDir, "compiled_dsrAB_hits_scoreThreshold_2-20.csv"), col_names=FALSE) %>%
+  #score is column 8
+  select(c(X1,X8)) %>%
+  mutate("hit_id"=X1) %>%
+  mutate("score"=X8) %>%
+  select(c("hit_id","score"))
+
+# get single closest reference
+NCBI_wSingleRef <- NCBI %>%
+  mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
+
+#having issues with the left join
+#remove hits with duplicates so it is not a many-to-many join
+duplicate_scores <- score_info %>%
+  group_by(hit_id) %>%
+  filter(n() > 1) %>%
+  plyr::arrange(hit_id)
+
+duplicate_refs <- NCBI_wSingleRef %>%
+  group_by(hit_id) %>%
+  filter(n() > 1) %>%
+  plyr::arrange(hit_id)
+
+score_info_no_dups <- score_info %>%
+  filter(!hit_id %in% duplicate_scores$hit_id)
+
+NCBI_wSingleRef_noDups <- NCBI_wSingleRef %>%
+  filter(!hit_id %in% duplicate_refs$hit_id)
+
+# make sure there are not a ton that aren't matching
+anti1 <- score_info_no_dups %>%
+  anti_join(NCBI_wSingleRef_noDups, by = "hit_id")
+anti2 <- NCBI_wSingleRef_noDups %>%
+  anti_join(score_info_no_dups, by = "hit_id")
+
+# find the bit scores for the hits
+NCBI_wSingleRef_wScores <- NCBI_wSingleRef_noDups %>%
+  left_join(score_info_no_dups, by = "hit_id")
+
+# contigs_of_interest <- NCBI_wSingleRef_wScores %>%
+#   #add "contig" as a variable 
+#   mutate(contig_proxy=str_extract(hit_id, "^[^_]+")) %>%
+#   #find where there are hits on a contig mapping to d. piger and desulfuricans
+#   #filter(single_closest_ref %in% c("uncultured_bacterium__EF645667", "Desulfovibrio_piger__DslPige2", "Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4")) %>%
+#   group_by(contig_proxy, biosample_id) %>%
+#   #remove contigs where all hits are a d. piger
+#   filter(!all(str_detect(single_closest_ref, "DslPige"))) %>%
+#   filter(n_distinct(single_closest_ref)>1) %>%
+#   summarize(n_hits = n(), refs = paste(unique(single_closest_ref), collapse = "; "))
+
+```
+
+# the following df lists samples that are from the same subject
+```{r}
+#(figured out that this df was probably made with the biosample_per_subject.Rmd)
+samples_by_subject <- read_csv(paste0(dataDir, "bySubject_dataset.csv"))
+```
+```{r}
+# get all of the sample ids separate (they are in list form in sample_id column) and with the merged_subject_id (which is the same for each of the samples for that subject)
+samples_w_subj <- samples_by_subject %>%
+  separate_rows(sample_id, sep = ",\\s*") %>%
+  #renames sample_id to biosample_id for joining in next chunk
+  select(biosample_id = sample_id, merged_subject_id)
+
+# Find hits that are from subjects with several samples
+hits_of_interest <- NCBI_wSingleRef_wScores %>%
+  inner_join(samples_w_subj, by = "biosample_id") 
+
+
+###SOMEWHERE HERE
+
+# Give info on which subjects have several samples with hits 
+subject_info <- NCBI_wSingleRef_wScores %>%
+  inner_join(samples_w_subj, by = "biosample_id") %>%
+  group_by(merged_subject_id, biosample_id) %>%
+  summarize(n_hits_per_sample=n()) %>%
+  group_by(merged_subject_id) %>%
+  summarize(n_samples_per_subject=n())
+
+# now, see which samples that belong to subjects with multiple samples are in the subject_OTU_matrix.
+what <- subject_OTU_matrix %>%
+  filter(subject_id %in% hits_of_interest$merged_subject_id)
+```
+
+# matrix that shows what species a subject has hits for
+```{r}
+subject_OTU_matrix <- read_xlsx(paste0(dataDir, "subject_OTU_matrix.xlsx"))
+
+colnames(subject_OTU_matrix)[1] <- "subject_id"
+```
+
+
+
+
+
+
+```{r}
+multiple_species <- subject_OTU_matrix %>%
+  filter(rowSums(across(-biosample_id)) > 1)
+
+desulfovibrio <- c("Desulfovibrio_piger__DslPige3","Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige4","Desulfovibrio_desulfuricans__DslDes17", "Desulfovibrio_desulfuricans__DslDes13","uncultured_bacterium__EF645667","Desulfovibrio_desulfuricans__DslDes16_DsvAlas8","Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358","Desulfovibrio_desulfuricans__DslDes24","Desulfovibrio_desulfuricans__DQ092635")
+
+# find the biosample_ids where there is d. piger and d. desulfuricans 
+subjects_desulfo <- subject_OTU_matrix %>%
+  select(biosample_id, all_of(desulfovibrio)) %>%
+  filter(rowSums(across(-biosample_id)) >1 ) %>%
+  filter(rowSums(across(contains("DslPige"))) > 0)
+
+firmicutes <- c("Bilophila_wadsworthia__BilWads6","Bilophila_sp._4_1_30__BilSpec3","Desulfitibacter_alkalitolerans__DfiAlka2")
+
+subjects_firmicutes
+```
+
+
+

@@ -1,5 +1,7 @@
 ---
 title: "checking_cooccurrencce"
+author: "Elizabeth Daigle"
+date: "23 February 2026"
 output: html_document
 ---
 # Read in packages and functions
@@ -27,10 +29,9 @@ get_single_ref <- function(ref_list) {
     return(ref_list[single_ref_index])
   }
 }
-
 ```
 
-#get hits with closest references and scores, so we can see how filtering was done
+#get hits with closest references and scores
 ```{r}
 #both files from the main folder in the sharepoint
 
@@ -55,13 +56,11 @@ NCBI_wSingleRef <- NCBI %>%
 #remove hits with duplicates so it is not a many-to-many join
 duplicate_scores <- score_info %>%
   group_by(hit_id) %>%
-  filter(n() > 1) %>%
-  plyr::arrange(hit_id)
+  filter(n() > 1)
 
 duplicate_refs <- NCBI_wSingleRef %>%
   group_by(hit_id) %>%
-  filter(n() > 1) %>%
-  plyr::arrange(hit_id)
+  filter(n() > 1)
 
 score_info_no_dups <- score_info %>%
   filter(!hit_id %in% duplicate_scores$hit_id)
@@ -97,32 +96,6 @@ NCBI_wSingleRef_wScores <- NCBI_wSingleRef_noDups %>%
 #(figured out that this df was probably made with the biosample_per_subject.Rmd)
 samples_by_subject <- read_csv(paste0(dataDir, "bySubject_dataset.csv"))
 ```
-```{r}
-# get all of the sample ids separate (they are in list form in sample_id column) and with the merged_subject_id (which is the same for each of the samples for that subject)
-samples_w_subj <- samples_by_subject %>%
-  separate_rows(sample_id, sep = ",\\s*") %>%
-  #renames sample_id to biosample_id for joining in next chunk
-  select(biosample_id = sample_id, merged_subject_id)
-
-# Find hits that are from subjects with several samples
-hits_of_interest <- NCBI_wSingleRef_wScores %>%
-  inner_join(samples_w_subj, by = "biosample_id") 
-
-
-###SOMEWHERE HERE
-
-# Give info on which subjects have several samples with hits 
-subject_info <- NCBI_wSingleRef_wScores %>%
-  inner_join(samples_w_subj, by = "biosample_id") %>%
-  group_by(merged_subject_id, biosample_id) %>%
-  summarize(n_hits_per_sample=n()) %>%
-  group_by(merged_subject_id) %>%
-  summarize(n_samples_per_subject=n())
-
-# now, see which samples that belong to subjects with multiple samples are in the subject_OTU_matrix.
-what <- subject_OTU_matrix %>%
-  filter(subject_id %in% hits_of_interest$merged_subject_id)
-```
 
 # matrix that shows what species a subject has hits for
 ```{r}
@@ -131,27 +104,46 @@ subject_OTU_matrix <- read_xlsx(paste0(dataDir, "subject_OTU_matrix.xlsx"))
 colnames(subject_OTU_matrix)[1] <- "subject_id"
 ```
 
-
-
-
-
-
 ```{r}
-multiple_species <- subject_OTU_matrix %>%
-  filter(rowSums(across(-biosample_id)) > 1)
+# get all of the sample ids separate (they are in list form in sample_id column) and with the merged_subject_id (which is the same for each of the samples for that subject)
+samples_w_subj <- samples_by_subject %>%
+  separate_rows(sample_id, sep = ",\\s*") %>%
+  #renames sample_id to biosample_id
+  select(biosample_id = sample_id, merged_subject_id)
 
-desulfovibrio <- c("Desulfovibrio_piger__DslPige3","Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige4","Desulfovibrio_desulfuricans__DslDes17", "Desulfovibrio_desulfuricans__DslDes13","uncultured_bacterium__EF645667","Desulfovibrio_desulfuricans__DslDes16_DsvAlas8","Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358","Desulfovibrio_desulfuricans__DslDes24","Desulfovibrio_desulfuricans__DQ092635")
-
-# find the biosample_ids where there is d. piger and d. desulfuricans 
-subjects_desulfo <- subject_OTU_matrix %>%
-  select(biosample_id, all_of(desulfovibrio)) %>%
-  filter(rowSums(across(-biosample_id)) >1 ) %>%
-  filter(rowSums(across(contains("DslPige"))) > 0)
-
-firmicutes <- c("Bilophila_wadsworthia__BilWads6","Bilophila_sp._4_1_30__BilSpec3","Desulfitibacter_alkalitolerans__DfiAlka2")
-
-subjects_firmicutes
+# all the species that are in Desulfovibrio desulfuricans or Desulfovibrio piger clusters.
+desulfovibrio <- c("Desulfovibrio_piger__DslPige3","Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige4",
+                   "uncultured_bacterium__EF645667", "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8", "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358")
+#these species are in the matrix but not part of the cluster according to supp.table 2
+#"Desulfovibrio_desulfuricans__DslDes17","Desulfovibrio_desulfuricans__DslDes13","Desulfovibrio_desulfuricans__DQ092635","Desulfovibrio_desulfuricans__DslDes24"
 ```
 
+```{r}
+# get the subjects in the desulfo triad
+subjects_of_interest <- subject_OTU_matrix %>%
+  select(subject_id, all_of(desulfovibrio)) %>%
+  # find the rows where there are hits for multiple species
+  filter(rowSums(across(-subject_id)) >1 )
 
+# figure out which samples are associated with these subjects
+samples_of_interest <- samples_w_subj %>%
+  filter(merged_subject_id %in% subjects_of_interest$subject_id)
+
+# find the hits associated with these samples 
+hits_of_interest <- NCBI_wSingleRef_wScores %>%
+  filter(biosample_id %in% samples_of_interest$biosample_id) %>%
+  # add the subject label back in
+  left_join(samples_w_subj, by = "biosample_id")
+
+#40006207 d. piger and d. desulfuricans are both there
+#17997838 one subunit is hitting each, but only d. piger would be selected 
+#10807867 one subunit is hitting each, but only d. piger would be selected 
+#19702233 d. piger and d. desulfuricans are both there
+#14315964 d. piger and d. desulfuricans are both there
+#10713431 d. piger and d. desulfuricans are both there
+#14040721 d. piger and d. desulfuricans are both there
+#13530241 d. piger and d. desulfuricans are both there
+#70059005 most likely all of them are there, at least bilophila and d. desulfuricans 
+#40647106 only one cluster with one subunit hitting each
+```
 

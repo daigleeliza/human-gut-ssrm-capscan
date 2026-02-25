@@ -23,9 +23,22 @@ stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_col8score_Stool_Abun
 # combine capsule and stool data
 samples <- bind_rows(capsule, stool) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))
+```
 
+```{r}
+#which hits are dups?
+# want to make sure they all get filtered out since they have NA for distance
+closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv")) 
+dups <- closest_ref_2015 %>%
+  filter(is.na(distance))
+
+samples_no_dups <- samples %>%
+  filter(!geneLoc %in% dups$hit_id)
+```
+
+```{r}
 # filter and remove duplicate genes
-samples_unique_genes <- samples %>%
+samples_unique_genes <- samples_no_dups %>%
 # Remove RPKMs of 0 (feature counts keeps genes even when nothing has mapped to them) 
   filter(RPKM>0) %>%
 # make subject a factor
@@ -48,7 +61,7 @@ closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHi
 # Add a column to samples that has the single_closest_ref
 ```{r}
 samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% closest_ref$hit_id) %>%
-  left_join(closest_ref %>% select(hit_id, single_closest_ref),
+  left_join(closest_ref %>% select(hit_id, single_closest_ref, distance),
             by = c("geneLoc" = "hit_id")) %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 
@@ -56,7 +69,7 @@ saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique
 
 
 samples_unique_genes_with_names_2015 <- samples_unique_genes %>% filter(geneLoc %in% closest_ref_2015$hit_id) %>%
-  left_join(closest_ref_2015 %>% select(hit_id, single_closest_ref),
+  left_join(closest_ref_2015 %>% select(hit_id, single_closest_ref, distance),
             by = c("geneLoc" = "hit_id")) %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 

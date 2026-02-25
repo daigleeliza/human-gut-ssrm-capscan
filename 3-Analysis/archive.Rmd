@@ -545,3 +545,46 @@ draw(hm_overall, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), 
 dev.off()
 ```
 
+
+## for checking cooccurrence 
+# archive this
+```{r}
+# Find hits that are from subjects with several samples
+hits_of_interest <- NCBI_wSingleRef_wScores %>%
+  inner_join(samples_w_subj, by = "biosample_id") 
+
+
+
+# Get list of which subjects have several samples with hits 
+subject_info <- hits_of_interest %>%
+  group_by(merged_subject_id, biosample_id) %>%
+  summarize(n_hits_per_sample=n()) %>%
+  group_by(merged_subject_id) %>%
+  summarize(n_samples_per_subject=n())
+
+#this is where we get all of the subjects with hits in multiple samples
+cooccur_subj <- subject_info %>% filter(n_samples_per_subject >1)
+
+
+
+# find subjects with multiple samples in the subject_OTU_matrix.
+cooccur_subj_species <- subject_OTU_matrix %>%
+  filter(subject_id %in% cooccur_subj$merged_subject_id) 
+
+# get the subjects with hits across the desulfovibrio triad
+cooccur_subj_species_desulfo <- cooccur_subj_species %>%
+  select(subject_id, all_of(desulfovibrio)) %>%
+  filter(rowSums(across(-subject_id)) >1 ) %>%
+  filter(rowSums(across(contains("DslPige"))) > 0)
+```
+
+
+```{r}
+# Now we can look at the hits found in the subject samples in cooccur_subj_species_desulfo
+hits <- hits_of_interest %>%
+  filter(merged_subject_id %in% cooccur_subj_species_desulfo$subject_id)
+
+```
+
+
+

@@ -84,15 +84,12 @@ asr <- read_tsv(paste0(dataDir, "/concat_asrABC_Abundances_RPKG_redo.txt")) %>%
 
 # filter and remove duplicate genes
 asr_unique_cluster <- asr %>%
-  mutate(RPKG = as.numeric(RPKG)) %>%
 # Remove RPKGs of 0 (feature counts keeps genes even when nothing has mapped to them) 
   filter(RPKG>0) %>%
   mutate(subject = factor(subject)) %>%
 # add capsule type
   left_join(meta %>% select(samplename, Type), 
             by = c("sample" = "samplename")) %>%
-# add name for closest ref for asr (most BLAST results gave Firmicutes)
-  mutate(single_closest_ref="likely Firmicutes") %>%
 # filter for unique genes in each sample
 # want to keep gene domain with the highest score, if there is a tie return just the first hit encountered
   group_by(geneID, sample) %>%

@@ -27,16 +27,26 @@ closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHi
 # this df is made in dm_abundance.Rmd
 samples_unique_genes_with_names_2015 <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
 
+# manually select a subunit for the 6 contigs found in contigs_multiple_refs
+partial_genes <- c("Capsule_14.k141_153065_1", "Stool_14.k141_240693_1", "Stool_9.k141_270672_1")
+unknown_species <- c("Capsule_7.k141_250498_14", "Stool_7.k141_215370_50")
+# and rename 113757 to D. piger based on blast results
+
+samples_unique_subunit_manual <- samples_unique_genes_with_names_2015 %>%
+  filter(!geneNum %in% partial_genes) %>%
+  filter(!geneNum %in% unknown_species) %>%
+  mutate(single_closest_ref = ifelse(contig == "k141_113757", "Desulfovibrio_piger__DslPige3", single_closest_ref))
+
 # filter to get one subunit
-samples_unique_subunit_RPKM_2015 <- samples_unique_genes_with_names_2015 %>%
+samples_unique_subunit_RPKG_2015 <- samples_unique_subunit_manual %>%
   group_by(contig, sample) %>%
-  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  slice_max(RPKG, n = 1, with_ties = FALSE) %>%
   ungroup()
 
 # filter the closest_ref df to only have the unique gene hits
 # this df is much smaller since hits are not split up by sample
 closest_ref_filtered_2015 <- closest_ref_2015 %>%
-  filter(hit_id %in% samples_unique_subunit_RPKM_2015$geneLoc)
+  filter(hit_id %in% samples_unique_subunit_RPKG_2015$geneLoc)
 ```
 # get labels for the species 
 ```{r}
@@ -47,8 +57,7 @@ species_labels_2015 <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfiti
                     "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
                     "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
                     "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
-                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica")
 ```
 
 

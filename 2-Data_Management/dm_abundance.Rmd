@@ -17,9 +17,9 @@ meta <- read_tsv(paste0(configDir, "/sampleReadList.txt"))
 # Read in dsrAB gene counts
 ```{r}
 # capsule data
-capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_Capsule_Abundances_RPKG.txt"))
+capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_Capsule_Abundances_RPKG_redo.txt"))
 # stool data
-stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_Stool_Abundances_RPKG.txt"))
+stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_Stool_Abundances_RPKG_redo.txt"))
 # combine capsule and stool data
 samples <- bind_rows(capsule, stool) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))
@@ -78,7 +78,7 @@ saveRDS(samples_unique_genes_with_names_2015, file = paste0(dataDir, "/samples_u
 
 ## for the asr genes 
 ```{r}
-asr <- read_tsv(paste0(dataDir, "/concat_asrABC_Abundances_RPKM_redo.txt")) %>%
+asr <- read_tsv(paste0(dataDir, "/concat_asrABC_Abundances_RPKG_redo.txt")) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))  %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 

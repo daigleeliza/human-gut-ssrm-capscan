@@ -38,9 +38,9 @@ jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 unique_hits_summary_dsr <- dsr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   # find unique contigs in each coassembly
-  # don't care about how we are selecting a subunit here since we just want overall count. RPKM will be in figure part b
+  # don't care about how we are selecting a subunit here since we just want overall count. RPKG will be in figure part b
   group_by(subject, contig, sample_type) %>%
-  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  slice_max(RPKG, n = 1, with_ties = FALSE) %>%
   ungroup %>%
   # find how many contigs are in each capsule type and stool
   group_by(subject, sample_type) %>%
@@ -52,9 +52,8 @@ unique_hits_summary_dsr <- dsr_unique %>%
   select(sample_type, n_hits_total, hits_per_subj)
 
 unique_hits_summary_asr <- asr_unique %>%
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(subject, contig, sample_type) %>%
-  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
+  slice_max(RPKG, n = 1, with_ties = FALSE) %>%
   ungroup %>%
   group_by(subject, sample_type) %>%
   summarize(number_hits=n()) %>%
@@ -63,7 +62,7 @@ unique_hits_summary_asr <- asr_unique %>%
   mutate(hits_per_subj = paste0(median_hits, " (", q_25, ", ", q_75, ")")) %>%
   select(sample_type, n_hits_total, hits_per_subj)
 
-
+## for these, the dsr hits get filtered by dups, etc. 
 figure_5a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "sample_type", suffix = c("_dsr", "_asr"))
 ```
 
@@ -72,8 +71,8 @@ figure_5a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, b
 
 
 
-# How do counts of unique clusters and RPKMs compare to the dsrAB genes? 
-# Cannot plot total RPKM since asrABC protein has 3 subunits while dsrAB has 2.
+# How do counts of unique clusters and RPKGs compare to the dsrAB genes? 
+# Cannot plot total RPKG since asrABC protein has 3 subunits while dsrAB has 2.
 # Using median to account for this
 ```{r}
 # Get median contigs for each subject
@@ -91,22 +90,22 @@ plot_count_asr <- asr_unique %>%
   group_by(subject, Type) %>%
   summarize(median_gene_set = median(n_contigs))
 
-# Get median RPKM across contigs in each sample
-plot_RPKM_dsr_median <- dsr_unique %>%
+# Get median RPKG across contigs in each sample
+plot_RPKG_dsr_median <- dsr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(subject, sample, Type, contig) %>%
-  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75)) %>%
+  summarize(n=n(), median_RPKG=median(RPKG), q_25=quantile(RPKG, probs=0.25), q_75=quantile(RPKG, probs=0.75)) %>%
   group_by(sample) %>%
-  summarize(sum=sum(median_RPKM)) %>%
+  summarize(sum=sum(median_RPKG)) %>%
   left_join(dsr_unique %>%
               select(sample, subject, Type, sample_type) %>%
               distinct(), by = "sample")
 
-plot_RPKM_asr_median <- asr_unique %>%
+plot_RPKG_asr_median <- asr_unique %>%
   group_by(subject, sample, Type, contig) %>%
-  summarize(n=n(), median_RPKM=median(RPKM), q_25=quantile(RPKM, probs=0.25), q_75=quantile(RPKM, probs=0.75)) %>%
+  summarize(n=n(), median_RPKG=median(RPKG), q_25=quantile(RPKG, probs=0.25), q_75=quantile(RPKG, probs=0.75)) %>%
   group_by(sample) %>%
-  summarize(sum=sum(median_RPKM)) %>%
+  summarize(sum=sum(median_RPKG)) %>%
   left_join(asr_unique %>%
               select(sample, subject, Type, sample_type) %>%
               distinct(), by = "sample")
@@ -199,8 +198,8 @@ ggsave("unique_asrABC_v_dsrAB_count.png",
 ```{r}
 # combine asr and dsr data
 all_genes <- bind_rows(
-  dsr = plot_RPKM_dsr_median,
-  asr = plot_RPKM_asr_median,
+  dsr = plot_RPKG_dsr_median,
+  asr = plot_RPKG_asr_median,
   .id = "gene_cluster")
 
 # plot a box for each cluster for each type, facet by subject
@@ -228,7 +227,7 @@ all_genes %>%
     subtitle = "Each point represents a sample",
     x = "Sample type",
     #median was taken across a contig to account for subunits
-    y = "log10(sum of RPKM)",
+    y = "log10(sum of RPKG)",
     color = "Gene cluster"
   ) +
   theme_bw() +
@@ -252,7 +251,7 @@ all_genes %>%
 
 #
 #"median_RPKM_asrABC_v_dsrAB_sub9.png"
-ggsave("median_RPKM_asrABC_v_dsrAB.png",
+ggsave("median_RPKG_asrABC_v_dsrAB.png",
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
 ```
@@ -260,8 +259,8 @@ ggsave("median_RPKM_asrABC_v_dsrAB.png",
 ## want to know if the differences we are seeing are statistically significant
 ```{r}
 # is the data normally distributed? 
-hist(plot_RPKM_dsr_median$sum)
-hist(plot_RPKM_asr_median$sum)
+hist(plot_RPKG_dsr_median$sum)
+hist(plot_RPKG_asr_median$sum)
 # definitely not
 wilcoxon_dsr_asr = all_genes %>% 
   # had to choose subjects with both genes present in stool and capsule

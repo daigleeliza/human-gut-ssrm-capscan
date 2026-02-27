@@ -20,24 +20,6 @@ rooted_ref_tree_2015 <- root(ref_tree_2015, c("Moorella_thermoacetica_Y72_copy_2
 
 # get names of closest references and filter to remove gene duplicates
 ```{r}
-## pre 2020
-closest_ref_pre2020 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
-
-# read in df that filters out gene duplicates in each sample (selects the domain with the highest bit score) 
-# this df is made in dm_abundance.Rmd
-samples_unique_genes_with_names_pre2020 <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names.rds"))
-
-# filter to get one subunit
-samples_unique_subunit_RPKM_pre2020 <- samples_unique_genes_with_names_pre2020 %>%
-  group_by(contig, sample) %>%
-  slice_max(RPKM, n = 1, with_ties = FALSE) %>%
-  ungroup()
-
-# filter the closest_ref df to only have the unique gene hits
-# this df is much smaller since hits are not split up by sample
-closest_ref_filtered_pre2020 <- closest_ref_pre2020 %>%
-  filter(hit_id %in% samples_unique_subunit_RPKM_pre2020$geneLoc)
-
 ## 2015 only 
 closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv"))
 
@@ -58,17 +40,6 @@ closest_ref_filtered_2015 <- closest_ref_2015 %>%
 ```
 # get labels for the species 
 ```{r}
-species_labels_pre2020 <- c("QUERY___Desulfitibacter_alkalitolerans_dsrB" = "Desulfitibacter alkalitolerans",
-                    "QUERY___Bilophila_wadsworthia_dsrA" = "Bilophila wadsworthia",
-                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger",
-                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia",
-                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
-                    "QUERY___Ley3_66761_scaffold_1025_dsrA" = "Ley3 dsrA",
-                    "QUERY___Ley3_66761_scaffold_1830_dsrB" = "Ley3 dsrB",
-                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
-                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "Anaerobic bacterium")
-
 species_labels_2015 <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
                     "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
                     "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
@@ -83,20 +54,6 @@ species_labels_2015 <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfiti
 
 # find the number of subjects that have a hit for a species
 ```{r}
-## pre 2020
-subjects_per_species_pre2020 <- closest_ref_filtered_pre2020 %>%
-  # filter out hits that are too far from the closest reference
-  filter(distance < 2.5) %>%
-  # add variable for the subject
-  mutate(subject = str_split(biosample_id, "\\_", simplify = TRUE)[, 2]) %>%
-  # count the number of subjects that have a hit for each species
-  distinct(single_closest_ref, subject) %>%
-  group_by(single_closest_ref) %>%
-  summarize(n_subjects = n())
-
-subjects_per_species_pre2020$logFreq <- log2(subjects_per_species_pre2020$n_subjects + 1)
-
-
 ## 2015
 subjects_per_species_2015 <- closest_ref_filtered_2015 %>%
   # filter out hits that are too far from the closest reference
@@ -116,25 +73,6 @@ subjects_per_species_2015$logFreq <- log2(subjects_per_species_2015$n_subjects +
  
 ## full circular plots 
 ```{r} 
-##could just add another layer with the hits from the NCBI data!
-
-## pre 2020
-plot_pre2020 <- ggtree(rooted_ref_tree_pre2020, layout = "circular")
-
-(full_plot_pre2020 <- plot_pre2020 %<+%
-  subjects_per_species_pre2020 +
-  geom_tree(color = "black") +
-  geom_tippoint(aes(subset = label %in% subjects_per_species_pre2020$single_closest_ref), size = 2, color = "red", alpha = 0.8, position = "jitter") + 
-  scale_color_manual(
-    name = "Hits",
-    values = c(`TRUE` = "black", `FALSE` = "red"),
-    labels = c("Capsule or Stool sample", "No hits")
-  ))
-
-ggsave("capsule_tree_circular_pre2020.png",
-       width = 16, height = 10, units = "in",   # increase for larger output
-       dpi = 600)
-
 ## 2015
 plot_2015 <- ggtree(rooted_ref_tree_2015, layout = "circular")
 
@@ -151,71 +89,8 @@ plot_2015 <- ggtree(rooted_ref_tree_2015, layout = "circular")
 ggsave("capsule_tree_circular_2015.png",
        width = 16, height = 10, units = "in",   # increase for larger output
        dpi = 600)
-
-
-
 ```
-# pre 2020 clade trees
-```{r}
-firmicutes_node_pre2020 <- MRCA(rooted_ref_tree_pre2020, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")
-firmicutes_subset_tree_pre2020 <- tree_subset(rooted_ref_tree_pre2020, firmicutes_node_pre2020, levels_back = 0)
 
-firmicutes_subset_tree_plot_pre2020 <- ggtree(firmicutes_subset_tree_pre2020, aes(color = label %in% subjects_per_species_pre2020$single_closest_ref))
-
-inset_firmicutes_pre2020 <- firmicutes_subset_tree_plot_pre2020 %<+%  
-  subjects_per_species_pre2020 +
-  aes(color = n_subjects) +
-  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
-  geom_text_repel(aes(subset = label %in% subjects_per_species_pre2020$single_closest_ref,
-                    label = species_labels_pre2020[label]), 
-                  size = 3, 
-                  align = F, 
-                  hjust = -.85, 
-                  direction = "y", 
-                  force = 0.1, 
-                  box.padding = 0.1,
-                  segment.size = 0.25,
-                  segment.linetype = "dashed") +
-  theme(legend.position = "left",
-        plot.margin = margin(5, 10, 5, 5)) +  # Right margin for labels
-  hexpand(0.2, direction = 1)
-  
-inset_firmicutes_pre2020
-
-ggsave("capsule_tree_firmicutes_pre2020.png",
-       width = 6, height = 4, units = "in",   # increase for larger output
-       dpi = 600)
-
-desulfovibionaceae_node_pre2020 <- MRCA(rooted_ref_tree_pre2020, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
-desulfovibrionaceae_subset_tree_pre2020 <- tree_subset(rooted_ref_tree_pre2020, desulfovibionaceae_node_pre2020, levels_back = 0)
-
-desulfo_subset_tree_plot_pre2020 <- ggtree(desulfovibrionaceae_subset_tree_pre2020, aes(color = label %in% subjects_per_species_pre2020$single_closest_ref)) 
-
-inset_desulfo_pre2020 <- desulfo_subset_tree_plot_pre2020 %<+%
-  subjects_per_species_pre2020 +
-  aes(color = n_subjects) +
-  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
-  geom_text_repel(aes(subset = label %in% subjects_per_species_pre2020$single_closest_ref,
-                    label = species_labels_pre2020[label]), 
-                  size = 3, 
-                  align = F, 
-                  hjust = -.85, 
-                  direction = "y", 
-                  force = 0.1, 
-                  box.padding = 0.1,
-                  segment.size = 0.25,
-                  segment.linetype = "dashed") +
-  theme(legend.position = "right",
-        plot.margin = margin(5, 10, 5, 5)) +
-  hexpand(0.2, direction = 1)
- 
-inset_desulfo_pre2020
-
-ggsave("capsule_tree_desulfovibrio_pre2020.png",
-       width = 6, height = 4, units = "in",
-       dpi = 600)
-
-```
 ## 2015 clade trees
 ```{r}
 firmicutes_node_2015 <- MRCA(rooted_ref_tree_2015, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")

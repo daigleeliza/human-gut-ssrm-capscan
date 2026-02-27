@@ -128,7 +128,7 @@ inset_firmicutes_2015 <- firmicutes_subset_tree_plot_2015 %<+%
 inset_firmicutes_2015
 
 ggsave("capsule_tree_firmicutes_2015.png",
-       width = 6, height = 4, units = "in",   # increase for larger output
+       width = 8, height = 4, units = "in",   # increase for larger output
        dpi = 600)
 
 desulfovibionaceae_node_2015 <- MRCA(rooted_ref_tree_2015, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
@@ -145,6 +145,7 @@ inset_desulfo_2015 <- desulfo_subset_tree_plot_2015 %<+%
                   size = 3, 
                   align = F, 
                   hjust = -.85, 
+                  nudge_x = 0.15,
                   direction = "y", 
                   force = 0.1, 
                   box.padding = 0.1,
@@ -157,7 +158,7 @@ inset_desulfo_2015 <- desulfo_subset_tree_plot_2015 %<+%
 inset_desulfo_2015
 
 ggsave("capsule_tree_desulfovibrio_2015.png",
-       width = 6, height = 4, units = "in",
+       width = 8, height = 4, units = "in",
        dpi = 600)
 
 ```

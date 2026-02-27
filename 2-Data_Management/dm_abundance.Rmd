@@ -17,9 +17,9 @@ meta <- read_tsv(paste0(configDir, "/sampleReadList.txt"))
 # Read in dsrAB gene counts
 ```{r}
 # capsule data
-capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM_redo.txt"))
+capsule <- read_tsv(paste0(abundanceDir, "/Capsule/concat_dsrAB_Capsule_Abundances_RPKG.txt"))
 # stool data
-stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM_redo.txt"))
+stool <- read_tsv(paste0(abundanceDir, "/Stool/concat_dsrAB_Stool_Abundances_RPKG.txt"))
 # combine capsule and stool data
 samples <- bind_rows(capsule, stool) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))
@@ -39,8 +39,8 @@ samples_no_dups <- samples %>%
 ```{r}
 # filter and remove duplicate genes
 samples_unique_genes <- samples_no_dups %>%
-# Remove RPKMs of 0 (feature counts keeps genes even when nothing has mapped to them) 
-  filter(RPKM>0) %>%
+# Remove RPKGs of 0 (feature counts keeps genes even when nothing has mapped to them) 
+  filter(RPKG>0) %>%
 # make subject a factor
   mutate(subject = factor(subject)) %>%
 # add capsule type (1,2,3,4, most proximal to most distal)
@@ -84,9 +84,9 @@ asr <- read_tsv(paste0(dataDir, "/concat_asrABC_Abundances_RPKM_redo.txt")) %>%
 
 # filter and remove duplicate genes
 asr_unique_cluster <- asr %>%
-  mutate(RPKM = as.numeric(RPKM)) %>%
-# Remove RPKMs of 0 (feature counts keeps genes even when nothing has mapped to them) 
-  filter(RPKM>0) %>%
+  mutate(RPKG = as.numeric(RPKG)) %>%
+# Remove RPKGs of 0 (feature counts keeps genes even when nothing has mapped to them) 
+  filter(RPKG>0) %>%
   mutate(subject = factor(subject)) %>%
 # add capsule type
   left_join(meta %>% select(samplename, Type), 

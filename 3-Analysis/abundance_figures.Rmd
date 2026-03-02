@@ -72,23 +72,23 @@ capsule_type_summary <- samples_unique_subunit_RPKG %>%
   # find the number of genes in each sample and the sum of their RPKGs
   group_by(sample, subject, Type) %>%
   summarise(n_genes = n(), 
-            total_RPKG = sum(RPKG)) %>%
+            total_RPKG_per_1000 = sum(RPKG)*1000) %>%
   ungroup() %>% 
   # find the median number of genes and median RPKG sum for all of the samples for a given subject and Type
   # need this center chunk because different subjects have different numbers of samples!
   group_by(subject, Type) %>%
   summarise(n_median = median(n_genes),
-            median_total_RPKG = median(total_RPKG)) %>%
+            median_total_RPKG_per_1000 = median(total_RPKG_per_1000)) %>%
   ungroup() %>%
   # find the median number of genes and median RPKG sum for each Type
   group_by(Type) %>% 
   summarise(n_subjects=n_distinct(subject),
-            n_median_all_subj = round(median(n_median),4),
-            n_25pct = round(quantile(n_median, probs = 0.25),4),
-            n_75pct = round(quantile(n_median, probs = 0.75),4),
-            median_RPKG_all_subj = round(median(median_total_RPKG),4),
-            RPKG_25pct = round(quantile(median_total_RPKG, probs = 0.25),4),
-            RPKG_75pct = round(quantile(median_total_RPKG, probs = 0.75),4)) %>% 
+            n_median_all_subj = round(median(n_median),2),
+            n_25pct = round(quantile(n_median, probs = 0.25),2),
+            n_75pct = round(quantile(n_median, probs = 0.75),2),
+            median_RPKG_all_subj = round_tidy(median(median_total_RPKG_per_1000),2),
+            RPKG_25pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.25),2),
+            RPKG_75pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.75),2)) %>% 
   mutate(n_genes_per_sample = paste0(n_median_all_subj, " (", n_25pct, ", ", n_75pct, ")"),
          median_RPKG_sum_per_sample = paste0(median_RPKG_all_subj, " (", RPKG_25pct, ", ", RPKG_75pct, ")")) %>%
   select(Type, n_subjects, n_genes_per_sample, median_RPKG_sum_per_sample)
@@ -238,15 +238,15 @@ plot_subj9 <- samples_unique_subunit_RPKG %>%
 
 
 ggplot(plot_subj9,
-       aes(x = Set, y = log10(RPKG), group = interaction(Type, contig), color = combine_species)) + 
+       aes(x = Set, y = log10(RPKG*1000), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
   facet_wrap(~Type, nrow = 1, scale = "free_x") +
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
-    title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by type")),
+    title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
     x = "Set",
-    y = "log10(RPKG)",
+    y = expression(log[10]*"(RPKG per 10"^3~"cells)"),
     color = "Species"
   ) +
   theme_bw() +
@@ -281,16 +281,19 @@ RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
     TRUE ~ single_closest_ref)) %>%
   mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
+  # values are the same whether you get the rpkg per 1000 at a sample or subject level
+  #group_by(sample, subject_sample_type, combine_species) %>%
+  #summarize(sample_RPKG_per_1000=sum(RPKG)*1000) %>%
   group_by(subject_sample_type, combine_species) %>%
-  summarize(sum_RPKG=sum(RPKG))%>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000)%>%
   pivot_wider(
     names_from = combine_species,
-    values_from = sum_RPKG,
+    values_from = sum_RPKG_per_1000,
     values_fill = 0) %>%
     column_to_rownames(., var = "subject_sample_type")
 
 # transform  
-matrix_sample_type_log <- round(log10(RPKG_by_sample_type + 1),4) %>%
+matrix_sample_type_log <- round(log10(RPKG_by_sample_type+1),4) %>%
   as.matrix()
 ```
 
@@ -357,8 +360,8 @@ all_values <- c(as.vector(matrix_capsule), as.vector(matrix_stool_complete))
 min_val <- min(all_values, na.rm = TRUE)
 max_val <- max(all_values, na.rm = TRUE)
 
-col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 25), 
-                       viridis(25, begin = 0.7, end = 0.1))
+col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 50), 
+                       viridis(50, begin = 0.9, end = 0.1))
 
 
 # Create custom cell function to draw split cells
@@ -403,10 +406,10 @@ col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorel
 ```{r}
 png("heatmap_split.png", width = 8, height = 6, units = "in", res = 600)
 
-hm_split <- pheatmap(
+hm_split <- ComplexHeatmap::pheatmap(
   matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)
   cell_fun = cell_func_hm,
-  col = viridis(25, begin = 0.7, end = 0.1),  # For legend
+  col = viridis(50, begin = 0.9, end = 0.1),  # For legend
   cluster_rows = FALSE,
   cluster_cols = FALSE,
   #clustering_distance_rows = "euclidean",
@@ -426,7 +429,7 @@ hm_split <- pheatmap(
   row_title_side = "left",
   
   heatmap_legend_param = list(
-    title = "log10(RPKG + 1)",
+    title = expression(log[10]*"(RPKG per 10"^3~"cells)"),
     legend_height = unit(4, "cm"),
     at = seq(min_val, max_val, length.out = 5),
     labels = sprintf("%.2f", seq(min_val, max_val, length.out = 5)),

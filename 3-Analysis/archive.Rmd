@@ -818,3 +818,22 @@ ggsave("unique_asrABC_v_dsrAB_count.png",
        width = 10, height = 6, units = "in",   # increase for larger output
        dpi = 600)
 ```
+
+
+## want to know if the differences we are seeing are statistically significant
+```{r}
+# is the data normally distributed? 
+hist(plot_RPKG_dsr_median$sum)
+hist(plot_RPKG_asr_median$sum)
+# definitely not
+wilcoxon_dsr_asr = all_genes %>% 
+  # had to choose subjects with both genes present in stool and capsule
+  filter(subject %in% c(2,3,6,7,9,11,12,13,14)) %>%
+  group_by(subject, sample_type) %>% 
+  do(w = wilcox.test(sum~gene_cluster, data=.)) %>% 
+  summarise(subject, sample_type, Wilcox.pval = w$p.value) %>%
+  mutate(padj = p.adjust(Wilcox.pval, method = "BH"))
+```
+
+
+

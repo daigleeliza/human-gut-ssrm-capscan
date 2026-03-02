@@ -110,7 +110,8 @@ firmicutes_subset_tree_plot_2015 <- ggtree(firmicutes_subset_tree_2015, aes(colo
 inset_firmicutes_2015 <- firmicutes_subset_tree_plot_2015 %<+%  
   subjects_per_species_2015 +
   aes(color = n_subjects) +
-  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
+  scale_color_gradient(low = "blue", high = "orange", 
+                       name = "Number of subjects with hits") +
   geom_text_repel(aes(subset = label %in% subjects_per_species_2015$single_closest_ref,
                     label = species_labels_2015[label]), 
                   size = 3, 
@@ -139,7 +140,10 @@ desulfo_subset_tree_plot_2015 <- ggtree(desulfovibrionaceae_subset_tree_2015, ae
 inset_desulfo_2015 <- desulfo_subset_tree_plot_2015 %<+%
   subjects_per_species_2015 +
   aes(color = n_subjects) +
-  scale_color_gradient(low = "blue", high = "orange", name = "Number of subjects with hits") +
+  scale_color_gradient(low = "blue", high = "orange", 
+                       name = "Number of subjects with hits",
+                       breaks = scales::pretty_breaks(n = 4),
+                       labels = scales::label_number(accuracy = 1)) +
   geom_text_repel(aes(subset = label %in% subjects_per_species_2015$single_closest_ref,
                     label = species_labels_2015[label]), 
                   size = 3, 

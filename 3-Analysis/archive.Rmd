@@ -715,3 +715,106 @@ ggsave("capsule_tree_desulfovibrio_pre2020.png",
 
 ```
 
+
+##ASR 
+
+# how do counts of dsrAB compare to counts of asrABC
+```{r}
+# Get median contigs for each subject
+plot_count_dsr <- dsr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+# find number of unique clusters for each sample
+  group_by(subject, sample, Type) %>%
+  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
+  group_by(subject, Type) %>% 
+  summarize(median_gene_set = median(n_contigs))
+
+plot_count_asr <- asr_unique %>%
+  group_by(subject, sample, Type) %>%
+  summarize(n_contigs = n_distinct(contig), .groups="drop") %>%
+  group_by(subject, Type) %>%
+  summarize(median_gene_set = median(n_contigs))
+```
+
+```{r}
+plot_count_asr %>%
+  ggplot(aes(x = Type, y = median_gene_set)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(color = Type),
+              alpha = 0.7, 
+              size = 3,
+              position = position_jitter(width = 0.15, height = 0)) +
+  scale_color_manual(values = jitter_colors) +
+  labs(
+    title = "Count of asrABC gene clusters across sample location",
+    x = "Sample Location",
+    y = "Median gene cluster count per subject",
+    color = "Type"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 20),
+    axis.title.y = element_text(size = 20),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    plot.title = element_text(size = 20, hjust = 0.5),
+    plot.subtitle = element_text(size = 24, hjust = 0.5))
+
+```
+
+#box and jitter of both gene clusters
+```{r}
+# combine asr and dsr data
+all_genes_counts <- bind_rows(
+  dsr = plot_count_dsr,
+  asr = plot_count_asr,
+  .id = "gene_cluster")
+
+# plot a box for each gene for each type, facet by subject
+all_genes_counts %>%
+  ggplot(aes(x = Type, y = median_gene_set, fill = gene_cluster)) +
+  geom_boxplot(color = "black",
+               position = position_dodge(width = 0.8),
+               width = 0.6,
+               outlier.shape = NA) +
+  # Jitter points with viridis colors
+  geom_jitter(aes(color = gene_cluster),
+              alpha = 0.9, 
+              size = 1.6,
+              position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
+  scale_color_manual(values = gene_colors) +
+  scale_fill_manual(values = c("transparent", "transparent"), guide = "none") +
+  guides(fill = "none") +
+  labs(
+    title = expression(paste("Count of ", italic(asrABC), " vs. ", italic(dsrAB), " gene clusters by sample location across subjects")),
+    x = "Sample location",
+    y = "Median gene cluster count per subject",
+    color = "Gene cluster"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 5)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14, angle = 60, hjust = 1),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    legend.position = "right",
+    legend.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 14),
+    plot.title = element_text(size = 18, hjust = 0.5),
+    plot.subtitle = element_text(size = 16, hjust = 0.5))
+
+ggsave("unique_asrABC_v_dsrAB_count.png",
+       width = 10, height = 6, units = "in",   # increase for larger output
+       dpi = 600)
+```

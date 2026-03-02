@@ -43,6 +43,7 @@ samples_unique_subunit_manual <- samples_unique_gene_casette %>%
   filter(!geneNum %in% unknown_species) %>%
   mutate(single_closest_ref = ifelse(contig == "k141_113757", "Desulfovibrio_piger__DslPige3", single_closest_ref))
 
+## value of 330 comes from this
 samples_unique_subunit_RPKG <- samples_unique_subunit_manual %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
@@ -89,8 +90,8 @@ capsule_type_summary <- samples_unique_subunit_RPKG %>%
             median_RPKG_all_subj = round_tidy(median(median_total_RPKG_per_1000),2),
             RPKG_25pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.25),2),
             RPKG_75pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.75),2)) %>% 
-  mutate(n_genes_per_sample = paste0(n_median_all_subj, " (", n_25pct, ", ", n_75pct, ")"),
-         median_RPKG_sum_per_sample = paste0(median_RPKG_all_subj, " (", RPKG_25pct, ", ", RPKG_75pct, ")")) %>%
+  mutate(n_genes_per_sample = paste0(n_median_all_subj, " [IQR ", n_25pct, "-", n_75pct, "]"),
+         median_RPKG_sum_per_sample = paste0(median_RPKG_all_subj, " [IQR ", RPKG_25pct, "-", RPKG_75pct, "]")) %>%
   select(Type, n_subjects, n_genes_per_sample, median_RPKG_sum_per_sample)
 ```
 

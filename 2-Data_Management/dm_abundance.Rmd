@@ -46,6 +46,8 @@ samples_unique_genes <- samples_no_dups %>%
 # add capsule type (1,2,3,4, most proximal to most distal)
   left_join(meta %>% select(samplename, Type, Set), 
             by = c("sample" = "samplename")) %>%
+  #remove practice capsules found in subject 1
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
 # filter for unique genes in each sample
 # want to keep gene domain with the highest score, if there is a tie return just the first hit encountered
   group_by(geneID, sample) %>%
@@ -88,8 +90,10 @@ asr_unique_cluster <- asr %>%
   filter(RPKG>0) %>%
   mutate(subject = factor(subject)) %>%
 # add capsule type
-  left_join(meta %>% select(samplename, Type), 
+  left_join(meta %>% select(samplename, Type, Set), 
             by = c("sample" = "samplename")) %>%
+  #remove practice capsules found in subject 1
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
 # filter for unique genes in each sample
 # want to keep gene domain with the highest score, if there is a tie return just the first hit encountered
   group_by(geneID, sample) %>%

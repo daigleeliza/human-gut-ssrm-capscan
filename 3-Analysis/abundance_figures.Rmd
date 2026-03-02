@@ -135,13 +135,11 @@ species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" =
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
 ```
 
-# SUPP. FIG. 5
+
 # plot RPKG for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
 # this plot combines the two D. piger and two B. wadsworthia species
 ```{r}
 samples_unique_subunit_RPKG %>%
-  #remove moorella because its distance from the queries is 7.5 (all others are less than 2.5)
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
@@ -155,7 +153,7 @@ samples_unique_subunit_RPKG %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   # order subjects based on heatmap order
   mutate(subject = factor(subject, levels = c("12", "9", "14", "2", "13", "7", "3", "6", "4", "11", "1"))) %>%
-  ggplot(aes(x = Type, y = log10(RPKG))) +
+  ggplot(aes(x = Type, y = log10(RPKG)*1000)) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
@@ -171,7 +169,7 @@ samples_unique_subunit_RPKG %>%
     color = guide_legend(
       override.aes = list(size = 4)
     )) +
-  facet_grid(subject ~ combine_species, 
+  facet_wrap(~ combine_species, 
              #scale = "free_y",
              labeller = labeller(combine_species = label_parsed)) +
   labs(
@@ -196,7 +194,50 @@ samples_unique_subunit_RPKG %>%
 ggsave("dsrAB_RPKG_combine_species.png",
        width = 18, height = 14, units = "in",   # increase for larger output
        dpi = 600)
+
 ```
+## SUPP. FIG. 5
+```{r}
+# anotha option 
+plot_capsule_differences <- samples_unique_subunit_RPKG %>%
+  filter(!Type == "Stool") %>%
+  filter(!single_closest_ref %in% c("uncultured_bacterium__EF645667","Desulfitibacter_alkalitolerans__DfiAlka2")) %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger",
+                                            "Bilophila_species",
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  group_by(subject, Type, combine_species) %>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop")
+
+ggplot(plot_capsule_differences, 
+       aes(x = Type, y = log10(sum_RPKG_per_1000), group = subject)) +
+  geom_point(size = 2, alpha = 0.8, col = "gray60") +
+  geom_line(alpha = 0.4, col = "gray60") +  # connects same subject across capsule types
+  facet_wrap(~ combine_species, nrow = 1, labeller = label_parsed) +
+  labs(x = "Capsule Type", 
+       y = expression(log[10]*"(RPKG per 10"^3~"cells)")) +
+  theme_bw() + 
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    #legend.text = element_text(size = 14),
+    #legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 14, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    plot.title = element_text(size = 20, hjust = 0.5)
+  )
+ggsave("RPKG_across_capsules.png",
+       width = 12, height = 8, units = "in",   # increase for larger output
+       dpi = 600)
+```
+
 
 ## sampling variability for subject 9 FIGURE 5
 ```{r}
@@ -215,28 +256,6 @@ plot_subj9 <- samples_unique_subunit_RPKG %>%
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
 
-# # Get contigs per species
-# contigs_by_species <- plot_subj9 %>%
-#   group_by(combine_species) %>%
-#   summarize(contigs = list(unique(contig))) 
-
-# # Generate shades automatically
-# contig_colors <- c(
-#   setNames(
-#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[1]]), palette = "Greens", l = c(40, 90)),
-#     contigs_by_species$contigs[[1]]
-#   ),
-#   setNames(
-#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[2]]), palette = "Blues", l = c(30, 80)),
-#     contigs_by_species$contigs[[2]]
-#   ),
-#   setNames(
-#     colorspace::sequential_hcl(n = length(contigs_by_species$contigs[[3]]), palette = "Oranges", l = c(20, 80)),
-#     contigs_by_species$contigs[[3]]
-#   )
-# )
-
-
 ggplot(plot_subj9,
        aes(x = Set, y = log10(RPKG*1000), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
@@ -245,19 +264,22 @@ ggplot(plot_subj9,
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    x = "Set",
     y = expression(log[10]*"(RPKG per 10"^3~"cells)"),
     color = "Species"
   ) +
   theme_bw() +
+  scale_x_discrete(labels = c("2" = "Afternoon", 
+                             "3" = "Evening",
+                             "4" = "Afternoon", 
+                             "5" = "Evening")) +
   theme(
     strip.background = element_blank(),
     strip.text = element_text(size = 14),
     legend.text = element_text(size = 12),
     legend.title = element_text(size = 14),
-    axis.text.x = element_text(size = 12),
+    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
     axis.text.y = element_text(size = 12),
-    axis.title.x = element_text(size = 16),
+    axis.title.x = element_blank(),
     axis.title.y = element_text(size = 16),
     plot.title = element_text(size = 20, hjust = 0.5)
   )

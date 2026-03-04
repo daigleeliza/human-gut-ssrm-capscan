@@ -67,6 +67,16 @@ unique_hits_summary_asr <- asr_unique %>%
 figure_6a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "sample_type", suffix = c("_dsr", "_asr"))
 ```
 
+#How many dsrAB hits have scores <200
+```{r}
+under200 <- dsr_unique %>%
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  filter(Score<200)
+(length(unique(under200$contig)))
+  
+```
+
+
 # How do RPKGs compare to the dsrAB genes? 
 # Cannot plot total RPKG since asrABC protein has 3 subunits while dsrAB has 2.
 # Using median to account for this
@@ -123,7 +133,7 @@ all_genes %>%
               alpha = 0.8, 
               size = 1.6,
               position = position_jitterdodge(jitter.width = 0.15, jitter.height = 3, dodge.width = 0.8)) +
-  scale_color_manual(values = gene_colors, labels = list(expression(italic(asrABC)), expression(italic(dsrAB)), parse = TRUE)) +
+  scale_color_manual(values = gene_colors, labels = c(expression(italic(asrABC)), expression(italic(dsrAB)))) +
   scale_fill_manual(values = c("transparent", "transparent"), guide = "none") +
   guides(fill = "none") +
   facet_wrap(~ subject, 
@@ -131,11 +141,11 @@ all_genes %>%
              strip.position = "top",
              labeller = labeller(subject = function(x) paste("Subject", x))) +
   labs(
-    title = expression(paste("Abundance of ", italic(asrABC), " vs. ", italic(dsrAB), " by sample type across subjects")),
-    subtitle = "Each point represents a sample",
+    title = expression(paste("Abundances of ", italic(asrABC), " and ", italic(dsrAB), " across sample types and subjects")),
+    #subtitle = "Each point represents a sample",
     x = "Sample type",
     #median was taken across a contig to account for subunits
-    y = "log10(sum of RPKG)",
+    y = expression(log[10]*"(RPKG per 10"^3~"cells)"),
     color = "Gene cluster"
   ) +
   theme_bw() +
@@ -162,6 +172,8 @@ ggsave("median_RPKG_asrABC_v_dsrAB.png",
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
 ```
+
+#ratio plot figure 6B
 ```{r}
 all_genes_subset <- all_genes %>%
   group_by(sample) %>%
@@ -190,7 +202,7 @@ plot_ratios %>%
   labs(
     title = expression(paste("Comparing ", italic(dsrAB), " to ", italic(asrABC), " abundances in the small and large intestines")),
     x = "Sample type",
-    y = expression(paste("Ratio of ", italic(dsrAB), " to ", italic(asrABC))),
+    y = expression(paste(log[2]*"(", italic(dsrAB), ":", italic(asrABC), ")")),
     color = "Sample type"
   ) +
   theme_bw() +
@@ -208,5 +220,16 @@ ggsave("ratio_RPKG_asrABC_v_dsrAB.png",
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
   
+```
+```{r}
+#ratios are not normally distributed and the samples are not independent of one another
+hist(plot_ratios$ratio_dsr_asr)
+
+median_ratios <- plot_ratios %>%
+  group_by(subject, sample_type) %>%
+  summarize(median_ratio = median(ratio_dsr_asr))
+
+wilcox.test(median_ratio ~ sample_type, data = median_ratios)
+
 ```
 

@@ -55,6 +55,7 @@ IMPORTANT WARNING: Alignment column 527 contains only undetermined values which 
 IMPORTANT WARNING: Alignment column 528 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 529 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 530 contains only undetermined values which will be treated as missing data
+IMPORTANT WARNING: Alignment column 531 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 537 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 602 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 633 contains only undetermined values which will be treated as missing data
@@ -177,25 +178,14 @@ IMPORTANT WARNING: Alignment column 1247 contains only undetermined values which
 IMPORTANT WARNING: Alignment column 1248 contains only undetermined values which will be treated as missing data
 IMPORTANT WARNING: Alignment column 1249 contains only undetermined values which will be treated as missing data
 
-
-IMPORTANT WARNING: Sequences rifcsplowo2_01_scaffold_254664_dsrB and rifcsplowo2_12_scaffold_209407_dsrB are exactly identical
-
-
-IMPORTANT WARNING: Sequences rifcsp2_19_4_full_scaffold_50699_dsrB and rifcsp2_19ft_1_scaffold_29633_dsrB are exactly identical
-
 IMPORTANT WARNING
-Found 2 sequences that are exactly identical to other sequences in the alignment.
-Normally they should be excluded from the analysis.
-
-
-IMPORTANT WARNING
-Found 178 columns that contain only undetermined values which will be treated as missing data.
+Found 179 columns that contain only undetermined values which will be treated as missing data.
 Normally these columns should be excluded from the analysis.
 
-An alignment file with undetermined columns and sequence duplicates removed has already
-been printed to file workflow/out/cleanHits/StoolCapsule_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa.reduced
+Just in case you might need it, an alignment file with 
+undetermined columns removed is printed to file workflow/out/cleanHits/compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa.reduced
 
-Alignment has 178 completely undetermined sites that will be automatically removed from the input data
+Alignment has 179 completely undetermined sites that will be automatically removed from the input data
 
 Found a total of 1280 taxa in tree file workflow/out/modelParams/RAxML_result.Daigle2026
 
@@ -217,7 +207,7 @@ Charlie Taylor    (UF)
 
 Alignment has 1066 distinct alignment patterns
 
-Proportion of gaps and completely undetermined characters in this alignment: 60.76%
+Proportion of gaps and completely undetermined characters in this alignment: 66.15%
 
 RAxML likelihood-based placement algorithm
 
@@ -239,34 +229,34 @@ Using fixed base frequencies
 
 RAxML was called as follows:
 
-raxmlHPC -f v -T 4 -R workflow/out/modelParams/RAxML_binaryModelParameters.Daigle2026 -r workflow/out/modelParams/RAxML_result.Daigle2026 -s workflow/out/cleanHits/StoolCapsule_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa -m PROTGAMMADAYHOFF -G 0.1 -n Daigle2026_frag_capsule -w /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput 
+raxmlHPC -f v -T 4 -R workflow/out/modelParams/RAxML_binaryModelParameters.Daigle2026 -r workflow/out/modelParams/RAxML_result.Daigle2026 -s workflow/out/cleanHits/compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa -m PROTGAMMADAYHOFF -G 0.1 -n Daigle2026_no_2018 -w /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput 
 
 
 
 RAxML is reading a binary model file and not optimizing model params
-RAxML placement algorithm: You provided a reference tree with 1280 taxa; alignmnet has 2510 taxa
-1230 query taxa will be placed using maximum likelihood
+RAxML placement algorithm: You provided a reference tree with 1280 taxa; alignmnet has 3049 taxa
+1769 query taxa will be placed using maximum likelihood
 
 RAxML Evolutionary Placement Algorithm
 
-Likelihood of reference tree: -352150.814957
+Likelihood of reference tree: -352150.814955
 
-RAxML will place 1230 Query Sequences into the 2557 branches of the reference tree with 1280 taxa
+RAxML will place 1769 Query Sequences into the 2557 branches of the reference tree with 1280 taxa
 
 EPA heuristics: determining 256 out of 2557 most promising insertion branches
-Overall Classification time: 15996.339223
+Overall Classification time: 20671.290284
 
 
 
-Labelled reference tree including branch labels and query sequences written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_labelledTree.Daigle2026_frag_capsule
+Labelled reference tree including branch labels and query sequences written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_labelledTree.Daigle2026_no_2018
 
-Labelled reference tree with branch labels (without query sequences) written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_originalLabelledTree.Daigle2026_frag_capsule
+Labelled reference tree with branch labels (without query sequences) written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_originalLabelledTree.Daigle2026_no_2018
 
-Labelled reference tree with branch labels in portable pplacer/EPA format (without query sequences) written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_portableTree.Daigle2026_frag_capsule.jplace
+Labelled reference tree with branch labels in portable pplacer/EPA format (without query sequences) written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_portableTree.Daigle2026_no_2018.jplace
 
-Classification result file written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_classification.Daigle2026_frag_capsule
+Classification result file written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_classification.Daigle2026_no_2018
 
-Classification result file using likelihood weights written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_classificationLikelihoodWeights.Daigle2026_frag_capsule
+Classification result file using likelihood weights written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_classificationLikelihoodWeights.Daigle2026_no_2018
 
-Classification entropy result file using likelihood weights written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_entropy.Daigle2026_frag_capsule
+Classification entropy result file using likelihood weights written to file: /storage/group/jag548/default/projects/capscan-gen1/meta/workflow/out/raxmlOutput/RAxML_entropy.Daigle2026_no_2018
 

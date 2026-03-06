@@ -1,0 +1,4 @@
+Geneid	Chr	Start	End	Strand	Length	workflow/out/mapping/bam/CoAssembly/Stool_5/C21_1.bam	RPKG	geneLoc	geneNum	Score
+2305_4	k141_60828	2528	3526	-	999	25	0.0863676	Stool_5.k141_60828_4/1-328	Stool_5.k141_60828_4	484.6
+2305_3	k141_60828	1738	2526	-	789	23	0.100607	Stool_5.k141_60828_3/3-262	Stool_5.k141_60828_3	433.9
+2305_2	k141_60828	759	1724	-	966	16	0.0571636	Stool_5.k141_60828_2/2-315	Stool_5.k141_60828_2	526.9

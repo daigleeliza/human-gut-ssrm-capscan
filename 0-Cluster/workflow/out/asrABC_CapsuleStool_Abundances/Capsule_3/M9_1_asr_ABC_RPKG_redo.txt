@@ -1,0 +1,4 @@
+Geneid	Chr	Start	End	Strand	Length	workflow/out/mapping/bam/CoAssembly/Capsule_3/M9_1.bam	RPKG	geneLoc	geneNum	Score
+536_16	k141_9401	13008	14027	-	1020	0	0	Capsule_3.k141_9401_16/1-334	Capsule_3.k141_9401_16	463.6
+536_15	k141_9401	12203	13015	-	813	0	0	Capsule_3.k141_9401_15/3-270	Capsule_3.k141_9401_15	387.7
+536_14	k141_9401	11139	12188	-	1050	0	0	Capsule_3.k141_9401_14/2-315	Capsule_3.k141_9401_14	492.0

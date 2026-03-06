@@ -206,7 +206,17 @@ rule all:
 			zip,
 			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
-		# concatenate .faa files
+		# fixing formatting for the .csvs
+		expand(join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter_formatted.csv"), ABC=['A','B','C']),
+		# filter .csv
+		join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv")
+		# compile csv files
+		join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
+		# concatenate .faa files ## THIS IS WHERE YOU CAN START based on files in repo
 		join(config["asrHMMERDir"],"compiled_asr_A_hits.faa"),
 		join(config["asrHMMERDir"],"compiled_asr_B_hits.faa"),
 		join(config["asrHMMERDir"],"compiled_asr_C_hits.faa")
@@ -214,15 +224,6 @@ rule all:
 		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_A.faa"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_B.faa"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_C.faa"), coassembly=coassemblies)
-		# fixing formatting for the .csvs
-		expand(join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter_formatted.csv"), ABC=['A','B','C']),
-		#filter .csv
-		join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv")
-		join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
 		# parse HMMER domain table		
 		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_B_hits.csv"), coassembly=coassemblies),
@@ -238,11 +239,12 @@ rule all:
 		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_B.sto"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_C.sto"), coassembly=coassemblies)
 
-include: "workflow/rules/ASRgeneabun.smk"
-include: "workflow/rules/ASRhmmer.smk"
-include: "workflow/rules/fragmentInsertionNo2018.smk"
+include: "workflow/rules/getTreeInfoCapsule.smk"
+include: "workflow/rules/fragmentInsertionCapsule.smk"
 include: "workflow/rules/cleanHitsCapsule.smk"
 include: "workflow/rules/runHMMERCapsule.smk"
 include: "workflow/rules/getGeneAbunCapsule.smk"
 include: "workflow/rules/perGeneCounts.smk"
 include: "workflow/rules/mapReads.smk"
+include: "workflow/rules/ASRgeneabun.smk"
+include: "workflow/rules/ASRhmmer.smk"

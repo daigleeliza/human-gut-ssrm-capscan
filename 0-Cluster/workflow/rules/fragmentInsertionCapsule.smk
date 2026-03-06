@@ -1,3 +1,25 @@
+#can reuse this from the NCBI rule
+#rule estimateModelParams:
+#	input:
+#		refMSA=config["refMSA"],
+#		refTree="config/dsrAB_consensus_phylogeny.newick"
+#	output:
+#		modelParams=join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtension']}"),
+#		refTree=join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}")
+#	conda:
+#		"../envs/raxml.yml"
+#	threads: 8
+#	resources:
+#		time=30,
+#		mem_mb=16000
+#	params:
+#		outputDir=config["modelParamsDir"],
+#		treeFileExtension=config["treeFileExtension"]
+#	shell:
+#		"""
+#		raxmlHPC -f e -m PROTGAMMADAYHOFF -T 8 -s {input.refMSA} -t {input.refTree} -n {params.treeFileExtension} -w $(pwd)/workflow/out/modelParams
+#		"""
+
 rule runRAXML_capsule_no_2018:
 	input:
 		seqAlignment=join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),

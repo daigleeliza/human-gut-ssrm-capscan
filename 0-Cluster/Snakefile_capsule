@@ -104,17 +104,17 @@ rule all:
 		# combine stool and capsule csv files
 		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
 		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv")
-		# combine stool and capsule .faa files ## THIS IS WHERE YOU CAN START based on files in repo
+		# combine stool and capsule .faa files 
 		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_bact_hits.faa"),
 		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_arch_hits.faa")
-		# convert .sto to .faa
-		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
-		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_arch.faa"), coassembly=coassemblies),
-		# combine stool csv files and capsule csv files separately
+		# combine stool csv files and capsule csv files separately ## THIS IS WHERE YOU CAN START based on files in repo
 		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
 		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
 		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),		
+		# convert .sto to .faa
+		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
+		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_arch.faa"), coassembly=coassemblies),
 		# parse hmmer domain table
 		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly=coassemblies),
 		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly=coassemblies),

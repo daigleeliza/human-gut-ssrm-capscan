@@ -46,47 +46,6 @@ rule parseHMMER:
 		python3 workflow/scripts/parse_hmmer_domtable.py {input.domOut_asr_C} {output.asr_C}
 		"""
 
-rule combineCSV_ASR:
-	input:
-		asr_A=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
-		asr_B=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_B_hits.csv"), coassembly=coassemblies),
-		asr_C=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_C_hits.csv"), coassembly=coassemblies)
-	output:
-		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
-		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
-		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
-	shell:
-		"""
-		cat {input.asr_A} > {output.asr_A}
-		cat {input.asr_B} > {output.asr_B}
-		cat {input.asr_C} > {output.asr_C}
-		"""
-
-rule filterHMM_ASR:
-	input:
-		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
-		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
-		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
-	output:
-		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
-		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
-		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv")
-	threads: 1
-	resources:
-		mem_mb=1000,
-		time=30
-	params:
-		asr_A_cutoff=config["asr_A_tc"],
-		asr_B_cutoff=config["asr_B_tc"],
-		asr_C_cutoff=config["asr_C_tc"]
-	shell:
-		"""
-		awk -F',' '$8 >= {params.asr_A_cutoff}' {input.asr_A} > {output.asr_A}
-		awk -F',' '$8 >= {params.asr_B_cutoff}' {input.asr_B} > {output.asr_B}
-		awk -F',' '$8 >= {params.asr_C_cutoff}' {input.asr_C} > {output.asr_C}
-		"""
-
-
 # awk statement to remove info on hmmer search and to include the coassembly at the beginning of the line
 rule testConvert:
 	input: 
@@ -155,4 +114,44 @@ rule combineFAA_ASR:
 		cat {input.asr_A} > {output.asr_A}
 		cat {input.asr_B} > {output.asr_B}
 		cat {input.asr_C} > {output.asr_C}
+		"""
+
+rule combineCSV_ASR:
+	input:
+		asr_A=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
+		asr_B=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_B_hits.csv"), coassembly=coassemblies),
+		asr_C=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_C_hits.csv"), coassembly=coassemblies)
+	output:
+		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
+		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
+		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
+	shell:
+		"""
+		cat {input.asr_A} > {output.asr_A}
+		cat {input.asr_B} > {output.asr_B}
+		cat {input.asr_C} > {output.asr_C}
+		"""
+
+rule filterHMM_ASR:
+	input:
+		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
+		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
+		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
+	output:
+		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
+		asr_B=join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
+		asr_C=join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv")
+	threads: 1
+	resources:
+		mem_mb=1000,
+		time=30
+	params:
+		asr_A_cutoff=config["asr_A_tc"],
+		asr_B_cutoff=config["asr_B_tc"],
+		asr_C_cutoff=config["asr_C_tc"]
+	shell:
+		"""
+		awk -F',' '$8 >= {params.asr_A_cutoff}' {input.asr_A} > {output.asr_A}
+		awk -F',' '$8 >= {params.asr_B_cutoff}' {input.asr_B} > {output.asr_B}
+		awk -F',' '$8 >= {params.asr_C_cutoff}' {input.asr_C} > {output.asr_C}
 		"""

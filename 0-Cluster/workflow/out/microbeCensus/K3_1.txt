@@ -1,0 +1,13 @@
+Parameters
+metagenome:	workflow/out/filtered/filtered/K3_1-filtered.1.fastq.gz,workflow/out/filtered/filtered/K3_1-filtered.2.fastq.gz
+reads_sampled:	2000000
+trimmed_length:	140
+min_quality:	-5
+mean_quality:	-5
+filter_dups:	False
+max_unknown:	100
+
+Results
+average_genome_size:	3381982.817341197
+total_bases:	5697063286
+genome_equivalents:	1684.5334804151498

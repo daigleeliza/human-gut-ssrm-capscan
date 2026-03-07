@@ -1,0 +1,13 @@
+Parameters
+metagenome:	workflow/out/filtered/filtered/P23_2-filtered.1.fastq.gz,workflow/out/filtered/filtered/P23_2-filtered.2.fastq.gz
+reads_sampled:	1894258
+trimmed_length:	140
+min_quality:	-5
+mean_quality:	-5
+filter_dups:	False
+max_unknown:	100
+
+Results
+average_genome_size:	2823057.8814962823
+total_bases:	279541490
+genome_equivalents:	99.02081421435005

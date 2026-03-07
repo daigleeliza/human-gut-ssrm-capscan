@@ -1,0 +1,13 @@
+Parameters
+metagenome:	workflow/out/filtered/filtered/E20_2-filtered.1.fastq.gz,workflow/out/filtered/filtered/E20_2-filtered.2.fastq.gz
+reads_sampled:	2000000
+trimmed_length:	140
+min_quality:	-5
+mean_quality:	-5
+filter_dups:	False
+max_unknown:	100
+
+Results
+average_genome_size:	3656594.776041796
+total_bases:	2888597520
+genome_equivalents:	789.9692738517938

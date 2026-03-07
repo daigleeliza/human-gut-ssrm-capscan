@@ -1,3 +1,4 @@
+# convert GFF to GTF
 rule makeGTF:
 	input:
 		gff=join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal.out")
@@ -17,6 +18,7 @@ rule makeGTF:
 		"""
 
 # The output files from the following rules are in the GitHub. Prodigal output, GTF, and bam files can be accessed by contacting authors.
+# get reads per gene
 rule perGeneCounts:
 	input:
 		gtf=join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"),
@@ -35,23 +37,62 @@ rule perGeneCounts:
 		featureCounts -f -p --countReadPairs -t CDS -B -a {input.gtf} -o {output.geneReads} {input.bam} --largestOverlap -T {threads}
 		"""
 
-rule RPKM:
+# get average genome size and genome equivalents for each sample
+#set sample=samples
+rule runMicrobeCensus:
+	input: 
+		filt1=join(config["filterDir"],"{sample}-filtered.1.fastq.gz"),
+		filt2=join(config["filterDir"],"{sample}-filtered.2.fastq.gz")
+	output: "workflow/out/microbeCensus/{sample}.txt"
+	conda: "../envs/microbeCensus.yml"
+	params:
+		tmpDir = config['tmpDir']
+	threads: 4
+	resources: 
+		mem_mb=150000,
+		time=240
+	shell:
+		"""
+		export TMPDIR={params.tmpDir}
+		run_microbe_census.py -t {threads} {input.filt1},{input.filt2} {output}
+		"""
+
+# get list of all the genome equivalents for the samples 
+rule getGenomeEquivalents:
+	input: expand(join("workflow/out/microbeCensus/{sample}.txt"), sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)])
+	output: "workflow/out/microbeCensus/genome_equivalents.txt"
+	resources:
+		mem_mb = 16000,
+		time = 30
+	shell:
+		"""
+		echo -e "sample\\tgenome_equivalents" > {output}
+		for f in {input}; do
+			sample=$(basename $f .txt)
+			genomeEquivalents=$(grep "genome_equivalents" $f | awk '{{print $2}}')
+			echo -e "$sample\t$genomeEquivalents" >> {output}
+		done
+		"""
+
+# calculate RPKG
+rule RPKG:
 	input:
-		geneReads=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt")
+		geneReads=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt"),
+		genomeEquivalents="workflow/out/microbeCensus/genome_equivalents.txt"
 	output:
-		geneReadsRPKM=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_RPKM.txt")
+		geneReadsRPKG=join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_microbeCensus_RPKG.txt")
 	threads: 1
 	resources:
 		mem_mb=4000,
 		time=60
 	shell:
 		"""
-		totalMapped=$(awk 'NR > 2 {{sum += $7}} END {{print sum}}' {input.geneReads})
-		awk -v total="$totalMapped" 'BEGIN{{OFS="\\t"}}
+		genomeEquivalents=$(grep "{wildcards.sample}" {input.genomeEquivalents} | awk '{{print $2}}')
+		awk -v genEq="$genomeEquivalents" 'BEGIN{{OFS="\\t"}}
 		NR == 1 {{print; next}}
-		NR == 2 {{print $0, "RPKM"; next}}
+		NR == 2 {{print $0, "RPKG"; next}}
 		{{
-			rpkm = ($7 * 1e9) / ($6 * total)
-			print $0, rpkm
-		}}' {input.geneReads} > {output.geneReadsRPKM}
+			rpkg = ($7 * 1e3) / ($6 * genEq)
+			print $0, rpkg
+		}}' {input.geneReads} > {output.geneReadsRPKG}
 		"""

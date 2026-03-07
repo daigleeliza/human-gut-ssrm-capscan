@@ -20,29 +20,28 @@ rule estimateModelParams:
 		"""
 
 # FRAGMENT INSERTION
-rule runRAXML:
+rule runRAXML_NCBI_no_2018:
 	input:
-		seqAlignment=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa"),
+		seqAlignment=join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
 		modelParams=join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtension']}"),
 		refTree=join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}")
 	params:
 		outputDir=config["raxmlOutputDir"],
-		#Daigle2026_frag
-		fileExtension=config["treeFileExtension_frag"]
+		fileExtension=config["treeFileExtension_no_2018"]
 	conda:
 		"../envs/raxml.yml"
 	threads: 4
 	resources:
-		time=360,
-		mem_mb=8000
+		time=700,
+		mem_mb=10000
 	output:
-		join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_frag']}"),
-		join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_frag']}")
+		join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018']}"),
+		join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_no_2018']}.jplace")
 	shell:
 		"""
 		raxmlHPC -f v -T {threads} -R {input.modelParams} -r {input.refTree} -s {input.seqAlignment} -m PROTGAMMADAYHOFF -G 0.1 -n {params.fileExtension} -w $(pwd)/workflow/out/raxmlOutput
@@ -51,11 +50,11 @@ rule runRAXML:
 # CLEAN TREE
 rule removeBootstrapValues:
 	input:
-		original=join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_frag']}"),
-		labelled=join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_frag']}")
+		original=join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018']}"),
+		labelled=join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_no_2018']}")
 	output:
-		original=join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap.newick"),
-		labelled=join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap.newick")
+		original=join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018.newick"),
+		labelled=join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018.newick")
 	resources:
 		time=10,
 		mem_mb=500

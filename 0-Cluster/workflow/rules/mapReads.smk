@@ -1,4 +1,4 @@
-# build bowtie2 index files from co-assemblies
+# build bowtie 2 index files from co-assemblies
 # set sample = samples, coassembly = coassemblies
 rule buildIndexFiles_coassemblies:
 	input: join(config["coAssemblyDir"],"{coassembly}/megahit/filtered_contigs_1kb.fasta")
@@ -13,7 +13,7 @@ rule buildIndexFiles_coassemblies:
 		bowtie2-build {input} {params.base} --seed 2525 --threads {threads} --offrate 3
 		"""
 
-# Use bowtie2 to map raw reads to coassemblies.
+# Use bowtie 2 to map raw reads to coassemblies.
 # set sample = samples, set coassembly = coassemblies
 rule mapReads:
 	input:

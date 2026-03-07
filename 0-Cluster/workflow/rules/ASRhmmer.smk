@@ -1,3 +1,4 @@
+# run HMMER search for asrA/B/C
 rule runHMMER:
 	input:
 		join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_out.faa")
@@ -28,6 +29,7 @@ rule runHMMER:
 		hmmsearch -o {output.hmmOut_asr_C} --domtblout {output.domOut_asr_C} -A {output.msa_asr_C} {params.hmm_profile_asr_C} {input}
 		"""
 
+# parse HMMER domain table
 rule parseHMMER:
 	input:
 		domOut_asr_A = join(config["asrHMMERDir"],"domtbl/{coassembly}_asr_A.domtblout"),
@@ -46,6 +48,7 @@ rule parseHMMER:
 		python3 workflow/scripts/parse_hmmer_domtable.py {input.domOut_asr_C} {output.asr_C}
 		"""
 
+# convert from .sto to .faa
 # awk statement to remove info on hmmer search and to include the coassembly at the beginning of the line
 rule testConvert:
 	input: 
@@ -95,6 +98,7 @@ rule testConvert:
 		' > {output.C}
 		"""
 
+# concatenate .faa files ## this is where you can start based on files in repo
 rule combineFAA_ASR:
 	input:
 		asr_A=expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_A.faa"), coassembly=coassemblies),
@@ -116,6 +120,7 @@ rule combineFAA_ASR:
 		cat {input.asr_C} > {output.asr_C}
 		"""
 
+# compile .csv files
 rule combineCSV_ASR:
 	input:
 		asr_A=expand(join(config["asrHMMERDir"],"summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
@@ -132,6 +137,7 @@ rule combineCSV_ASR:
 		cat {input.asr_C} > {output.asr_C}
 		"""
 
+# filter .csv files
 rule filterHMM_ASR:
 	input:
 		asr_A=join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),

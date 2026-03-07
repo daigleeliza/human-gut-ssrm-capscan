@@ -131,14 +131,15 @@ rule all:
 		expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism)
 
-		# get RPKG 
+		# calculate RPKG 
 		expand(
 			join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_microbeCensus_RPKG.txt"),
 			zip,
 			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
-		# get genome equivalents for each sample and concatenate into one .txt
+		# get list of all the genome equivalents for the samples
 		"workflow/out/microbeCensus/genome_equivalents.txt",
+		# get average genome size and genome equivalents for each sample		
 		expand(join("workflow/out/microbeCensus/{sample}.txt"), 
 			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)])
 		# get reads per gene ## THIS IS WHERE YOU CAN START based on files in repo
@@ -147,27 +148,10 @@ rule all:
 			zip,
 			coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
 			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# make GTF
+		# convert GFF to GTF
 		expand(join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"), coassembly=coassemblies)
 
 		# get reads per contig
-		# hard rerun for samples that didn't finish
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_1/M21_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_1/M19_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_12/K20_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_12/M6_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_12/M8_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_12/M10_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_9/G20_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_11/O6_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Stool_9/A7_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Stool_9/A11_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Stool_11/C15_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Stool_14/C21_2_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Stool_14/E11_2_reads_per_contig.txt")
-		# practice
-		join(config["mapDir"], "bam/CoAssembly_contig_reads/Capsule_1/E15_1_reads_per_contig.txt"),
-		join(config["mapDir"], "bam/CoAssembly_gene_reads/Capsule_1/E15_1_reads_per_gene.txt")
 		expand(
 		    join(config["mapDir"], "bam/CoAssembly_contig_reads/{coassembly}/{sample}_reads_per_contig.txt"),
 		    zip,
@@ -195,7 +179,7 @@ rule all:
 		    zip,
 		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
 			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# get bt2 index
+		# get bowtie 2 index
 		expand(join(config["coAssemblyDir"],"{coassembly}/bowtie2_index.1.bt2"), coassembly=coassemblies)
 
 ## getting abundances of asr genes

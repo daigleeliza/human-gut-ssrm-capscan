@@ -1,4 +1,4 @@
-# fix formatting of csv
+# fixing formatting for the .csvs
 rule fixCSV:
 	input: 
 		hmm=join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter.csv")
@@ -21,7 +21,7 @@ rule fixCSV:
 		' {input.hmm} > {output.hmm}
 		""" 
 
-#extract geneReads that are found in filtered csv
+# get asr RPKGs
 rule countASR:
 	input:
 		hmm=expand(join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter_formatted.csv"), ABC=["A","B","C"]),
@@ -52,7 +52,7 @@ rule countASR:
 		mv $temp_file {output}
 		"""
 
-#concatenate all coassemblies' hits
+# concatenate asr RPKGs
 rule concatGeneHits_asr:
 	input:
 		expand(
@@ -66,7 +66,6 @@ rule concatGeneHits_asr:
 	resources:
 		mem_mb=2000,
 		time=120
-	#make one file including all samples: keep only tab separated portion of input, add column for identifying sample, rename columns
 	shell:
 		"""
 		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKG\\tgeneLoc\\tgeneNum\\tScore" > {output}

@@ -20,13 +20,10 @@ refMSA: "config/dsrAB_referenceSequences_aa.faa"
 blastDB: "workflow/out/sequenceSimilarity/db"
 
 # raxml input files
-#treeFileExtension: Christensen2024
 treeFileExtension: Daigle2026
-treeFileExtensionNovel: novelHits
-treeFileExtension_frag: Daigle2026_frag
-treeFileExtension_frag_capsule: Daigle2026_frag_capsule
+treeFileExtension_no_2018: "Daigle2026_no_2018"
+treeFileExtension_no_2018_capsule: "Daigle2026_no_2018_capsule"
 
-paramName: "[date]"
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
 #refTree: "workflow/out/modelParams/RAxML_result."
 hitAndRefResultTree: "workflow/out/raxmlOutputFinal/RAxML_labelledTree_noBootstrap_rooted.newick"
@@ -53,6 +50,10 @@ summaryDir: "workflow/out/dsrAB_hmmer/summary"
 scoreThreshold: 100 # score cutoff
 gapThreshold: 60 # gap filter to remove ultra-gappy sequences
 cleanHitsDir: "workflow/out/cleanHits"
+
+asr_A_tc: 323.15
+asr_B_tc: 288.60
+asr_C_tc: 324.10
 
 # Tree files
 raxmlOutputDir: "workflow/out/raxmlOutput"

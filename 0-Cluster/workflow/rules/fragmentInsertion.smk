@@ -1,21 +1,3 @@
-# make MSA from our result msa (with hits and ref seqs) with Anantharaman2018's novel seqs
-rule runMAFFT_2:
-	input:
-		hitsWithRefMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
-		Anantharaman2018Seqs="config/Anantharaman2018_dsrA_dsrB_noDups.faa"
-	output:
-		resultMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps_withAnantharaman2018Seqs.faa")
-	conda:
-		"../envs/mafft.yml"
-	threads: 4
-	resources:
-		time=30,
-		mem_mb=2000
-	shell:
-		"""
-		mafft --add {input.Anantharaman2018Seqs} --keeplength {input.hitsWithRefMSA} > {output.resultMSA}
-		"""
-
 rule estimateModelParams:
 	input:
 		refMSA=config["refMSA"],

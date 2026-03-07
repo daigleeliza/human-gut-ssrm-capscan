@@ -1,4 +1,16 @@
-## get tree treeInfo
+# can reuse this from the getTreeInfo.smk rule
+#rule getAnantharamanQueriesIDs:
+#	input: "config/Anantharaman2018_dsrA_dsrB_noDups.faa"
+#	output: "workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt"
+#	conda:
+#		"../envs/biopython.yml"
+#	resources:
+#		time=5,
+#		mem_mb=500
+#	shell:
+#		"""
+#		python3 workflow/scripts/Anantharaman2018_querySeqsInTree.py {input} {output}
+#		"""
 
 rule getBranchDistances:
 	input:

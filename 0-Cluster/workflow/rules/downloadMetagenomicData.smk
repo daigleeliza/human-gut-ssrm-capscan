@@ -4,7 +4,7 @@ rule prefetch:
     params:
         acc_num=lambda w: {w.accession_num}
     conda:
-        config["sraEnv"]
+        "../../workflow/envs/sra-tools.yml"
     shell:
         "prefetch {params.acc_num} -o {output}"
 
@@ -16,6 +16,6 @@ rule dump:
     output:
         join(config["dumpDir"],"{accession_num}.fa")
     conda:
-        config["sraEnv"]
+        "../../workflow/envs/sra-tools.yml"
     shell:
         "vdb-dump -f fasta {input} --output-file {output}"

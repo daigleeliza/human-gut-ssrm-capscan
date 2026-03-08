@@ -23,6 +23,7 @@ rule scoreFilter:
 		python3 workflow/scripts/scoreFilter.py {input.archFASTA} {input.archCSV} {output.archFASTA} {output.archCSV} {params.score_threshold} >> {log.arch} 2>&1
 		"""
 
+# combine bact and arch hits
 rule combineArchBact:
 	input:
 		bactCSV = join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_bact_hits_scoreThreshold.csv"),
@@ -38,6 +39,7 @@ rule combineArchBact:
 		cat {input.bactCSV} {input.archCSV} > {output.combinedCSV}
 		"""
 
+# remove duplicates
 rule removeDuplicates:
 	input:
 		join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold.faa")
@@ -55,6 +57,7 @@ rule removeDuplicates:
 		python3 workflow/scripts/removeDuplicates.py {input} {params.output_dir} >> {log} 2>&1
 		"""
 
+# get MSA
 rule runMAFFT:
 	input:
 		hitsFASTA = join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
@@ -74,6 +77,7 @@ rule runMAFFT:
 		python3 workflow/scripts/removeRefFromMSA.py {output.withRefMSA} {input.refMSA} {output.noRefMSA}
 		"""
 
+# trim gaps
 rule trimGaps_identifySubunit:
 	input:
 		MSA=join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
@@ -90,6 +94,7 @@ rule trimGaps_identifySubunit:
 		python3 workflow/scripts/trimGaps_identifySubunit.py {input.MSA} {input.dupsInfo} {output.gapPercCSV} {output.trimmedGapsMSA} {params.gapThreshold}
 		"""
 
+# get final MSA for fragment insertion
 rule compileFinalMSA:
 	input:
 		hitsMSA=join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),

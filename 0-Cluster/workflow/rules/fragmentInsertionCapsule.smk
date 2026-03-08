@@ -1,4 +1,5 @@
-#can reuse this from the NCBI rule
+# can reuse this from the NCBI rule
+# estimating model parameters
 #rule estimateModelParams:
 #	input:
 #		refMSA=config["refMSA"],
@@ -20,6 +21,7 @@
 #		raxmlHPC -f e -m PROTGAMMADAYHOFF -T 8 -s {input.refMSA} -t {input.refTree} -n {params.treeFileExtension} -w $(pwd)/workflow/out/modelParams
 #		"""
 
+# fragment insertion
 rule runRAXML_capsule_no_2018:
 	input:
 		seqAlignment=join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
@@ -47,7 +49,7 @@ rule runRAXML_capsule_no_2018:
 		raxmlHPC -f v -T {threads} -R {input.modelParams} -r {input.refTree} -s {input.seqAlignment} -m PROTGAMMADAYHOFF -G 0.1 -n {params.fileExtension} -w $(pwd)/workflow/out/raxmlOutput
 		"""
 
-# CLEAN TREE
+# clean tree
 rule removeBootstrapValues:
 	input:
 		original=join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018_capsule']}"),

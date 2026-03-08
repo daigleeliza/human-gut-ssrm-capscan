@@ -1,3 +1,4 @@
+# run prodigal
 # set coassembly = coassemblies
 rule runProdigal:
 	input: join(config["coAssemblyDir"],"{coassembly}/megahit/filtered_contigs_1kb.fasta")
@@ -11,6 +12,7 @@ rule runProdigal:
 		prodigal -i {input} -o {output.geneCoords} -a {output.proteinSeqs}
 		"""
 
+# run HMMER for dsrAB genes
 rule runHMMER:
 	input:
 		join(config["prodigalProteinSeqDir"],"{coassembly}.faa")
@@ -32,6 +34,7 @@ rule runHMMER:
 		hmmsearch -o {output.hmmOut_arch} --domtblout {output.domOut_arch} -A {output.msa_arch} {params.hmm_profile_arch} {input}
 		"""
 
+# parse HMMER domain table
 rule parseHMMER:
 	input:
 		bact=join(config["domtblDir"],"{coassembly}_dsrAB_bact.domtblout"),
@@ -45,25 +48,6 @@ rule parseHMMER:
 		"""
 		python3 {params.scripts_dir}/parse_hmmer_domtable.py {input.bact} {output.bact}
 		python3 {params.scripts_dir}/parse_hmmer_domtable.py {input.arch} {output.arch}
-		"""
-
-rule combineCSVpre:
-	input:
-		CapsuleBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = capsule),
-		CapsuleArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = capsule),
-		StoolBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = stool),
-		StoolArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = stool)
-	output":
-		CapsuleBact=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		CapsuleArch=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
-		StoolBact=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		StoolArch=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv")
-	shell:
-		"""
-		cat {input.CapsuleBact} > {output.CapsuleBact}
-		cat {input.CapsuleArch} > {output.CapsuleArch}
-		cat{input.StoolBact} > {output.StoolBact}
-		cat{input.StoolArch} > {output.StoolArch}
 		"""
 
 # convert the HMMER output MSA from stockholm format (.sto) to fasta (.faa)
@@ -83,7 +67,27 @@ rule convertMSA:
 		"""
 
 # files included in the repo starting below
-# combine stool and capsule faa files
+# combine stool .csv files and capsule .csv files separately
+rule combineCSVpre:
+	input:
+		CapsuleBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = capsule),
+		CapsuleArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = capsule),
+		StoolBact=expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly = stool),
+		StoolArch=expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly = stool)
+	output":
+		CapsuleBact=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		CapsuleArch=join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+		StoolBact=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		StoolArch=join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv")
+	shell:
+		"""
+		cat {input.CapsuleBact} > {output.CapsuleBact}
+		cat {input.CapsuleArch} > {output.CapsuleArch}
+		cat{input.StoolBact} > {output.StoolBact}
+		cat{input.StoolArch} > {output.StoolArch}
+		"""
+
+# combine stool and capsule .faa files
 rule combineMSA:
 	input: 
 		bact=expand(join(config["dsrHMMERDir"], "faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
@@ -96,7 +100,7 @@ rule combineMSA:
 		cat {input.bact} > {output.bact}
 		cat {input.arch} > {output.arch}
 		"""
-# combine stool and capsule csv files
+# combine stool and capsule .csv files
 rule combineCSV:
 	input: 
 		bact=expand(join(config["dsrHMMERDir"], "coassemblies/{sampletype}Data_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"), sampletype=sampletype),

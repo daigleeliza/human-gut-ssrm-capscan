@@ -1,5 +1,5 @@
 ---
-title: "checking_cooccurrencce"
+title: "checking_cooccurrence"
 author: "Elizabeth Daigle"
 date: "23 February 2026"
 output: html_document

@@ -320,10 +320,14 @@ RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
 matrix_sample_type_log <- round(log10(RPKG_by_sample_type+1),4) %>%
   as.matrix()
 ```
-# does d.piger or bilophila have a greater abundance across subjects in the stool?
+# does d.piger or bilophila have a greater abundance across subjects in the stool? what about SI?
 ```{r}
 (RPKG_by_sample_type %>%
   filter(grepl("Stool", rownames(.))) %>%
+  select(Bilophila_species) %>%
+  sum())
+(RPKG_by_sample_type %>%
+  filter(grepl("Capsule", rownames(.))) %>%
   select(Bilophila_species) %>%
   sum())
 
@@ -331,6 +335,11 @@ matrix_sample_type_log <- round(log10(RPKG_by_sample_type+1),4) %>%
   filter(grepl("Stool", rownames(.))) %>%
   select(Desulfovibrio_piger) %>%
   sum())
+(RPKG_by_sample_type %>%
+  filter(grepl("Capsule", rownames(.))) %>%
+  select(Desulfovibrio_piger) %>%
+  sum())
+
 ```
 # comparison of bilophila abundance in the SI to the stool
 ```{r}

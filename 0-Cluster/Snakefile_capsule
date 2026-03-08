@@ -45,13 +45,14 @@ def get_subject_sample_list_dropped(coassembly):
 rule all:
 	input:
 		# get tree info
-		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"),
-		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"),
 		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.csv",
 		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.json",
 		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv",
 		#"workflow/out/treeInfo/closestRefList_no_2018_capsule.txt"
 
+		# clean tree
+		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"),
+		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"),
 		# fragment insertion
 		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018_capsule']}"),
 		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018_capsule']}"),

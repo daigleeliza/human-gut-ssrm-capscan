@@ -1,0 +1,13 @@
+name: microbecensus
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - git
+  - numpy
+  - scipy
+  - pip:
+    - /storage/home/ehd5113/miniconda3/bin/MicrobeCensus

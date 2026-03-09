@@ -3,6 +3,14 @@ title: "archive"
 output: html_document
 ---
 
+# if you wanted to see what the Ley sequences are for 2018 seq you need to read in the fragment insertion with the 2018 seqs
+## what are the Ley3 hits?
+```{r}
+ley3 <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule %>% filter(single_closest_ref %in% c("QUERY___Ley3_66761_scaffold_1025_dsrA", "QUERY___Ley3_66761_scaffold_1830_dsrB"))
+#look here to see what they hit in 2015
+ley3_2015_identity <- closestRefInfo_allScoreThresholdHits_capsule_2015 %>% filter(query_id %in% ley3$query_id)
+```
+
 
 ## checking to see if there is a big difference between selecting subunits based on bit score or RPKM
 ```{r}

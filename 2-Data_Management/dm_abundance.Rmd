@@ -28,10 +28,9 @@ samples <- bind_rows(capsule, stool) %>%
 ```{r}
 #which hits are dups?
 # want to make sure they all get filtered out since they have NA for distance
-closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv")) 
-dups <- closest_ref_2015 %>%
+closest_ref_no_2018 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_capsule.csv")) 
+dups <- closest_ref_no_2018 %>%
   filter(is.na(distance))
-  
 
 samples_no_dups <- samples %>%
   filter(!geneLoc %in% dups$hit_id)
@@ -61,26 +60,17 @@ samples_unique_genes <- samples_no_dups %>%
 ```
 # Read in closest reference leaf info; only 2015 references
 ```{r}
-closest_ref <-  read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule.csv"))
-closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv"))
+closest_ref_no_2018 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_capsule.csv"))
 ```
 
 # Add a column to samples that has the single_closest_ref
 ```{r}
-samples_unique_genes_with_names <- samples_unique_genes %>% filter(geneLoc %in% closest_ref$hit_id) %>%
-  left_join(closest_ref %>% select(hit_id, single_closest_ref, distance),
+samples_unique_genes_with_names_no_2018 <- samples_unique_genes %>% filter(geneLoc %in% closest_ref_no_2018$hit_id) %>%
+  left_join(closest_ref_no_2018 %>% select(hit_id, single_closest_ref, distance),
             by = c("geneLoc" = "hit_id")) %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 
-saveRDS(samples_unique_genes_with_names, file = paste0(dataDir, "/samples_unique_genes_with_names.rds"))
-
-
-samples_unique_genes_with_names_2015 <- samples_unique_genes %>% filter(geneLoc %in% closest_ref_2015$hit_id) %>%
-  left_join(closest_ref_2015 %>% select(hit_id, single_closest_ref, distance),
-            by = c("geneLoc" = "hit_id")) %>% 
-  mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
-
-saveRDS(samples_unique_genes_with_names_2015, file = paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
+saveRDS(samples_unique_genes_with_names_no_2018, file = paste0(dataDir, "/samples_unique_genes_with_names_no_2018.rds"))
 ```
 
 ## for the asr genes 

@@ -32,6 +32,7 @@ rule all:
 		join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018']}"),
 		join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_no_2018']}.jplace")
 		# get model parameters (.Daigle2026)
+		# there will also be a log and info file produced
 		#join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtension']}"),
 		#join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}"),
 		

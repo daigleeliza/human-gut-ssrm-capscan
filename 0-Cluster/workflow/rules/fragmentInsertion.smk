@@ -1,3 +1,4 @@
+# estimating model parameters
 rule estimateModelParams:
 	input:
 		refMSA=config["refMSA"],

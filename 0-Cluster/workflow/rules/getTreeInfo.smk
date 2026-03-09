@@ -1,17 +1,17 @@
-#rule getAnantharamanQueriesIDs:
-#	input: "config/Anantharaman2018_dsrA_dsrB_noDups.faa"
-#	output: "workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt"
-#	conda:
-#		"../envs/biopython.yml"
-#	resources:
-#		time=5,
-#		mem_mb=500
-#	shell:
-#		"""
-#		python3 workflow/scripts/Anantharaman2018_querySeqsInTree.py {input} {output}
-#		"""
+rule getAnantharamanQueriesIDs:
+	input: "config/Anantharaman2018_dsrA_dsrB_noDups.faa"
+	output: "workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt"
+	conda:
+		"../envs/biopython.yml"
+	resources:
+		time=5,
+		mem_mb=500
+	shell:
+		"""
+		python3 workflow/scripts/Anantharaman2018_querySeqsInTree.py {input} {output}
+		"""
 
-
+# find distance to nearest reference leaf
 rule getBranchDistances:
 	input:
 		tree=join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018.newick"),
@@ -31,6 +31,7 @@ rule getBranchDistances:
 		python3 workflow/scripts/getBranchDistances.py {input.tree} {input.query_info} {input.Anantharaman2018_seq_list} {output.csv} {output.json}
 		"""
 
+# adds closest reference leaf (by branch distance) and sample ID to all hit sequences from dsrAB HMMER search that passed the score threshold (so, all duplicate sequences)
 rule compileRefInfo:
 	input:
 		queryDistanceCSV="workflow/out/treeInfo/queryDistanceInfo_no_2018.csv",
@@ -49,6 +50,7 @@ rule compileRefInfo:
 		python3 workflow/scripts/compileRefInfo.py {input.queryDistanceCSV} {input.scoreThresholdCSV} {input.biosampleJSON} {output}
 		"""
 
+# make list of closest reference leaves found in this dataset
 rule listClosestRefLeaves:
 	input:
 		queryDistanceJSON="workflow/out/treeInfo/queryDistanceInfo_no_2018.json",

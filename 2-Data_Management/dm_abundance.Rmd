@@ -71,7 +71,7 @@ saveRDS(samples_unique_genes_with_names_no_2018, file = paste0(dataDir, "/sample
 
 ## for the asr genes 
 ```{r}
-asr <- read_tsv(paste0(dataDir, "/concat_asrABC_Abundances_RPKG_redo.txt")) %>%
+asr <- read_tsv(paste0(abundanceDirASR, "/concat_asrABC_Abundances_RPKG_redo.txt")) %>%
   mutate(subject=as.numeric(str_extract(.$coassembly, "\\d+")))  %>% 
   mutate(sample_type = ifelse(grepl("Stool", coassembly), "Stool", "Capsule"))
 

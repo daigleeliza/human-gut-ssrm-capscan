@@ -1,3 +1,4 @@
+# run prodigal
 rule runProdigal:
     input: join(config["dumpDir"],"{accession_num}.fa")
     output:
@@ -10,6 +11,7 @@ rule runProdigal:
         prodigal -i {input} -o {output.geneCoords} -a {output.proteinSeqs}
         """
 
+# run HMMER for dsrAB genes
 rule runHMMER:
     input:
         join(config["prodigalProteinSeqDir"],"{accession_num}.faa")
@@ -31,6 +33,7 @@ rule runHMMER:
         hmmsearch -o {output.hmmOut_arch} --domtblout {output.domOut_arch} -A {output.msa_arch} {params.hmm_profile_arch} {input}
         """
 
+# parse HMMER domain table
 rule parseHMMER:
     input:
         bact=join(config["domtblDir"],"{accession_num}_dsrAB_bact.domtblout"),
@@ -62,6 +65,7 @@ rule convertMSA:
         python3 {params.scripts_dir}/convertFASTA.py {input.arch} {output.arch}
         """
 
+# combine all hits into one arch and one bact csv
 rule combineCSV:
     input:
         bact=expand(join(config["summaryDir"],"{accession_num}_dsrAB_bact_hits.csv"),accession_num=ACCESSION_NUMBERS),
@@ -77,6 +81,7 @@ rule combineCSV:
         cat {input.arch} > {output.arch}
         """
 
+# combine individual .faa files
 rule combineMSA:
     input:
         bact=expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_bact.faa"),accession_num=ACCESSION_NUMBERS),

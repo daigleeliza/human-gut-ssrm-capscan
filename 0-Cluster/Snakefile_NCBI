@@ -10,8 +10,20 @@ with open(config["accessionNumFile"], 'r') as f:
 
 rule all:
 	input:
-		
-		# fragment insertion (.Daigle2026_frag)
+		# calculate branch distances between hit sequences and reference sequences and get other tree info
+		#"workflow/out/treeInfo/closestRefList_no_2018.txt"		
+		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018.csv"
+		#"workflow/out/treeInfo/queryDistanceInfo_no_2018.csv",
+		#"workflow/out/treeInfo/queryDistanceInfo_no_2018.json"
+		# find names of reference sequences from the 2018 database so they can be used as references instead of queries
+		# this file is used as input for the rules in getTreeInfo.smk but has no bearing on results since these sequences
+		# were not inserted into the tree
+		"workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt"
+
+		# remove bootstrap values
+		join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018.newick"),
+		join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018.newick")
+		# fragment insertion
 		join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018']}"),
 		join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018']}"),
 		join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_no_2018']}"),
@@ -49,17 +61,21 @@ rule all:
         #join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
 		#join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
         #join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa"),
-		# run Prodigal then run HMMER search of dsrAB on human gut metagenomic data
+		
+		# run Prodigal 
 		#expand(join(config["prodigalGeneCoordDir"],"{accession_num}_geneCoord.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["prodigalProteinSeqDir"], "{accession_num}.faa"), accession_num=ACCESSION_NUMBERS),
+		# run HMMER search of dsrAB on human gut metagenomic data		
 		#expand(join(config["hmmOutDir"],"{accession_num}_dsrAB_bact.hmm.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["domtblDir"],"{accession_num}_dsrAB_bact.domtblout"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["hmmOutDir"],"{accession_num}_dsrAB_arch.hmm.out"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["domtblDir"],"{accession_num}_dsrAB_arch.domtblout"), accession_num=ACCESSION_NUMBERS),
-		#expand(join(config["summaryDir"],"{accession_num}_dsrAB_bact_hits.csv"), accession_num=ACCESSION_NUMBERS),
-		#expand(join(config["summaryDir"],"{accession_num}_dsrAB_arch_hits.csv"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"sto/{accession_num}_dsrAB_bact.sto"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"sto/{accession_num}_dsrAB_arch.sto"), accession_num=ACCESSION_NUMBERS),
+		# parse HMMER domain table
+		#expand(join(config["summaryDir"],"{accession_num}_dsrAB_bact_hits.csv"), accession_num=ACCESSION_NUMBERS),
+		#expand(join(config["summaryDir"],"{accession_num}_dsrAB_arch_hits.csv"), accession_num=ACCESSION_NUMBERS),
+		# convert from stockholm to fasta
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_bact.faa"), accession_num=ACCESSION_NUMBERS),
 		#expand(join(config["msaDir"],"faa/{accession_num}_dsrAB_arch.faa"), accession_num=ACCESSION_NUMBERS),
 		
@@ -72,7 +88,7 @@ rule all:
 		#"config/Anantharaman2018_dsrA_dsrB_noEDups.faa",
 		#"config/Anantharaman2018_dsrA_dsrB_noDups.json"
 
-include: "workflow/rules/getTreeInfo.smk"
+#include: "workflow/rules/getTreeInfo.smk"
 #include: "workflow/rules/fragmentInsertion.smk"
 #include: "workflow/rules/cleanHits.smk"
 #include: "workflow/rules/runHMMER.smk"

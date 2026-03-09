@@ -1,3 +1,4 @@
+# bit filter csv and faa files
 rule scoreFilter_NCBI:
 	input:
 		bactCSV = join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
@@ -23,6 +24,7 @@ rule scoreFilter_NCBI:
 		python3 {params.scripts_dir}/scoreFilter.py {input.archFASTA} {input.archCSV} {output.archFASTA} {output.archCSV} {params.score_threshold}
 		"""
 
+# combine bact and arch hits
 rule combineArchBact_NCBI:
 	input:
 		bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
@@ -43,6 +45,7 @@ rule combineArchBact_NCBI:
 		cat {input.bactCSV} {input.archCSV} > {output.combinedCSV}
 		"""
 
+# remove duplicates
 rule removeDuplicates_NCBI:
 	input:
 		join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa")
@@ -60,6 +63,7 @@ rule removeDuplicates_NCBI:
 		python3 {params.scripts_dir}/removeDuplicates.py {input} {params.output_dir}
 		"""
 
+# get MSA
 rule runMAFFT_NCBI:
 	input:
 		hitsFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
@@ -81,6 +85,7 @@ rule runMAFFT_NCBI:
 		python3 {params.scripts_dir}/removeRefFromMSA.py {output.withRefMSA} {input.refMSA} {output.noRefMSA}
 		"""
 
+# trim gaps
 rule trimGaps_identifySubunit_NCBI:
 	input:
 		MSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
@@ -98,6 +103,7 @@ rule trimGaps_identifySubunit_NCBI:
 		python3 {params.scripts_dir}/trimGaps_identifySubunit.py {input.MSA} {input.dupsInfo} {output.gapPercCSV} {output.trimmedGapsMSA} {params.gapThreshold}
 		"""
 
+# get final MSA for fragment insertion
 rule compileFinalMSA_NCBI:
 	input:
 		hitsMSA=join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),

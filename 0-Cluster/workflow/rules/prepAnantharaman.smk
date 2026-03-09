@@ -1,3 +1,4 @@
+# removes sequences from the 2018 database that are already in the 2015 database
 rule prepAnantharaman:
 	input: 
 		Anantharaman2018="config/Anantharaman2018_dsrA_dsrB.faa",

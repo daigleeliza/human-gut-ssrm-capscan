@@ -21,11 +21,11 @@ rooted_ref_tree_2015 <- root(ref_tree_2015, c("Moorella_thermoacetica_Y72_copy_2
 # get names of closest references and filter to remove gene duplicates
 ```{r}
 ## 2015 only 
-closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_2015.csv"))
+closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
 
 # read in df that filters out gene duplicates in each sample (selects the domain with the highest bit score) 
 # this df is made in dm_abundance.Rmd
-samples_unique_genes_with_names_2015 <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_2015.rds"))
+samples_unique_genes_with_names_2015 <- readRDS(paste0(dataDir, "/samples_unique_genes_with_names_no_2018.rds"))
 
 # manually select a subunit for the 6 contigs found in contigs_multiple_refs
 partial_genes <- c("Capsule_14.k141_153065_1", "Stool_14.k141_240693_1", "Stool_9.k141_270672_1")

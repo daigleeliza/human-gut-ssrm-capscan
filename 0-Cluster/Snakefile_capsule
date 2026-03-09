@@ -33,7 +33,6 @@ def get_subject_sample_list(coassembly):
 	sample_list = [s for s in sample_list if s not in exclude]
 	return sample_list
 
-#for use in getGeneAbunCapsule.smk so final df doesn't contain a bunch of hits from dropped samples
 def get_subject_sample_list_dropped(coassembly):
 	global df
 	# Querying the DataFrame for samples with the same coassembly wildcard
@@ -44,79 +43,141 @@ def get_subject_sample_list_dropped(coassembly):
 
 rule all:
 	input:
-		# get tree info
-		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.csv",
-		#"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.json",
-		#"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv",
-		#"workflow/out/treeInfo/closestRefList_no_2018_capsule.txt"
+		# get reference file without dups from Mueller 2015
+		# only need to do this once for the two datasets
+		#"config/Anantharaman2018_dsrA_dsrB_noDups.faa",
+		#"config/Anantharaman2018_dsrA_dsrB_noEDups.faa",
+		#"config/Anantharaman2018_dsrA_dsrB_noDups.json",		
 
-		# clean tree
-		#join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"),
-		#join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"),
-		# fragment insertion
-		#join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018_capsule']}"),
-		#join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_no_2018_capsule']}.jplace")
-		
-		# get final MSA for fragment insertion
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
-		# trim gaps
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_gapPercentageInfo.csv"),
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa")
-		# get MSA
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef.faa"),
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa")
-		# remove duplicates
-		#join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
-		#join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noDups.json"),
-		#join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noEDups.faa"),
-		# combine bact and arch hits
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold.faa"),
-		#join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold.csv"),
-		# bit filter .csv and .faa files
-		#join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_bact_hits_scoreThreshold.csv"),
-		#join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_arch_hits_scoreThreshold.csv"),
-		#join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_bact_hits_scoreThreshold.faa"),
-		#join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_arch_hits_scoreThreshold.faa")
-
-		# combine stool and capsule .csv files
-		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv")
-		# combine stool and capsule .faa files 
-		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_bact_hits.faa"),
-		#join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_arch_hits.faa")
-		# combine stool .csv files and capsule .csv files separately ## THIS IS WHERE YOU CAN START based on files in repo
-		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		#join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
-		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
-		#join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),		
-		# convert .sto to .faa
-		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
-		#expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_arch.faa"), coassembly=coassemblies),
-		# parse HMMER domain table
-		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly=coassemblies),
-		#expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly=coassemblies),
-		# run HMMER on dsrAB
-		#expand(join(config["hmmOutDir"],"{coassembly}_dsrAB_bact.hmm.out"), coassembly=coassemblies),
-		#expand(join(config["domtblDir"],"{coassembly}_dsrAB_bact.domtblout"), coassembly=coassemblies),
-		#expand(join(config["hmmOutDir"],"{coassembly}_dsrAB_arch.hmm.out"), coassembly=coassemblies),
-		#expand(join(config["domtblDir"],"{coassembly}_dsrAB_arch.domtblout"), coassembly=coassemblies),
-		#expand(join(config["msaDir"],"sto/{coassembly}_dsrAB_bact.sto"), coassembly=coassemblies),
-		#expand(join(config["msaDir"],"sto/{coassembly}_dsrAB_arch.sto"), coassembly=coassemblies),
 		# run prodigal
-		#expand(join(config["prodigalGeneCoordDir"],"{coassembly}_geneCoord.out"), coassembly=coassemblies),
-		#expand(join(config["prodigalProteinSeqDir"], "{coassembly}.faa"), coassembly=coassemblies),
+		expand(join(config["prodigalGeneCoordDir"],"{coassembly}_geneCoord.out"), coassembly=coassemblies),
+		expand(join(config["prodigalProteinSeqDir"], "{coassembly}.faa"), coassembly=coassemblies),
+		# run HMMER on dsrAB
+		expand(join(config["hmmOutDir"],"{coassembly}_dsrAB_bact.hmm.out"), coassembly=coassemblies),
+		expand(join(config["domtblDir"],"{coassembly}_dsrAB_bact.domtblout"), coassembly=coassemblies),
+		expand(join(config["hmmOutDir"],"{coassembly}_dsrAB_arch.hmm.out"), coassembly=coassemblies),
+		expand(join(config["domtblDir"],"{coassembly}_dsrAB_arch.domtblout"), coassembly=coassemblies),
+		expand(join(config["msaDir"],"sto/{coassembly}_dsrAB_bact.sto"), coassembly=coassemblies),
+		expand(join(config["msaDir"],"sto/{coassembly}_dsrAB_arch.sto"), coassembly=coassemblies),
+		# parse HMMER domain table
+		expand(join(config["summaryDir"], "{coassembly}_dsrAB_bact_hits.csv"), coassembly=coassemblies),
+		expand(join(config["summaryDir"], "{coassembly}_dsrAB_arch_hits.csv"), coassembly=coassemblies),
+		# convert .sto to .faa
+		expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_bact.faa"), coassembly=coassemblies),
+		expand(join(config["msaDir"],"faa/{coassembly}_dsrAB_arch.faa"), coassembly=coassemblies),
+		# combine stool .csv files and capsule .csv files separately ## THIS IS WHERE YOU CAN START based on files in repo
+		join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		join(config["dsrHMMERDir"], "coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+		join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		join(config["dsrHMMERDir"], "coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),		
+		# combine stool and capsule .faa files 
+		join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_bact_hits.faa"),
+		join(config["dsrHMMERDir"],"summary/StoolCapsuleData_compiled_dsrAB_arch_hits.faa"),
+		# combine stool and capsule .csv files
+		join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_bacterial_hits.csv"),
+		join(config["dsrHMMERDir"],"summary/StoolCapsuleData_parsedHMMDomainTableSummary_dsrAB_archaeal_hits.csv"),
+	
+		# bit filter .csv and .faa files
+		join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_bact_hits_scoreThreshold.csv"),
+		join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_arch_hits_scoreThreshold.csv"),
+		join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_bact_hits_scoreThreshold.faa"),
+		join(config["cleanHitsDir"],"StoolCapsule_compiled_dsrAB_arch_hits_scoreThreshold.faa"),
+		# combine bact and arch hits
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold.faa"),
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold.csv"),
+		# remove duplicates
+		join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
+		join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noDups.json"),
+		join(config["cleanHitsDir"], "StoolCapsule_arch_bact_compiled_dsrAB_hits_scoreThreshold_noEDups.faa"),
+		# get MSA
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef.faa"),
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
+		# trim gaps
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_gapPercentageInfo.csv"),
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),
+		# get final MSA for fragment insertion
+		join(config["cleanHitsDir"],"StoolCapsule_arch_bact_compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa"),
+		
+		# get model parameters
+		# can reuse the output from fragmentInsertion.smk
+		#join(config["modelParamsDir"], f"RAxML_binaryModelParameters.{config['treeFileExtension']}"),
+		#join(config["modelParamsDir"], f"RAxML_result.{config['treeFileExtension']}"),
+		# fragment insertion
+		join(config["raxmlOutputDir"], f"RAxML_info.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_classification.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_classificationLikelihoodWeights.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_entropy.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_labelledTree.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_originalLabelledTree.{config['treeFileExtension_no_2018_capsule']}"),
+		join(config["raxmlOutputDir"], f"RAxML_portableTree.{config['treeFileExtension_no_2018_capsule']}.jplace"),
+		# clean tree
+		join(config["raxmlOutputDir"],"RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"),
+		join(config["raxmlOutputDir"],"RAxML_labelledTree_noBootstrap_no_2018_capsule.newick"),
 
+		# find names of reference sequences from the 2018 database so they can be used as references instead of queries
+		# only need to do this once for the two datasets
+		#"workflow/out/treeInfo/Anantharaman2018_queryIDs_inTree.txt",
+		# get tree info
+		"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.csv",
+		"workflow/out/treeInfo/queryDistanceInfo_no_2018_capsule.json",
+		"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv",
+		"workflow/out/treeInfo/closestRefList_no_2018_capsule.txt"
 
 ## getting abundances below 
-		# concatenate RPKGs into Capsule and Stool files
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_Capsule_Abundances_RPKG_redo.txt",
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_Stool_Abundances_RPKG_redo.txt",
+		# get bowtie 2 index
+		expand(join(config["coAssemblyDir"],"{coassembly}/bowtie2_index.1.bt2"), coassembly=coassemblies),
+		# map raw reads to coassemblies
+		expand(
+		    join(config["SAMDir"],"CoAssembly/{coassembly}/{sample}.bt2.log"),
+		    zip,
+		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
+		expand(
+		    join(config["SAMDir"],"CoAssembly/{coassembly}/{sample}.sam"),
+		    zip,
+		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
+		# convert SAM to BAM, remove unmapped reads; get bam index
+		expand(
+		    join(config["mapDir"],"bam/CoAssembly/{coassembly}/{sample}.bam"),
+		    zip,
+		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
+		expand(
+		    join(config["mapDir"],"bam/CoAssembly_index/{coassembly}/{sample}.bam.bai"),
+		    zip,
+		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
+		# get reads per contig ## these files are in the repo
+		expand(
+		    join(config["mapDir"], "bam/CoAssembly_contig_reads/{coassembly}/{sample}_reads_per_contig.txt"),
+		    zip,
+		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
 
+		# convert GFF to GTF
+		expand(join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"), coassembly=coassemblies),
+		# get reads per gene ## THIS IS WHERE YOU CAN START based on files in repo
+		expand(
+			join(config["mapDir"], "bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt"),
+			zip,
+			coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list(c)]),
+		# get average genome size and genome equivalents for each sample		
+		expand(join("workflow/out/microbeCensus/{sample}.txt"), 
+			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
+		# get list of all the genome equivalents for the samples
+		"workflow/out/microbeCensus/genome_equivalents.txt",
+		# calculate RPKG 
+		expand(
+			join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_microbeCensus_RPKG.txt"),
+			zip,
+			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
+
+		# filter dsrAB hits .csv files for Capsule and Stool
+		expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
+		expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
 		# extract RPKGs for dsrAB hits in Capsule and Stool
 		expand(
 			join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_RPKG_redo.txt"),
@@ -128,91 +189,11 @@ rule all:
 			zip,
 			coassembly=[c for c in stool for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in stool for s in get_subject_sample_list_dropped(c)]),
-		# filter dsrAB hits .csv files for Capsule and Stool
-		expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
-		expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism)
-
-		# calculate RPKG 
-		expand(
-			join(config["mapDir"],"bam/CoAssembly_gene_reads/{coassembly}/{sample}_microbeCensus_RPKG.txt"),
-			zip,
-			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
-		# get list of all the genome equivalents for the samples
-		"workflow/out/microbeCensus/genome_equivalents.txt",
-		# get average genome size and genome equivalents for each sample		
-		expand(join("workflow/out/microbeCensus/{sample}.txt"), 
-			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)])
-		# get reads per gene ## THIS IS WHERE YOU CAN START based on files in repo
-		expand(
-			join(config["mapDir"], "bam/CoAssembly_gene_reads/{coassembly}/{sample}_reads_per_gene.txt"),
-			zip,
-			coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# convert GFF to GTF
-		expand(join(config["prodigalDir"],"coassemblies/{coassembly}_contigs_prodigal_GTF.gtf"), coassembly=coassemblies)
-
-		# get reads per contig
-		expand(
-		    join(config["mapDir"], "bam/CoAssembly_contig_reads/{coassembly}/{sample}_reads_per_contig.txt"),
-		    zip,
-		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# convert SAM to BAM, remove unmapped reads; get bam index
-		expand(
-		    join(config["mapDir"],"bam/CoAssembly/{coassembly}/{sample}.bam"),
-		    zip,
-		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		expand(
-		    join(config["mapDir"],"bam/CoAssembly_index/{coassembly}/{sample}.bam.bai"),
-		    zip,
-		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# map raw reads to coassemblies
-		expand(
-		    join(config["SAMDir"],"CoAssembly/{coassembly}/{sample}.bt2.log"),
-		    zip,
-		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		expand(
-		    join(config["SAMDir"],"CoAssembly/{coassembly}/{sample}.sam"),
-		    zip,
-		    coassembly=[c for c in coassemblies for _ in get_subject_sample_list(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list(c)])
-		# get bowtie 2 index
-		expand(join(config["coAssemblyDir"],"{coassembly}/bowtie2_index.1.bt2"), coassembly=coassemblies)
+		# concatenate RPKGs into Capsule and Stool files
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_Capsule_Abundances_RPKG_redo.txt",
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_Stool_Abundances_RPKG_redo.txt"
 
 ## getting abundances of asr genes
-		# getting asr RPKGs and concatenating
-		"workflow/out/asrABC_CapsuleStool_Abundances/concat_asrABC_Abundances_RPKG_redo.txt",
-		expand(
-			join("workflow/out/asrABC_CapsuleStool_Abundances/{coassembly}/{sample}_asr_ABC_RPKG_redo.txt"),
-			zip,
-			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
-			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
-		# fixing formatting for the .csvs
-		expand(join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter_formatted.csv"), ABC=['A','B','C']),
-		# filter .csv
-		join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv")
-		# compile csv files
-		join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
-		join(config["asrHMMERDir"],"compiled_asr_C_hits.csv")
-		# concatenate .faa files ## THIS IS WHERE YOU CAN START based on files in repo
-		join(config["asrHMMERDir"],"compiled_asr_A_hits.faa"),
-		join(config["asrHMMERDir"],"compiled_asr_B_hits.faa"),
-		join(config["asrHMMERDir"],"compiled_asr_C_hits.faa")
-		# convert from .sto to .faa
-		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_A.faa"), coassembly=coassemblies),
-		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_B.faa"), coassembly=coassemblies),
-		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_C.faa"), coassembly=coassemblies)
-		# parse HMMER domain table		
-		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
-		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_B_hits.csv"), coassembly=coassemblies),
-		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_C_hits.csv"), coassembly=coassemblies)
 		# run HMMER search for asrA/B/C
 		expand(join(config["asrHMMERDir"],"out/{coassembly}_asr_A.hmm.out"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"domtbl/{coassembly}_asr_A.domtblout"), coassembly=coassemblies),
@@ -222,14 +203,45 @@ rule all:
 		expand(join(config["asrHMMERDir"],"domtbl/{coassembly}_asr_C.domtblout"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_A.sto"), coassembly=coassemblies),
 		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_B.sto"), coassembly=coassemblies),
-		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_C.sto"), coassembly=coassemblies)
-
-include: "workflow/rules/getTreeInfoCapsule.smk"
-include: "workflow/rules/fragmentInsertionCapsule.smk"
-include: "workflow/rules/cleanHitsCapsule.smk"
+		expand(join(config["asrHMMERDir"],"sto/{coassembly}_asr_C.sto"), coassembly=coassemblies),
+		# parse HMMER domain table		
+		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_A_hits.csv"), coassembly=coassemblies),
+		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_B_hits.csv"), coassembly=coassemblies),
+		expand(join(config["asrHMMERDir"], "summary/{coassembly}_asr_C_hits.csv"), coassembly=coassemblies),
+		# convert from .sto to .faa
+		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_A.faa"), coassembly=coassemblies),
+		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_B.faa"), coassembly=coassemblies),
+		expand(join(config["asrHMMERDir"],"faa/{coassembly}_asr_C.faa"), coassembly=coassemblies),
+		# concatenate .faa files ## THIS IS WHERE YOU CAN START based on files in repo
+		join(config["asrHMMERDir"],"compiled_asr_A_hits.faa"),
+		join(config["asrHMMERDir"],"compiled_asr_B_hits.faa"),
+		join(config["asrHMMERDir"],"compiled_asr_C_hits.faa"),
+		# compile csv files
+		join(config["asrHMMERDir"],"compiled_asr_A_hits.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_B_hits.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_C_hits.csv"),
+		# filter .csv
+		join(config["asrHMMERDir"],"compiled_asr_A_hits_bitFilter.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_B_hits_bitFilter.csv"),
+		join(config["asrHMMERDir"],"compiled_asr_C_hits_bitFilter.csv"),
+		# fixing formatting for the .csvs
+		expand(join(config["asrHMMERDir"],"compiled_asr_{ABC}_hits_bitFilter_formatted.csv"), ABC=['A','B','C']),
+		# getting asr RPKGs and concatenating
+		expand(
+			join("workflow/out/asrABC_CapsuleStool_Abundances/{coassembly}/{sample}_asr_ABC_RPKG_redo.txt"),
+			zip,
+			coassembly=[c for c in coassemblies for _ in get_subject_sample_list_dropped(c)],
+			sample=[s for c in coassemblies for s in get_subject_sample_list_dropped(c)]),
+		"workflow/out/asrABC_CapsuleStool_Abundances/concat_asrABC_Abundances_RPKG_redo.txt"
+		
+		
+include: "workflow/rules/prepAnantharaman.smk"
 include: "workflow/rules/runHMMERCapsule.smk"
-include: "workflow/rules/getGeneAbunCapsule.smk"
-include: "workflow/rules/perGeneCounts.smk"
+include: "workflow/rules/cleanHitsCapsule.smk"
+include: "workflow/rules/fragmentInsertionCapsule.smk"
+include: "workflow/rules/getTreeInfoCapsule.smk"
 include: "workflow/rules/mapReads.smk"
-include: "workflow/rules/ASRgeneabun.smk"
+include: "workflow/rules/perGeneCounts.smk"
+include: "workflow/rules/getGeneAbunCapsule.smk"
 include: "workflow/rules/ASRhmmer.smk"
+include: "workflow/rules/ASRgeneabun.smk"

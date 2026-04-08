@@ -1,0 +1,324 @@
+---
+title: "junk_removal"
+output: html_document
+---
+# Read in packages, functions, and directories
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+# read in the dataframe and have it default to read values as characters so there are not parsing issues
+# i don't care if it is numeric or not because i just want to make this readable for Denise and Liam
+
+```{r}
+
+srb <- read_csv(paste0(dataDir, "dataset21and22_withNayfachData.csv"), col_types = cols(.default = "c"))
+
+srb_viz <- srb %>%
+  select(-1) %>%
+  select(-c(Bilophila_wadsworthia__BilWads6:Desulfovibrio_carbinoliphilus__JQ031012)) %>%
+  select(-c(Desulfovibrio_gigas__DsvGiga4:Desulfovibrio_gabonensis__DslGabo2)) %>%
+  select(-c(uncultured_bacterium__EF645665:`Rice_field_soil_clone_Bu-23__JN615148`)) %>%
+  # move any project, subject, age identifiers to the front
+  relocate(host, `host age`, subject_id, `host subject id`, `individual name`, age, age_years, `host_age [months]`, age_nayfach, age_group, age_years_nayfach, ProjectAccession, `project name`, .after = sample_id)
+```
+
+```{r}
+toss <- c("whole genome analysis of diarrheagenic Escherichia coli isolated in Kawasaki, Japan", "Molecular epidemiology of mcr-1-positive Enterobacteriaceae", "Molecular epidemiology of carbapenem-resistant Enterobacteriaceae", "Genomic analysis of non-sorbitol-fermenting and beta-glucuronidase-positive O157:H7 strain", "Molecular characterization of IMP-1 producing Enterobacter cloacae complex isolates in multi tertiary care hospital in Tokyo, Japan","Bifidobacterium strains genome sequencing", "whole genome sequence of macrolide resistant Campylobacter jejuni", "Draft Genome Sequences of Bifidobacterium species Consecutively Isolated from Healthy Japanese.", "Whole genome sequences of motile and non-motile strains of Escherichia albertii", "Bifidobacterium pseudocatenulatum NBRC 113353 genome sequencing project", "Draft genome sequencing of Escherichia albertii", "WGS of E. coli", "Genomic analysis of the vanA-plasmid transmission among vancomycin-resistant Enterococcus in a nosocomial outbreak in Osaka, Japan", "Draft whole-genome sequencing of IMP-producing Enterobacter cloacae complex", "STEC O157:H7 intrafamily infection", "Helicobacter pylori type 4 secretion system within the integrative and conjugative element and cag pathogenicity island are gastroduodenal disease markers", "Genome-wide association study with machine-learning between H. pylori gastric-cancer and duodenal-ulcer strain reveal discriminatory amino acid differences and novel oncoprotein candidates", "Genome-wide association study", "Draft genome sequencing of Adlercreutzia equolifaciens strain 9CBH6", "Molecular epidemiology of carbapenem-resistant Enterobacteriaceae isolated in Japan", "Salmonella_Montevideo_outbreak","Molecular epidemiology of carbapenem-resistant Enterobacteriaceae isolated in Japan" )
+```
+```{r}
+srb_lite <- srb_viz %>% 
+  filter(host != "Bacteria" | is.na(host)) %>% 
+  filter(!`project name` %in% toss) %>% 
+  filter(`investigation type` == "metagenome" | is.na(`investigation type`)) %>% 
+  filter(is.na(`organism modifier note`)) %>% 
+  filter(is.na(`biosample of physical sample`)) %>%  ##Only isolates/MAGs have included the biosample.of.physical.sample
+  filter(!quality_assessment_method %in% c("CheckM")) %>%  #Thees are all isolates
+  filter(!`broad-scale environmental context` %in% c("bodily fluid material biome [ENVO:02000019]","anthropogenic terrestrial biome")) %>%  ## These are all isolates
+  filter(!`relationship to oxygen` %in% c("anaerobe", "facultative", "obligate anaerobe")) %>% # These are all isolates
+  filter(!`isolation source` %in% c("10 mM sulfoquinovose-amended vegetarian human fecal microcosm","stool isolate", "stool culture", "Tissue from the tricuspid valve", "Vulva exsudate", "stomach", "river water", "Lung tissue", "Material from the bottom lip", "Material from the ethmoid", "Bone, muscular tissue, and connective tissue from the spine extension of third thoracic vertebra","arsenic-impacted human gut samples taken from 10 individuals over 4 consecutive days", "Material from the bottom lip", "Material from the ethmoid", "Bone, muscular tissue, and connective tissue from the spine extension of third thoracic vertebra","arsenic-impacted human gut samples taken from 10 individuals over 4 consecutive days")) %>% # These are bacterial genomes isolated from stool cultures or collected from non-stool locations
+  filter((!grepl("iopsy", `isolation source`) & !grepl("fluid", `isolation source`) & !grepl("chromium", `isolation source`)) | is.na(`isolation source`)) %>% #~400 stomach and gastric biopsies plus a few skin biopsies and 2 peritoneal fluid samples
+  filter(`geographic location` != "USA: University of Michigan Hospital, Ann Arbor, MI" | is.na(`geographic location`)) %>% ## These sample are MAGs assembled from a metagenome
+  filter(!sample_id %in% c("SAMN11080843","SAMN11080845")) %>% # these are cultures
+  filter(!str_detect(sample_id, "SAMN1957")) %>% # these are individual bacteria
+  filter(!str_detect(sample_id, "SAMN0729")) %>% # these are individual bacteria
+  filter(!str_detect(sample_id, "SAMN0998")) %>% # these are individual bacteria or pathogens
+  filter(!str_detect(sample_id, "SAMEA7690")) %>% # these are isolates
+  filter(!str_detect(sample_id, "SAMEA1042")) %>% # single organism
+  filter(!str_detect(sample_id, "SAMEA5175")) %>% # these are isolates
+  filter(!str_detect(sample_id, "SAMN1796")) %>% # these are MAGs or pathogens
+  filter(!str_detect(sample_id, "SAMD00114")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMD0015")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA1031")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA205")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA206")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA207")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA208")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA217")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA299")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA310")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA346")) %>% # isolates
+  filter(!str_detect(sample_id, "SAMEA3491|SAMEA3493")) %>% # not from human stool; cultured bacteria or RNA (see VE Wagner papers)
+  filter(!str_detect(sample_id, "SAMEA3496|SAMEA352")) %>% # isolates
+  filter(!str_detect(sample_id, "SAMEA361")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA3677")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA3715|SAMEA3735|SAMEA3935|SAMEA436")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA4444|SAMEA4614|SAMEA4645|SAMEA4697|SAMEA4741|SAMEA4775|SAMEA4852")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA4969|SAMEA5555|SAMEA5556|SAMEA5842|SAMEA5843")) %>% #isolates
+  filter(!str_detect(sample_id, "SAMEA559")) %>% #WGS of ecoli
+  filter(!str_detect(sample_id, "SAMEA581|SAMEA58492|SAMEA58493|SAMEA5848|SAMEA58494|SAMEA6082")) %>% #c. diff
+  # Unified Human Gastrointestinal Genome (UHGG) collection, a resource combining 286,997 genomes representing 4,644 prokaryotic species from the human gut.
+  filter(!str_detect(sample_id, "SAMEA58497|SAMEA58498|SAMEA58499|SAMEA585")) %>% # single organisms
+  filter(!str_detect(sample_id, "SAMEA6084|SAMEA6792|SAMEA6813|SAMEA6921|SAMEA7281|SAMEA7280|SAMEA750|SAMEA7540|SAMEA766|SAMEA788|SAMEA813|SAMEA860|SAMEA894|SAMEA899")) %>% # single organisms; c. diff; e. coli; isolates
+  filter(!str_detect(sample_id, "SAMN0000|SAMN0069|SAMN0086|SAMN009902|SAMN009903|SAMN009915|SAMN00998|SAMN0111|SAMN0104|SAMN01773|SAMN01774")) %>% # "Generic sample from unclassified Bacteria/sequence"
+  filter(!str_detect(sample_id, "SAMN0001|SAMN0003|SAMN0011|SAMN00262|SAMN00249|SAMN00222|SAMN00210|SAMN0062|SAMN0061|SAMN0071510|SAMN00717|SAMN0072|SAMN0073|SAMN0075|SAMN00765|SAMN00767|SAMN00769|SAMN00779|SAMN00760|SAMN0098|SAMN009918|SAMN0105|SAMN0108")) %>% # individual organisms
+  filter(!str_detect(sample_id, "SAMN0082|SAMN0085")) %>% # e. coli
+  filter(!str_detect(sample_id, "SAMN01779|SAMN0178|SAMN0179")) %>% # "generic sample..." or pathogen or clinical sample
+  filter(!str_detect(sample_id, "SAMN018|SAMN019|SAMN020447|SAMN0205|SAMN0220|SAMN021|SAMN0221|SAMN0222|SAMN0226|SAMN02314|SAMN02317|SAMN023245|SAMN02344|SAMN0235")) %>% # "generic sample..." or individual org. or pathogen; SAMN0189.. is a biopsy sample
+  filter(!str_detect(sample_id, "SAMEA215029|SAMEA215048")) %>%# individual species
+  filter(!str_detect(sample_id, "SAMN02363|SAMN02368|SAMN0240|SAMN0241|SAMN0243|SAMN0246|SAMN0247|SAMN0259|SAMN0263|SAMN0264|SAMN0266|SAMN02673|SAMN0267628|SAMN0267629|SAMN026763|SAMN0268|SAMN0269|SAMN027113|SAMN02713|SAMN02719|SAMN0272|SAMN0273|SAMN0274|SAMN0276|SAMN0277|SAMN0278|SAMN0279")) %>% #individual species
+  filter(!str_detect(sample_id, "SAMN02802|SAMN02803|SAMN02808|SAMN02837|SAMN0284|SAMN0285|SAMN0286|SAMN0287|SAMN0288|SAMN0289")) %>% #individual species
+  filter(!(str_detect(sample_id, "SAMN029") & !str_detect(sample_id, "SAMN02954"))) # 029 is individual species but want to keep four within this string that have assemblies!
+
+srb_lite_two <- srb_lite %>%
+  filter(!str_detect(sample_id, "SAMN030|SAMN031|SAMN033|SAMN035|SAMN038")) %>% # all individual species
+  filter(!(str_detect(sample_id, "SAMN032") & 
+           !(age == "1 month" | 
+             str_detect(sample_id, "SAMN03283") | 
+             str_detect(sample_id, "SAMN032958")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN034") & 
+           !(str_detect(sample_id, "SAMN034182") | 
+             str_detect(sample_id, "SAMN03449989")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN036") & 
+           !(str_detect(sample_id, "SAMN036536")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN037") & 
+           !(str_detect(sample_id, "SAMN0377735")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN039") & 
+           !(str_detect(sample_id, "SAMN0392")))) %>% # potential metagenomes
+  filter(!str_detect(sample_id, "SAMN040")) %>% # all individual species
+  filter(!(str_detect(sample_id, "SAMN041") & 
+           !(str_detect(sample_id, "SAMN041586|SAMN04168|SAMN041610")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN042") & 
+           !(`environmental medium` == "feces"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN043") & 
+           !(`broad-scale environmental context` == "human-associated habitat"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN044") & 
+           !(str_detect(sample_id, "SAMN044140|SAMN04436|SAMN044804")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN045") & 
+           !(`broad-scale environmental context` == "human gut"))) %>% # potential metagenomes
+  filter(!str_detect(sample_id, "SAMN046|SAMN047|SAMN048")) %>% # all individual species
+  filter(!(str_detect(sample_id, "SAMN049") & 
+           !(str_detect(sample_id, "SAMN04978193")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN050") & 
+           !(str_detect(sample_id, "SAMN0502|SAMN0506")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN051|SAMN052") & 
+           !(str_detect(sample_id, "SAMN05194|SAMN05214")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN053") & 
+           !(str_detect(`isolation source`, "gut") | 
+             str_detect(sample_id, "SAMN0535")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN054|SAMN055|SAMN056|SAMN057") & 
+           !(str_detect(sample_id, "SAMN055785|SAMN05780991")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN058") & 
+           !(`broad-scale environmental context` == "ENVO:2100002"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN059"))) %>% # individual species
+  filter(!(str_detect(sample_id, "SAMN060") & 
+           !(`geographic location` %in% c("USA: Chicago","USA: Cincinnati, Ohio") | `local-scale environmental context` == "ankylosing spondylitis patient"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN061") & 
+           !(`local-scale environmental context` == "ankylosing spondylitis patient"|str_detect(sample_id, "SAMN061153|SAMN061154|SAMN061155")|`nucleic_acid` == "dna"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN062") & 
+           !(`geographic location` == "USA: virginia"))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN063|SAMN064|SAMN065|SAMN066|SAMN067|SAMN068|SAMN069") & 
+           !(str_detect(sample_id, "SAMN0634|SAMN066993")))) %>% # potential metagenomes
+  # double check there are not things in here that we want 
+  filter(!`isolation source` %in% c("perirectal swab", "Perirectal swab", "Perirectal Swab", "rectal swab", "rectal Swab", "Rectal swab", "Rectal Swab", "RECTAL SWAB", "rectal swab neonate", "rectum", "Rectum", "rectal", "Rectal", "RECTAL")) %>% # we don't want rectal samples or saliva samples
+  filter(!`environmental medium` %in% c("saliva")) %>% # don't want these two saliva samples
+  mutate(country = str_split_fixed(`geographic location`, ":", n = 2)[, 1]) 
+## this should have 41882 samples
+```
+```{r}
+# 23,339 samples
+srb_lite_three <- srb_lite_two %>%
+  filter(!(str_detect(sample_id, "SAMN071|SAMN072|SAMN073|SAMN074|SAMN075|SAMN076|SAMN077|SAMN078|SAMN079") & 
+           !(str_detect(sample_id, "SAMN07501|SAMN079777")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN080|SAMN081|SAMN082|SAMN083|SAMN084|SAMN085|SAMN086|SAMN087|SAMN088|SAMN089") & 
+           !(str_detect(sample_id, "SAMN0824|SAMN08533")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN090|SAMN092|SAMN093|SAMN094|SAMN095|SAMN096|SAMN097|SAMN098|SAMN099") & 
+           !(str_detect(sample_id, "SAMN09062|SAMN09711|SAMN09866")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN10|SAMN11|SAMN12|SAMN13|SAMN14") & 
+           !(str_detect(sample_id, "SAMN10720|SAMN1100|SAMN1238|SAMN1465")))) %>% # potential metagenomes
+  filter(!(str_detect(sample_id, "SAMN00771448"))) %>% # "generic sample from unclassified sequences"
+  filter(!(str_detect(sample_id, "SAMN02324081"))) %>% #metagenomic library from human feces
+  filter(!(str_detect(sample_id, "SAMN02382"))) %>% # individual species
+  filter(!(str_detect(sample_id, "SAMEA214|SAMEA215|SAMEA216") & 
+           (!is.na(host) & host == "Homo sapiens"))) %>% # ind species 
+  filter(!(str_detect(sample_id, "SAMN0634"))) %>% #duplicate of other AS study
+  filter(!(str_detect(sample_id, "SAMN062"))) %>% #RNAseq
+  filter(!(str_detect(sample_id, "SAMEA253"))) #duplicate download of MGWAS T2D data
+
+#7,397 samples
+srb_lite_four <- srb_lite_three %>%
+    filter(!(str_detect(sample_id, "SAMN15|SAMN16|SAMN17|SAMN18|SAMN19|SAMN2") & 
+              !(str_detect(sample_id, "SAMN17071939|SAMN17103336")))) %>%
+    filter(!(str_detect(sample_id, "SAMN02954256"))) %>% # there is already another sample for this project and there is only one subject; this one is likely a MAG
+    filter(!(str_detect(sample_id, "SAMEA104427653|SAMEA104407483"))) %>% #ind species
+    filter(!(str_detect(sample_id, "SAMEA1318"))) %>% # c.diff
+    filter(!(str_detect(sample_id, "SAMEA1966600|SAMEA1966754|SAMEA1967299"))) %>% # ind species
+    filter(!(str_detect(sample_id, "SAMEA1971427|SAMEA1972019|SAMEA1972044|SAMEA1972962"))) %>% # ind species
+    filter(!(str_detect(sample_id, "SAMEA3497897"))) %>% #this is an assembly, but it is DNA isolated from virus-like particles (VLPs) recovered from fecal samples
+    filter(!(str_detect(sample_id, "SAMN02044"))) # sequencing of viral particles purified from stool
+
+
+srb_lite_four_wnotes <- srb_lite_four %>%  
+  mutate(country = case_when(
+    grepl("SAMD000365", sample_id) ~ "Japan",
+    TRUE ~ country),
+    age_years = case_when(
+      sample_id == "SAMD00036524" ~ 30,
+      sample_id == "SAMD00036525" ~ 28,
+      sample_id == "SAMD00036526" ~ 0.75,
+      sample_id == "SAMD00036527" ~ 37,
+      sample_id == "SAMD00036528" ~ 36,
+      sample_id == "SAMD00036529" ~ 3,
+      sample_id == "SAMD00036530" ~ 1.5,
+      sample_id == "SAMD00036531" ~ 45,
+      sample_id == "SAMD00036532" ~ 0.5,
+      sample_id == "SAMD00036533" ~ 35,
+      sample_id == "SAMD00036534" ~ 0.5,
+      sample_id == "SAMD00036535" ~ 0.5,
+      sample_id == "SAMD00036536" ~ 24,
+      grepl("collected", `isolation source`) ~ 0.1, # These are from Matt Olm's NEC infant cohort (Olm MR et al., "Necrotizing enterocolitis is preceded by increased gut bacterial replication, Klebsiella, and fimbriae-encoding bacteria.", Sci Adv, 2019 Dec;5(12):eaax5727)
+    ),
+    notes = case_when(
+      `geographic location` %in% c("Finland:Espoo", "Estonia:Tartu", "Russia:Petrozavodsk") ~ "metagenomes from children in the DIABIMMUNE cohort, followed from birth to age 3",
+      `project name` == "EKmeta" ~ "metagenome fecal microbiota from diet study",
+      `project name` == "Infant" ~ "InfantGut: Dynamics and Stabilization of the Human Gut Microbiome during the First Year of Life",
+      str_detect(sample_id, "SAMEA103958") ~ "comparing fecal microbiomes of L-DOPA-naïve PD subjects to controls by metagenomic analysis",
+      str_detect(sample_id, "SAMEA104411163") ~ "infant gut microbiome study",
+      str_detect(sample_id, "SAMEA2041|SAMEA2042|SAMEA2043|SAMEA1963|SAMEA1964348|SAMEA1964895|SAMEA1964914|SAMEA1965033|SAMEA1965112|SAMEA1965191|SAMEA1965384|SAMEA1965767|SAMEA1965852|SAMEA1965906|SAMEA1966253|SAMEA1967055|SAMEA1968035|SAMEA1968151|SAMEA1968361|SAMEA1969296|SAMEA1971886|SAMEA1972159|SAMEA1972229|SAMEA1972440|SAMEA1972463|SAMEA1972794|SAMEA1973207") ~ "method for identifying metagenomic species and variable genetic elements by exhaustive co-abundance binning",
+      str_detect(sample_id, "SAMEA214|SAMEA215|SAMEA216|SAMEA1964270|SAMEA19646|SAMEA1964852|SAMEA1965149|SAMEA1965858|SAMEA1966821|SAMEA1967319|SAMEA1967891|SAMEA1969126|SAMEA1969178|SAMEA1969417|SAMEA1970465|SAMEA1970582|SAMEA1970858|SAMEA1970897|SAMEA1971210|SAMEA1972002|SAMEA1972188|SAMEA1972381") ~ "Richness of human gut microbiome correlates with metabolic markers",
+      str_detect(sample_id, "SAMEA233") ~ "human gut metagenome from stool samples; integrated catalog of reference genes in the human gut microbiome",
+      str_detect(sample_id, "SAMEA273") ~ "gut microbiome dysbiosis in RA",
+      str_detect(sample_id, "SAMEA3136|SAMEA317") ~  "MGWAS on stools from healthy controls, advanced adenoma and carcinoma patients",
+      str_detect(sample_id, "SAMEA336") ~  "study examining microbiota after cholera infection",
+      str_detect(sample_id, "SAMEA354") ~ "metagenome-wide association study on fecal samples from 74 CRC patients and 54 controls from China",
+      str_detect(sample_id, "SAMEA3708") ~ "metagenome-wide association studies on fecal samples: gut microbial dysbiosis in young adults with obesity",
+      str_detect(sample_id, "SAMEA3879") ~ "stool shotgun metagenomics from study looking at association between gut microbiome and CRC",
+      str_detect(sample_id, "SAMEA3882") ~ "shotgun sequencing after FMT",
+      str_detect(sample_id, "SAMEA3888") ~ "changes in taxonomy and functional potential after Roux-en-Y gastric bypass",
+      str_detect(sample_id, "SAMEA4370|SAMEA4384") ~ "metagenomic sequencing of the microbiota obtained from faecal samples from 6 healthy humans; investigating role of spore-forming bacteria",
+      str_detect(sample_id, "SAMEA4378") ~ "identifying microbial metabolites associated with coronary heart disease; stool samples were collected in addition to the urine and plasma samples",
+      str_detect(sample_id, "SAMEA4431") ~ "metagenomic shotgun sequencing; impact of EEN on Crohn's disease microbiome",
+      str_detect(sample_id, "SAMEA483") ~ "Assemblies of 760 MetaHIT metagenomes used in a pangenomic study",
+      str_detect(sample_id. "SAMN00265") ~ "shotgun metagenomic data from stool samples collected from four pairs of matched T1D case-control subjects",
+      str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993") ~ "A metagenome-wide association study of gut microbiota in type 2 diabetes",
+      str_detect(sample_id, "SAMN0084") ~ "gut microbiota of an morbidly obese human",
+      str_detect(sample_id, "SAMN009901") ~ "Metagenomic analysis of infant stool sample; a premature infant born at 28 weeks gestation",
+      str_detect(sample_id, "SAMN0176") ~ "Symptomatic atherosclerosis gut metagenome",
+      str_detect(sample_id, "SAMN02316") ~ "3rd week of life of a premature male infant; metagenome",
+      str_detect(sample_id, "SAMN02364") ~ "Gut metagenome of a premature infant isolated from fecal samples",
+      str_detect(sample_id, "SAMN02674|SAMN02675") ~ "human gut metagenome, microbiome study of the RISK cohort",
+      str_detect(sample_id, "SAMN026761|SAMN02676200") ~ "human gut metagenome, C.diff FMT",
+      str_detect(sample_id, "SAMN027112|SAMN02712") ~ "systematic comparison of the DNA extraction methods on feacal samples; gut metagenome under data type and organism",
+      str_detect(sample_id, "SAMN02954257|SAMN02954258") ~ "metagenome sample from human gut metagenome",
+      str_detect(sample_id, "SAMN0295426") ~ "A metagenomic study of the microorganisms in the human distal gut",
+      (str_detect(sample_id, "SAMN032") & (age == "1 month")) ~ "Fecal microbiome of eczema children",
+      str_detect(sample_id, "SAMN03283") ~ "Human gut microbiome metagenome, gut microbiome diversity",
+      str_detect(sample_id, "SAMN032958|SAMN079777") ~ "Metagenomes from human infant fecal samples with and without necrotizing enterocolitis",
+      str_detect(sample_id, "SAMN034182") ~ "Metagenome sequencing of the Hadza hunter-gatherer gut microbiota",
+      str_detect(sample_id, "SAMN03449989") ~ "Homo sapiens fecal metagenome Raw sequence reads",
+      str_detect(sample_id, "SAMN036536") ~ "Gut microbiome profiling of pediatric patients undergoing stem cell transplantation",
+      str_detect(sample_id, "SAMN0377735") ~ "Evaluation of vertical transmission between mother-infant",
+      str_detect(sample_id, "SAMN0392") ~ "Characterization of the distal gut microbiota in obese patients following a weight-loss intervention using whole metagenome shotgun sequencing",
+      str_detect(sample_id, "SAMN041586") ~ "Functional dynamics of the elderly gut microbiome during probiotic consumption",
+      str_detect(sample_id, "SAMN04168") ~ "This project investigates how library preparation and sequencing protocol influence the taxonomy and function analysis of microbial species in human microbiome research",
+      str_detect(sample_id, "SAMN041610") ~ "Metagenomes from 11 human infant fecal samples hospitalized in the same ICU",
+      (str_detect(sample_id, "SAMN04209") & (`environmental medium` == "feces")) ~ "Gut microbiome diversity among the Cheyenne & Arapaho of Oklahoma",
+      (str_detect(sample_id, "SAMN043") & (`broad-scale environmental context` == "human-associated habitat")) ~ "Metagenomic sequencing to identify and measure the abundances of microorganisms present in stool samples from athletes",
+      str_detect(sample_id, "SAMN044140") ~ "Human Faecal Samples Raw sequence reads",
+      str_detect(sample_id, "SAMN04436") ~ "Metagenomic sequencing of preterm infant gut microbiota raw sequence reads",
+      str_detect(sample_id, "SAMN044804") ~ "prospective cohort study using metagenomics to characterize gut microbiota populations of pediatric short bowel syndrome",
+      (str_detect(sample_id, "SAMN04571") & (`broad-scale environmental context` == "human gut")) ~ "Human Gut Microbiome in a Multiplex Family Study of Type 1 Diabetes Mellitus",
+      str_detect(sample_id, "SAMN04978193") ~ "human gut and groundwater harbor non-photosynthetic bacteria; fecal sample 3 from healthy adult C",
+      str_detect(sample_id, "SAMN0502") ~ "We applied shotgun metagenomics to stool samples collected from two geographically isolated (Alabama and Colorado) outbreaks, where the etiologic agents were identified as distinct strains of Salmonella enterica serovar Heidelberg by culture-dependent methods.",
+      str_detect(sample_id, "SAMN0506") ~ "Increased intestinal microbial diversity following fecal microbiota transplant for active Crohn's disease",
+      str_detect(sample_id, "SAMN05194|SAMN0535") ~ "Human fecal microbiome before and after consumption of AH1206 - Raw sequence reads",
+      str_detect(sample_id, "SAMN05214") ~ "Gut metagenomes were isolated from people living in the Central region of Russia",
+      str_detect(sample_id, "SAMN053014|SAMN053015") ~ "Raw reads of the microbiota of premature infant gut",
+      str_detect(sample_id, "SAMN055785") ~ "Metagenomics analysis of donor and recepient samples from fecal transplant for Recurrent Clostridium difficile infection",
+      str_detect(sample_id, "SAMN05780991") ~ "Infant gut microbiome Metagenomic assembly",
+      (str_detect(sample_id, "SAMN058") & (`broad-scale environmental context` == "ENVO:2100002")) ~ "longitudinal analysis of the developing gut microbiome in infants from Finland, Estonia, and Russian Karelia",
+      (str_detect(sample_id, "SAMN060") & (`local-scale environmental context` == "ankylosing spondylitis patient")) ~ "Human gut microbiome in AS",
+      (str_detect(sample_id, "SAMN060") & (`geographic location` == "USA: Chicago")) ~ "De novo reconstruction of bacterial genomes allows high-resolution tracking of microbial colonization in Fecal Microbiota Transplantation experiments",
+      (str_detect(sample_id, "SAMN060") & (`geographic location` == "USA: Cincinnati, Ohio")) ~ "Gut microbiome profiling of pediatric patients undergoing stem cell transplantation",
+      (str_detect(sample_id, "SAMN061") & (`local-scale environmental context` == "ankylosing spondylitis patient")) ~ "human gut metagenome in RA; this does not make sense since it says ankylosing spondylitis patient",
+      str_detect(sample_id, "SAMN061153|SAMN061154|SAMN061155") ~ "Metagenomic sequencing; this study presented the bacterial diversity of human stool sample from the Vogt-Koyanagi-Harada disease patients in Chinese population",
+      (str_detect(sample_id, "SAMN061") & (`nucleic_acid` == "dna")) ~ "Human gut metagenome raw sequence reads",
+      str_detect(sample_id, "SAMN066993") ~ "comprehensive metagenomic study of the fecal microbiomes from 23 TD patients and seven healthy travelers",
+      str_detect(sample_id, "SAMN07501") ~ "preterm infant gut metagenomes",
+      str_detect(sample_id, "SAMN0824") ~ "Human gut microbiome in IBD",
+      str_detect(sample_id, "SAMN08533") ~ "Human gut metagenome, marine sediment metagenome, and synthetic metagenome; our samples are human metagenome assemblies",
+      str_detect(sample_id, "SAMN09062") ~ "Metagenome or environmental sample from human gut metagenome, assemblies included",
+      str_detect(sample_id, "SAMN09711") ~ "Human metagenome isolated from feces of healthy adult male",
+      str_detect(sample_id, "SAMN09866") ~ "Temporal and Spatial Variation of the Human Microbiota During Pregnancy",
+      str_detect(sample_id, "SAMN10720|SAMN1238") ~ "nanopore long read assembly of the human gut metagenome",
+      str_detect(sample_id, "SAMN1100") ~ "Resistant microbiome underlies antibiotic therapy in pouchitis",
+      str_detect(sample_id, "SAMN1465") ~ "Proximity ligation based characterization of 10 human gut samples",
+      str_detect(sample_id, "SAMD000361|SAMD000362|SAMD000363|SAMD000364") ~ "metagenomics of Japanese gut microbiomes",
+      str_detect(sample_id, "SAMD000365") ~ "Gut metagenomes collected from 13 healthy individuals",
+      str_detect(sample_id, "SAMN17071939|SAMN17103336") ~ "human gut metagenome sequencing and assembly",
+      TRUE ~ "None"
+    )) %>%
+    relocate(notes, .after = `project name`)
+
+
+#this was exporting a csv for Liam to look at 
+#write.csv(srb_lite, file = "srb_lite_20-03.csv", row.names = FALSE)
+```
+
+## adding ages
+```{r}
+## ages are in days ?
+tartu_espoo_rus <- srb_lite %>%
+  filter(`geographic location` %in% c("Finland:Espoo", "Tartu:Estonia", "Russia:Petrozavodsk"))
+## add ages for the SAMEA258 samples (may be in the Alias variable)
+```
+
+
+```{r}
+
+pit <- srb_lite_four %>% 
+  filter(str_detect(sample_id, "SAMEA273"))
+
+
+my_filtered <- srb_lite_four %>%
+  filter((str_detect(sample_id, "SAMN15|SAMN16|SAMN17|SAMN18|SAMN19|SAMN2") & 
+              !(str_detect(sample_id, "SAMN17071939|SAMN17103336|SAMN173705|SAMN17614|SAMN177394|SAMN17800|SAMN17801|SAMN17842|SAMN17843|SAMN18355|SAMN184788|SAMN1922|SAMN223124|SAMN2263618|SAMN2348")))) 
+
+  
+```
+
+```{r}
+needed <- srb_lite_four_wnotes %>%
+  filter(notes == "None")
+# check the things that were removed for rectal, etc.
+# double check numbers so there arent duplicate uploads
+# add age and country data
+# add all notes to the spreadsheet
+```
+
+
+## duplicate AS studies; both have 97 samples; which is the one that has assemblies?
+```{r}
+AS_samples <- srb_lite %>%
+  filter((str_detect(sample_id, "SAMN060|SAMN0634") & (`local-scale environmental context` == "ankylosing spondylitis patient")))
+
+hits <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018.csv"))
+
+AS_hits <- hits %>%
+  filter(biosample_id %in% AS_samples$sample_id)
+
+all_hits <- hits %>%
+  filter(biosample_id %in% srb_lite_four_wnotes$sample_id)
+```
+
+
+

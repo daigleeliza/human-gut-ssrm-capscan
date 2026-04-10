@@ -391,13 +391,45 @@ write.csv(srb_lite_notes_ages_countries, file = "srb_lite_notes_ages_countries_0
 
 ```
 
-
-
 ## add subject info
 #ie is it longitudinal? 
 ```{r}
 
-  
+```
+
+# making sure that the first portion of the query IDs is unique for a biosample
+# code generated with Claude AI
+```{r}
+# extract Query IDs from their list and turn df into long format
+df_long <- srb_lite_notes_ages_countries %>%
+  mutate(query_ids = str_extract_all(query_ids, "[A-Z0-9]+")) %>%  # parse the string lists
+  unnest(query_ids)
+
+# are any of these IDs *not* unique?
+duplicated_ids <- df_long %>%
+  count(query_ids) %>%
+  filter(n > 1)
+
+## second way of checking, splitting by commas in the list rather than regex
+all_ids <- unlist(strsplit(srb_lite_notes_ages_countries$query_ids, ","))
+all_ids <- trimws(all_ids)  # remove whitespace
+all_ids <- gsub("\\[", "", all_ids)
+all_ids <- gsub("\\]", "", all_ids)
+all_ids <- gsub("'", "", all_ids)  # remove brackets and quotes
+
+unique_ids <- unique(all_ids)
+duplicated_ids <- all_ids[duplicated(all_ids)]
+
+# make sure these methods give the same results
+ids_regex <- df_long %>%
+  pull(query_ids) %>%
+  sort()
+
+# method 2 - comma split
+ids_split <- all_ids %>% sort()
+
+# compare
+identical(ids_regex, ids_split)
 ```
 
 

@@ -6,6 +6,9 @@ biosampleMetadata: "config/metadata/NCBI_biosample_metadata.json"
 # sample list for capsule/stool data
 sampleFileRaw: "config/sampleReadList.txt"
 
+# list of biosamples to keep (actual assemblies)
+assemblies: "config/srb_lite_notes_ages_countries_04-10-2026.csv"
+
 # profile HMMs for dsrAB
 dsrAB_bact_HMMProfile: "config/profileHMM_bacteria_aa.phmm"
 dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"

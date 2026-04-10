@@ -78,6 +78,7 @@ srb_lite <- srb_viz %>%
   filter(!str_detect(sample_id, "SAMN02363|SAMN02368|SAMN0240|SAMN0241|SAMN0243|SAMN0246|SAMN0247|SAMN0259|SAMN0263|SAMN0264|SAMN0266|SAMN02673|SAMN0267628|SAMN0267629|SAMN026763|SAMN0268|SAMN0269|SAMN027113|SAMN02713|SAMN02719|SAMN0272|SAMN0273|SAMN0274|SAMN0276|SAMN0277|SAMN0278|SAMN0279")) %>% #individual species
   filter(!str_detect(sample_id, "SAMN02802|SAMN02803|SAMN02808|SAMN02837|SAMN0284|SAMN0285|SAMN0286|SAMN0287|SAMN0288|SAMN0289")) %>% #individual species
   filter(!(str_detect(sample_id, "SAMN029") & !str_detect(sample_id, "SAMN02954"))) # 029 is individual species but want to keep four within this string that have assemblies!
+##this should have 54,654 samples
 
 srb_lite_two <- srb_lite %>%
   filter(!str_detect(sample_id, "SAMN030|SAMN031|SAMN033|SAMN035|SAMN038")) %>% # all individual species
@@ -133,6 +134,7 @@ srb_lite_two <- srb_lite %>%
   filter(!`environmental medium` %in% c("saliva")) %>% # don't want these two saliva samples
   mutate(country = str_split_fixed(`geographic location`, ":", n = 2)[, 1]) 
 ## this should have 41882 samples
+ 
 ```
 ```{r}
 # 23,339 samples
@@ -154,7 +156,7 @@ srb_lite_three <- srb_lite_two %>%
   filter(!(str_detect(sample_id, "SAMN062"))) %>% #RNAseq
   filter(!(str_detect(sample_id, "SAMEA253"))) #duplicate download of MGWAS T2D data
 
-#7,397 samples
+#7,389 samples
 srb_lite_four <- srb_lite_three %>%
     filter(!(str_detect(sample_id, "SAMN15|SAMN16|SAMN17|SAMN18|SAMN19|SAMN2") & 
               !(str_detect(sample_id, "SAMN17071939|SAMN17103336")))) %>%
@@ -208,7 +210,7 @@ srb_lite_four_wnotes <- srb_lite_four %>%
       str_detect(sample_id, "SAMEA4378") ~ "identifying microbial metabolites associated with coronary heart disease; stool samples were collected in addition to the urine and plasma samples",
       str_detect(sample_id, "SAMEA4431") ~ "metagenomic shotgun sequencing; impact of EEN on Crohn's disease microbiome",
       str_detect(sample_id, "SAMEA483") ~ "Assemblies of 760 MetaHIT metagenomes used in a pangenomic study",
-      str_detect(sample_id. "SAMN00265") ~ "shotgun metagenomic data from stool samples collected from four pairs of matched T1D case-control subjects",
+      str_detect(sample_id, "SAMN00265") ~ "shotgun metagenomic data from stool samples collected from four pairs of matched T1D case-control subjects",
       str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993") ~ "A metagenome-wide association study of gut microbiota in type 2 diabetes",
       str_detect(sample_id, "SAMN0084") ~ "gut microbiota of an morbidly obese human",
       str_detect(sample_id, "SAMN009901") ~ "Metagenomic analysis of infant stool sample; a premature infant born at 28 weeks gestation",
@@ -276,33 +278,126 @@ srb_lite_four_wnotes <- srb_lite_four %>%
 
 ## adding ages
 ```{r}
-## ages are in days ?
-tartu_espoo_rus <- srb_lite %>%
-  filter(`geographic location` %in% c("Finland:Espoo", "Tartu:Estonia", "Russia:Petrozavodsk"))
-## add ages for the SAMEA258 samples (may be in the Alias variable)
+srb_lite_notes_ages <- srb_lite_four_wnotes %>%
+  mutate(under_over_3 = case_when(
+    str_detect(sample_id, "SAMEA103958") ~ "over 3",
+    str_detect(sample_id, "SAMEA104411163") ~ "under 3",
+    str_detect(sample_id, "SAMEA2041|SAMEA2042|SAMEA2043|SAMEA1963|SAMEA1964348|SAMEA1964895|SAMEA1964914|SAMEA1965033|SAMEA1965112|SAMEA1965191|SAMEA1965384|SAMEA1965767|SAMEA1965852|SAMEA1965906|SAMEA1966253|SAMEA1967055|SAMEA1968035|SAMEA1968151|SAMEA1968361|SAMEA1969296|SAMEA1971886|SAMEA1972159|SAMEA1972229|SAMEA1972440|SAMEA1972463|SAMEA1972794|SAMEA1973207") ~ "over 3",
+    str_detect(sample_id, "SAMEA215|SAMEA1964270|SAMEA19646|SAMEA1964852|SAMEA1965149|SAMEA1965858|SAMEA1966821|SAMEA1967319|SAMEA1967891|SAMEA1969126|SAMEA1969178|SAMEA1969417|SAMEA1970465|SAMEA1970582|SAMEA1970858|SAMEA1970897|SAMEA1971210|SAMEA1972002|SAMEA1972188|SAMEA1972381") ~ "over 3",
+    str_detect(sample_id, "SAMEA233") ~ "over 3",
+    str_detect(sample_id, "SAMEA273") ~ "over 3",
+    str_detect(sample_id, "SAMEA214") ~ "over 3",
+    str_detect(sample_id, "SAMEA216") ~ "over 3",
+    str_detect(sample_id, "SAMEA245") ~ "over 3",
+    str_detect(sample_id, "SAMEA257|SAMEA258") ~ "under 3",
+    str_detect(sample_id, "SAMEA3136|SAMEA317") ~ "over 3",
+    str_detect(sample_id, "SAMEA354") ~ "over 3",
+    str_detect(sample_id, "SAMEA3708") ~ "over 3",
+    str_detect(sample_id, "SAMEA3879") ~ "over 3",
+    str_detect(sample_id, "SAMEA3882") ~ "over 3",
+    str_detect(sample_id, "SAMEA3888") ~ "over 3",
+    str_detect(sample_id, "SAMEA4378") ~ "over 3",
+    str_detect(sample_id, "SAMEA4431") ~ "over 3",
+    str_detect(sample_id, "SAMEA483") ~ "over 3",
+    str_detect(sample_id, "SAMN00265") ~ "under 3",
+    str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993") ~ "over 3",
+    str_detect(sample_id, "SAMN0084") ~ "over 3",
+    str_detect(sample_id, "SAMN009901") ~ "under 3",
+    str_detect(sample_id, "SAMN0176") ~ "over 3",
+    str_detect(sample_id, "SAMN02316") ~ "under 3",
+    str_detect(sample_id, "SAMN02364") ~ "under 3",
+    str_detect(sample_id, "SAMN02674") ~ "over 3",
+    str_detect(sample_id, "SAMN02675") ~ "over 3",
+    str_detect(sample_id, "SAMN026761") ~ "over 3",
+    str_detect(sample_id, "SAMN02676200") ~ "over 3",
+    str_detect(sample_id, "SAMN027112") ~ "over 3",
+    str_detect(sample_id, "SAMN02712") ~ "over 3",
+    str_detect(sample_id, "SAMN02954257|SAMN02954258") ~ "over 3",
+    str_detect(sample_id, "SAMN0295426") ~ "over 3",
+    (str_detect(sample_id, "SAMN032") & (age == "1 month")) ~ "under 3",
+    str_detect(sample_id, "SAMN032958") ~ "under 3",
+    str_detect(sample_id, "SAMN034182") ~ "over 3",
+    str_detect(sample_id, "SAMN0377735") ~ "under 3",
+    str_detect(sample_id, "SAMN0392") ~ "over 3",
+    str_detect(sample_id, "SAMN041586") ~ "over 3",
+    str_detect(sample_id, "SAMN04168") ~ "over 3",
+    str_detect(sample_id, "SAMN041610") ~ "under 3",
+    (str_detect(sample_id, "SAMN04209") & (`environmental medium` == "feces")) ~ "over 3",
+    (str_detect(sample_id, "SAMN043") & (`broad-scale environmental context` == "human-associated habitat")) ~ "over 3",
+    str_detect(sample_id, "SAMN04436") ~ "under 3",
+    (str_detect(sample_id, "SAMN04571") & (`broad-scale environmental context` == "human gut")) ~ "over 3",
+    str_detect(sample_id, "SAMN04978193") ~ "over 3",
+    str_detect(sample_id, "SAMN0506") ~ "over 3",
+    str_detect(sample_id, "SAMN05194") ~ "over 3",
+    str_detect(sample_id, "SAMN05214") ~ "over 3",
+    str_detect(sample_id, "SAMN053014|SAMN053015") ~ "under 3",
+    str_detect(sample_id, "SAMN0535") ~ "over 3",
+    str_detect(sample_id, "SAMN055785") ~ "over 3",
+    str_detect(sample_id, "SAMN05780991") ~ "under 3",
+    (str_detect(sample_id, "SAMN058") & (`broad-scale environmental context` == "ENVO:2100002")) ~ "under 3",
+    (str_detect(sample_id, "SAMN060") & (`local-scale environmental context` == "ankylosing spondylitis patient")) ~ "over 3",
+    (str_detect(sample_id, "SAMN060") & (`geographic location` == "USA: Chicago")) ~ "over 3",
+    (str_detect(sample_id, "SAMN061") & (`local-scale environmental context` == "ankylosing spondylitis patient")) ~ "over 3",
+    str_detect(sample_id, "SAMN061153|SAMN061154|SAMN061155") ~ "over 3",
+      (str_detect(sample_id, "SAMN061") & (`nucleic_acid` == "dna")) ~ "over 3",
+    str_detect(sample_id, "SAMN07501") ~ "under 3",
+    str_detect(sample_id, "SAMN079777") ~ "under 3",
+    str_detect(sample_id, "SAMN0824") ~ "over 3",
+    str_detect(sample_id, "SAMN08533") ~ "over 3",
+    str_detect(sample_id, "SAMN09062") ~ "over 3",
+    str_detect(sample_id, "SAMN09711") ~ "over 3",
+    str_detect(sample_id, "SAMN09866") ~ "over 3",
+    str_detect(sample_id, "SAMN10720") ~ "over 3",
+    str_detect(sample_id, "SAMN1100") ~ "over 3",
+    str_detect(sample_id, "SAMN1238") ~ "over 3",
+    str_detect(sample_id, "SAMN1465") ~ "over 3",
+    str_detect(sample_id, "SAMD000361|SAMD000362|SAMD000363|SAMD000364") ~ "over 3",
+    str_detect(sample_id, "SAMD00036524") ~ "over 3",
+    str_detect(sample_id, "SAMD00036525") ~ "over 3",
+    str_detect(sample_id, "SAMD00036526") ~ "under 3",
+    str_detect(sample_id, "SAMD00036527") ~ "over 3",
+    str_detect(sample_id, "SAMD00036528") ~ "over 3",
+    str_detect(sample_id, "SAMD00036529") ~ "under 3", # exactly 3
+    str_detect(sample_id, "SAMD00036530") ~ "under 3",
+    str_detect(sample_id, "SAMD00036531") ~ "over 3",
+    str_detect(sample_id, "SAMD00036532") ~ "under 3",
+    str_detect(sample_id, "SAMD00036533") ~ "over 3",
+    str_detect(sample_id, "SAMD00036534") ~ "under 3",
+    str_detect(sample_id, "SAMD00036535") ~ "under 3",
+    str_detect(sample_id, "SAMD00036536") ~ "over 3",
+    TRUE ~ "NA"
+)) %>%
+    relocate(under_over_3, .after = `age_years_nayfach`) %>%
+    relocate(country, .after = `geographic location`)
+
+```
+
+```{r}
+srb_lite_notes_ages_countries <- srb_lite_notes_ages %>%
+  mutate(country = case_when(
+    str_detect(sample_id, "SAMD00036") ~ "Japan",
+    str_detect(sample_id, "SAMN00265") ~ "Finland",
+    str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993") ~ "China",
+    str_detect(sample_id, "SAMN0295426") ~ "United States of America", # IRB approval at Stanford Uni, "one subject had traveled to Brazil and France", suggesting they are from the U.S.A.
+    (str_detect(sample_id, "SAMN032") & (age == "1 month")) ~ "Singapore", #other ones already say Singapore
+    str_detect(sample_id, "SAMN0377735") ~ "Italy", # pilot for larger study with IRB approval at Uni of Trento
+    str_detect(sample_id, "SAMN04978193") ~ "United Kingdom", # samples from UK adult twin registry
+    str_detect(sample_id, "SAMN0824") ~ "United States of America",
+    str_detect(sample_id, "SAMN08533") ~ "United States of America", # recruited at Stanford Uni
+    str_detect(sample_id, "SAMN10720|SAMN1238") ~ "United States of America", # recruited at Stanford Uni
+    TRUE ~ country))
+
+write.csv(srb_lite_notes_ages_countries, file = "srb_lite_notes_ages_countries_04-10-2026.csv", row.names = FALSE)
+
 ```
 
 
+
+## add subject info
+#ie is it longitudinal? 
 ```{r}
-
-pit <- srb_lite_four %>% 
-  filter(str_detect(sample_id, "SAMEA273"))
-
-
-my_filtered <- srb_lite_four %>%
-  filter((str_detect(sample_id, "SAMN15|SAMN16|SAMN17|SAMN18|SAMN19|SAMN2") & 
-              !(str_detect(sample_id, "SAMN17071939|SAMN17103336|SAMN173705|SAMN17614|SAMN177394|SAMN17800|SAMN17801|SAMN17842|SAMN17843|SAMN18355|SAMN184788|SAMN1922|SAMN223124|SAMN2263618|SAMN2348")))) 
 
   
-```
-
-```{r}
-needed <- srb_lite_four_wnotes %>%
-  filter(notes == "None")
-# check the things that were removed for rectal, etc.
-# double check numbers so there arent duplicate uploads
-# add age and country data
-# add all notes to the spreadsheet
 ```
 
 

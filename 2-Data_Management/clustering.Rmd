@@ -1,0 +1,143 @@
+---
+title: "clustering"
+output: html_document
+Author: "Elizabeth Daigle"
+date: "16 March 2026"
+---
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
+# Read in OTU table and taxa table
+```{r}
+taxa_table <- read_csv("taxa_table.csv")
+otu_subject_df <- read_csv(paste0(clusterDir, "/otu_subject_matrix_ref_0316.csv"))
+otu_subject_matrix <- otu_subject_df %>%
+  column_to_rownames(., var = "...1") %>%
+  as.matrix()
+```
+# Read in tree and root
+```{r}
+ref_tree <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018.newick"))
+rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+TREE <- phy_tree(rooted_ref_tree)
+```
+## HERE 
+
+# prep reference phyloseq object
+```{r}
+OTU = otu_table(otu_subject_matrix, taxa_are_rows = TRUE)
+
+# format taxa_table
+taxa_table <- taxa_table %>% select(-"...1") %>%
+  column_to_rownames(var = "OTU") %>%
+  select(-c("environmental_category","dsrab_type"))
+
+taxa_table <- as.matrix(taxa_table)
+TAX = tax_table(taxa_table)
+
+# make phyloseq object
+phyloseq <- phyloseq(TREE, TAX, OTU)
+
+## want to add sample data?
+```
+
+# tip_glom at 0.1 and get list of OTUs that are in each cluster
+```{r}
+ps_tipglom <- tip_glom(phyloseq, h = 0.1)
+# find which tips were retained after tip_glom
+cluster_reps <- taxa_names(ps_tipglom)
+
+# find the distances between tips on the tree so that each OTU can be assigned to its closest relative retained after tip_glom
+tree_dist <- cophenetic(phy_tree(phyloseq))
+```
+
+```{r}
+clusters_df <- data.frame(
+  OTU = taxa_names(phyloseq),
+  cluster = ifelse(taxa_names(phyloseq) %in% cluster_reps,
+                   taxa_names(phyloseq),
+                   sapply(taxa_names(phyloseq), function(tip) {
+                     cluster_reps[which.min(tree_dist[tip, cluster_reps])]
+                   }))
+)
+
+# # write one file per cluster
+# for (cluster in cluster_reps) {
+#   otus_in_cluster <- clusters_df$OTU[clusters_df$cluster == cluster]
+#   if (length(otus_in_cluster) > 1) {
+#     write_lines(otus_in_cluster,
+#                 file = paste0(clusterDir, "/", cluster, "_otus_in_cluster.txt"))
+#   }
+# }
+```
+
+
+## from ani_zoom_trees.Rmd by RC
+
+# overall purpose: get a table for each reference leaf and which cluster they fall into with h=0.1 for tip_glom
+
+# packages to install
+```{r}
+library(ggplot2)
+library(treeio)
+library(ggtree)
+library(dplyr)
+library(ape)
+library(phytools)
+library(phyloseq)
+```
+
+# prep tree, OTU, and TAX
+```{r}
+pruned_tree <- drop.tip(rooted_ref_tree, c(moorella_copy_2_labels, ox_bact_labels))
+
+hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
+hit_otus <- gsub("[.]", "-", hit_otus)
+hit_otus <- gsub("sp-", "sp.", hit_otus)
+hit_otus <- gsub("sk-", "sk.", hit_otus)
+hit_otus <- gsub("str-", "str.", hit_otus)
+```
+
+```{r}
+faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
+
+faca_tree <- phyloseq(faca_tax, OTU, pruned_tree)
+
+plot_tree(tip_glom(faca_tree, h = 0), label.tips = "taxa_names" %in% hit_otus, text.size = 2)
+plot_tree(tip_glom(faca_tree, h = 0.25), label.tips = "taxa_names", text.size = 2)
+```
+
+# make df for each leaf in each cluster at h = 0.2
+```{r}
+df <- taxa_table_firmicutes_notipglom
+
+df$tip_glom_01_clusters <- ifelse(df$otu %in% df$tip_glom_01_clusters,
+                              df$otu,
+                              NA)
+
+for (n_row in 1:nrow(df)) {
+  if (is.na(df[n_row, "tip_glom_01_clusters"])) {
+    df[n_row, "tip_glom_01_clusters"] <- df[n_row - 1, "tip_glom_01_clusters"]
+  }
+}
+
+clusters_freq <- as.data.frame(table(df$tip_glom_01_clusters))
+clusters <- subset(clusters_freq$Var1, clusters_freq$Freq > 1)
+
+taxa_table_firmicutes_notipglom <- df
+
+# for (cluster in clusters) {
+#   otus_in_cluster <- df$out[df$tip_glom_01_clusters == cluster]
+# 
+#   write_lines(otus_in_cluster, file = paste("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/cluster_otus/ids/firmicutes/", cluster, "_otus_in_cluster.txt", sep = ""))
+# }
+
+# write_lines(unique(clusters),
+#             file = "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/config/firmicutes_cluster_names.txt", 
+#             sep = "\n")
+
+```
+
+

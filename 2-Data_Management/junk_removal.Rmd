@@ -397,6 +397,14 @@ write.csv(srb_lite_notes_ages_countries, file = "srb_lite_notes_ages_countries_0
 
 ```
 
+# make .txt file of the biosample IDs
+```{r}
+IDs <- srb_lite_notes_ages_countries$sample_id
+write(IDs, file = "biosample_IDs_04-13-2026.txt")
+```
+
+
+
 # making sure that the first portion of the query IDs is unique for a biosample
 # code generated with Claude AI
 ```{r}
@@ -444,8 +452,95 @@ AS_hits <- hits %>%
   filter(biosample_id %in% AS_samples$sample_id)
 
 all_hits <- hits %>%
-  filter(biosample_id %in% srb_lite_four_wnotes$sample_id)
+  filter(biosample_id %in% srb_lite_notes_ages_countries$sample_id)
 ```
 
+# trying to see how many biosample_ids are associated with multiple query ids
+# does having multiple query IDs mean there are duplicates in the dataset?
+# code generated with help from Claude
+```{r}
+mult_queries <- srb_lite_notes_ages_countries$sample_id[sapply(strsplit(srb_lite_notes_ages_countries$query_ids, ","), length) > 1]
+
+#extract the sample_id and query_ids for samples with multiple queries
+samples_w_mult_queries <- srb_lite_notes_ages_countries %>% filter(sample_id %in% mult_queries) %>% select(sample_id, query_ids)
+
+queries_long <- samples_w_mult_queries %>%
+  mutate(query_ids = str_extract_all(query_ids, "[A-Z0-9]+")) %>%  # parse the string lists
+  unnest(query_ids)
+
+hits_for_assemblies <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_no_2018_assemblies.csv"))
+
+# are there samples that have hits from more than one different query?
+samples_w_multiple_query_hits <- hits_for_assemblies %>% filter(query_id %in% queries_long$query_ids) %>%
+  rename(query_ids = query_id) %>%
+  left_join(queries_long, by = "query_ids") %>%
+  # don't need to worry about the ones hitting moorella thermoacetica
+  filter(distance < 2.5 | is.na(distance)) %>%
+  group_by(sample_id) %>%
+  summarise(n_query_ids = n_distinct(query_ids)) %>%
+  filter(n_query_ids > 1)
+
+#now, find which hits these are -> which samples with multiple query IDs actually had both hit something
+just_filtered <- hits_for_assemblies %>% filter(query_id %in% queries_long$query_ids) %>%
+  rename(query_ids = query_id) %>%
+  left_join(queries_long, by = "query_ids") %>%
+  filter(sample_id %in% samples_w_multiple_query_hits$sample_id) %>%
+  group_by(sample_id) %>%
+  summarise(query_list = list(unique(query_ids)))
+
+# make df for .txt file of these queries that can be used with snakemake rule
+qoi <- just_filtered %>%
+  mutate(query_list = str_extract_all(query_list, "[A-Z0-9]+")) %>%
+  unnest(query_list)
+
+# queries that both have hits and are from one sample
+write(qoi$query_list, file = "queries_dups_04-15-2026.txt")
+
+# there are 59 biosamples that have several queries that both have hits
+# all of these look like viable assemblies aside from 2 samples. 
+# instead select by the query with more hits ??
+which_query <- hits_for_assemblies %>%
+  filter(query_id %in% qoi$query_list)
+
+
+SAMD00036196 OQGT01 (the other has 4 genes on one contig)
+SAMD00036214 OQHG01 (higher bit score for the hit to the same species)
+SAMD00036228 OPYT01 (the other has 3 genes on one contig)
+SAMD00036229 OQCB01 (shorter distance to the same species)
+SAMD00036251 OQAD01 (had a slightly higher bit score for a hit to the same species)
+SAMD00036316 OQEN01 (the other only had one species aside from moorella with a bit score barely over 100)
+SAMD00036330 OQDZ01 (higher bit score for same species)
+SAMD00036337 OQDT01 (3 hits to one contig for bilophila species as opposed to one)
+SAMD00036377 OQNO01 (much longer length hits)
+SAMD00036381 OQLH01 (much longer length hits)
+
+
+
+```
+
+```{r}
+## dups would get removed when placing in the tree for visualization. 
+## want to make sure they aren't duplicates from different assemblies
+closest_ref_no_2018 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_no_2018_assemblies.csv")) 
+dups <- closest_ref_no_2018 %>%
+  filter(is.na(distance))
+
+## now I want to see what their corresponding dups are 
+df_with_dups_list <- read_csv(paste0(dataDir, "compiled_dsrAB_scoreThreshold_assemblies_noDups_gapPercentageInfo.csv")) %>% select(id, sdups)
+# this provides the "reference/first" dup that has an actual distance and all of the others are listed as that representative hit's sdups
+dups$rep_id <- sapply(dups$hit_id, function(dup) {
+  match_row <- df_with_dups_list %>% 
+    filter(str_detect(sdups, fixed(dup)))
+  if (nrow(match_row) > 0) match_row$id[1] else NA
+})
+
+#now see which dups are only mapping to rep hits that are from a different assembly
+dups_from_other_assemblies <- dups %>%
+  filter(sapply(seq_along(rep_id), function(i) {
+    !any(str_detect(rep_id[[i]], query_id[i]))
+  }))
+
+
+```
 
 

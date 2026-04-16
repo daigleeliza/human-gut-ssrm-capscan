@@ -129,6 +129,10 @@ subjects_of_interest <- subject_OTU_matrix %>%
 samples_of_interest <- samples_w_subj %>%
   filter(merged_subject_id %in% subjects_of_interest$subject_id)
 
+# for seeing which samples definitely have hits so that we can figure out which are assemblies!
+samples_of_interest_all_species <- samples_w_subj %>%
+  filter(merged_subject_id %in% subject_OTU_matrix$subject_id)
+
 # find the hits associated with these samples 
 hits_of_interest <- NCBI_wSingleRef_wScores %>%
   filter(biosample_id %in% samples_of_interest$biosample_id) %>%

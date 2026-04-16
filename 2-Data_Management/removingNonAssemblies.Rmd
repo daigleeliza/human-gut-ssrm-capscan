@@ -502,43 +502,22 @@ write(qoi$query_list, file = "queries_dups_04-15-2026.txt")
 which_query <- hits_for_assemblies %>%
   filter(query_id %in% qoi$query_list)
 
+## instead of trying to choose them below, I can do this after removing other duplicates... left_join the sample ID then group_by
+# SAMD00036196 OQGT01 (the other has 4 genes on one contig)
+# SAMD00036214 OQHG01 (higher bit score for the hit to the same species)
+# SAMD00036228 OPYT01 (the other has 3 genes on one contig)
+# SAMD00036229 OQCB01 (shorter distance to the same species)
+# SAMD00036251 OQAD01 (had a slightly higher bit score for a hit to the same species)
+# SAMD00036316 OQEN01 (the other only had one species aside from moorella with a bit score barely over 100)
+# SAMD00036330 OQDZ01 (higher bit score for same species)
+# SAMD00036337 OQDT01 (3 hits to one contig for bilophila species as opposed to one)
+# SAMD00036377 OQNO01 (much longer length hits)
+# SAMD00036381 OQLH01 (much longer length hits)
+# SAMD00036386 OQNI01 (subunits are mapping to same species)
+# SAMD00036430 OQLI01 (more non-sdup hits)
+# SAMD00036432 OQNV01 (more species)
+# SAMEA1963786 OPRH01 (longer hits)
 
-SAMD00036196 OQGT01 (the other has 4 genes on one contig)
-SAMD00036214 OQHG01 (higher bit score for the hit to the same species)
-SAMD00036228 OPYT01 (the other has 3 genes on one contig)
-SAMD00036229 OQCB01 (shorter distance to the same species)
-SAMD00036251 OQAD01 (had a slightly higher bit score for a hit to the same species)
-SAMD00036316 OQEN01 (the other only had one species aside from moorella with a bit score barely over 100)
-SAMD00036330 OQDZ01 (higher bit score for same species)
-SAMD00036337 OQDT01 (3 hits to one contig for bilophila species as opposed to one)
-SAMD00036377 OQNO01 (much longer length hits)
-SAMD00036381 OQLH01 (much longer length hits)
-
-
-
-```
-
-```{r}
-## dups would get removed when placing in the tree for visualization. 
-## want to make sure they aren't duplicates from different assemblies
-closest_ref_no_2018 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_no_2018_assemblies.csv")) 
-dups <- closest_ref_no_2018 %>%
-  filter(is.na(distance))
-
-## now I want to see what their corresponding dups are 
-df_with_dups_list <- read_csv(paste0(dataDir, "compiled_dsrAB_scoreThreshold_assemblies_noDups_gapPercentageInfo.csv")) %>% select(id, sdups)
-# this provides the "reference/first" dup that has an actual distance and all of the others are listed as that representative hit's sdups
-dups$rep_id <- sapply(dups$hit_id, function(dup) {
-  match_row <- df_with_dups_list %>% 
-    filter(str_detect(sdups, fixed(dup)))
-  if (nrow(match_row) > 0) match_row$id[1] else NA
-})
-
-#now see which dups are only mapping to rep hits that are from a different assembly
-dups_from_other_assemblies <- dups %>%
-  filter(sapply(seq_along(rep_id), function(i) {
-    !any(str_detect(rep_id[[i]], query_id[i]))
-  }))
 
 
 ```

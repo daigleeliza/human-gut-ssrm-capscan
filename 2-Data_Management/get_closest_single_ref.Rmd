@@ -11,7 +11,7 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```
 # Read in info on closest references to capsule and NCBI hits
 ```{r}
-closestRefInfo_allScoreThresholdHits_no_2018 <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018.csv"))
+closestRefInfo_allScoreThresholdHits_no_2018 <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_assemblies.csv"))
 
 closestRefInfo_allScoreThresholdHits_no_2018_capsule <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv"))
 ```

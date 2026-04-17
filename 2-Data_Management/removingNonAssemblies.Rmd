@@ -381,7 +381,6 @@ srb_lite_notes_ages_countries <- srb_lite_notes_ages %>%
     str_detect(sample_id, "SAMN00265") ~ "Finland",
     str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993") ~ "China",
     str_detect(sample_id, "SAMN0295426") ~ "United States of America", # IRB approval at Stanford Uni, "one subject had traveled to Brazil and France", suggesting they are from the U.S.A.
-    (str_detect(sample_id, "SAMN032") & (age == "1 month")) ~ "Singapore", #other ones already say Singapore
     str_detect(sample_id, "SAMN0377735") ~ "Italy", # pilot for larger study with IRB approval at Uni of Trento
     str_detect(sample_id, "SAMN04978193") ~ "United Kingdom", # samples from UK adult twin registry
     str_detect(sample_id, "SAMN0824") ~ "United States of America",

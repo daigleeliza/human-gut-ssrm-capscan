@@ -1,0 +1,52 @@
+---
+title: "dm_NCBI"
+output: html_document
+---
+
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
+
+# read in the data
+```{r}
+hits <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018.csv")) 
+
+metadata <- readRDS(paste0(dataDir, "/srb_lite_notes_ages_countries.rds"))
+```
+
+## the purpose of this is to remove any last non-metagenomic assemblies
+# after going through the pipeline with the culled data, I pulled the data from one or two accession numbers from each project that was kept (unless there were visible metagenome assemblies on NCBI)
+# looked at each to see if it was contigs/scaffolds
+```{r}
+# this is 86 samples; they were isolate/strain assembly and one had very tiny contigs
+samples_remove <- c("SAMN02674", "SAMN02675", "SAMN026761", "SAMN02676200", "SAMN02954257", "SAMN02954258", "SAMN03449989")
+
+## remove from metadata
+metadata_final <- metadata %>%
+  filter(!str_detect(sample_id, paste(samples_remove, collapse = "|"))) %>%
+  #remove extra replicates from PRJDB3601, PRJNA380276, and PRJNA243036
+  filter(!(str_detect(sample_id, "SAMD000361|SAMD000362|SAMD000363|SAMD000364") & 
+          str_detect(`sample name`, "F") &
+           str_detect(`sample name`, "-"))) %>%
+  filter(!(str_detect(sample_id, "SAMN08533") &
+           str_detect(`sample material processing`, "tru"))) %>%
+  filter(!(str_detect(notes, "systematic comparison") & 
+         !str_detect(sample_id, "SAMN02712088|SAMN02712139|SAMN02712150")))
+
+saveRDS(metadata_final, file = paste0(dataDir, "/metadata_final.rds"))
+
+## remove from final hits 
+hits_final <- hits %>%
+  filter(!str_detect(biosample_id, paste(samples_remove, collapse = "|")))
+
+## add ages
+hits_final_ages <- hits_final %>%
+  left_join(metadata_final %>% select(sample_id, under_over_3), by = c("biosample_id" = "sample_id"))
+
+saveRDS(hits_final_ages, file = paste0(dataDir, "/hits_final_ages.rds"))
+
+## remove from tree??
+```
+

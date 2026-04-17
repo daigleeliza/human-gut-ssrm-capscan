@@ -1,0 +1,53 @@
+---
+title: "SSRMprevalence"
+output: html_document
+author: "Elizabeth Daigle"
+date: "16 April 2026"
+---
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+# Read in metadata and hits from dm_NCBI.Rmd
+```{r}
+metadata_final <- readRDS(paste0(dataDir, "/metadata_final.rds"))
+hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_ages.rds"))
+
+```
+
+
+# calculate SSRM sample prevalence
+```{r}
+
+n_samples <- n_distinct(metadata_final$sample_id)
+
+n_samples_under_3 <- n_distinct(metadata_final$sample_id[metadata_final$under_over_3 == "under 3"])
+
+n_samples_over_3 <- n_distinct(metadata_final$sample_id[metadata_final$under_over_3 == "over 3"])
+
+overall <- hits_final_ages %>%
+  summarize(n_biosamples_hits = n_distinct(biosample_id)) %>%
+  mutate(n_biosamples_total = n_samples) %>%
+  mutate(sample_SSRM_prevalence = n_biosamples_hits/n_biosamples_total) %>%
+  mutate(group = "All ages")
+
+under_3 <- hits_final_ages %>%
+  filter(under_over_3 == "under 3") %>%
+  summarize(n_biosamples_hits = n_distinct(biosample_id)) %>%
+  mutate(n_biosamples_total = n_samples_under_3) %>%
+  mutate(sample_SSRM_prevalence = n_biosamples_hits/n_biosamples_total) %>%
+  mutate(group = "Subjects under age 3")
+
+over_3 <- hits_final_ages %>%
+  filter(under_over_3 == "over 3") %>%
+  summarize(n_biosamples_hits = n_distinct(biosample_id)) %>%
+  mutate(n_biosamples_total = n_samples_over_3) %>%
+  mutate(sample_SSRM_prevalence = n_biosamples_hits/n_biosamples_total) %>%
+  mutate(group = "Subjects over age 3")
+
+prevalence <- bind_rows(overall, under_3, over_3) %>%
+  relocate(group, .before = n_biosamples_hits)
+  
+```
+
+## for the prevalence above, grouping by biosample avoids the need to remove the excess query IDs; there is the one weird project that runs 8 aliquots from the same people

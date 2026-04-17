@@ -57,6 +57,7 @@ conflicts_prefer(dplyr::summarize)
 conflicts_prefer(dplyr::summarise)
 conflicts_prefer(plyr::mutate)
 conflicts_prefer(dplyr::left_join)
+conflicts_prefer(base::remove)
 
 #--------------------------------------------
 # define repository paths

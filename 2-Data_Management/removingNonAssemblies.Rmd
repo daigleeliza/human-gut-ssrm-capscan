@@ -1,7 +1,9 @@
 ---
-title: "junk_removal"
+title: "removingNonAssemblies"
 output: html_document
+author: "Elizabeth Daigle and Jessica Grembi"
 ---
+## the purpose of this script is to remove all of the NCBI samples that are not true metagenomic assemblies since they skew our calculation of SSRM prevalence
 # Read in packages, functions, and directories
 ```{r}
 source(paste0(here::here(), "/1-Config/config.R"))
@@ -385,9 +387,14 @@ srb_lite_notes_ages_countries <- srb_lite_notes_ages %>%
     str_detect(sample_id, "SAMN0824") ~ "United States of America",
     str_detect(sample_id, "SAMN08533") ~ "United States of America", # recruited at Stanford Uni
     str_detect(sample_id, "SAMN10720|SAMN1238") ~ "United States of America", # recruited at Stanford Uni
+    str_detect(sample_id, "SAMN03279760|SAMN03281006|SAMN03281007|SAMN03281010|SAMN03281016|SAMN03281018|SAMN03281020|SAMN03281021") ~ "Malaysia",
+    str_detect(sample_id, "SAMN03281009|SAMN03281011") ~ "India",
+    str_detect(sample_id, "SAMN03281017|SAMN03281019") ~ "China",
     TRUE ~ country))
 
-write.csv(srb_lite_notes_ages_countries, file = "srb_lite_notes_ages_countries_04-10-2026.csv", row.names = FALSE)
+#write.csv(srb_lite_notes_ages_countries, file = "srb_lite_notes_ages_countries_04-10-2026.csv", row.names = FALSE)
+saveRDS(srb_lite_notes_ages_countries, file = paste0(dataDir, "/srb_lite_notes_ages_countries.rds"))
+
 
 ```
 
@@ -405,7 +412,7 @@ write(IDs, file = "biosample_IDs_04-13-2026.txt")
 
 
 
-# making sure that the first portion of the query IDs is unique for a biosample
+# making sure that the query IDs are unique since that will be used to filter the compiled csv files for only the samples we want to keep
 # code generated with Claude AI
 ```{r}
 # extract Query IDs from their list and turn df into long format
@@ -441,7 +448,7 @@ identical(ids_regex, ids_split)
 ```
 
 
-## duplicate AS studies; both have 97 samples; which is the one that has assemblies?
+## duplicate AS studies; both have 97 samples; which is the one that has assemblies? kept the one with hits in a previous iteration of the pipeline (all 72k samples)
 ```{r}
 AS_samples <- srb_lite %>%
   filter((str_detect(sample_id, "SAMN060|SAMN0634") & (`local-scale environmental context` == "ankylosing spondylitis patient")))
@@ -456,7 +463,7 @@ all_hits <- hits %>%
 ```
 
 # trying to see how many biosample_ids are associated with multiple query ids
-# does having multiple query IDs mean there are duplicates in the dataset?
+# does having multiple query IDs mean there are duplicates in the dataset? -> you would see multiple of the same species/hits from the same sample but different assembly/sequencing run
 # code generated with help from Claude
 ```{r}
 mult_queries <- srb_lite_notes_ages_countries$sample_id[sapply(strsplit(srb_lite_notes_ages_countries$query_ids, ","), length) > 1]

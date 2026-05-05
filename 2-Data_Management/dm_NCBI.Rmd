@@ -17,7 +17,8 @@ metadata <- readRDS(paste0(dataDir, "/srb_lite_notes_ages_countries.rds"))
 ```
 
 ## the purpose of this is to remove any last non-metagenomic assemblies
-# after going through the pipeline with the culled data, I pulled the data from one or two accession numbers from each project that was kept (unless there were visible metagenome assemblies on NCBI)
+
+# after going through the pipeline with the dataset made in removingNonAssemblies.Rmd, I downloaded one or two samples from each project that was kept (unless there were visible metagenome assemblies on NCBI)
 # looked at each to see if it was contigs/scaffolds
 ```{r}
 # this is 86 samples; they were isolate/strain assembly and one had very tiny contigs
@@ -35,18 +36,353 @@ metadata_final <- metadata %>%
   filter(!(str_detect(notes, "systematic comparison") & 
          !str_detect(sample_id, "SAMN02712088|SAMN02712139|SAMN02712150")))
 
-saveRDS(metadata_final, file = paste0(dataDir, "/metadata_final.rds"))
+# this is 7194 samples
+```
 
+# starting with the metaHIT samples, as I have found they are likely duplicates of each other
+```{r}
+# all are likely the same people -> metaHIT consortium 
+# these are the proper subject names based on the supp. tables for PRJEB1220, PRJEB5224, and PRJEB4336; inferred for PRJEB28245
+# want to keep longitudinal data but get rid of samples that are processed in two different ways 
+# keep both when they have the same subject name but end in -0, -1, -2, -3, -4 (longitudinal)
+# the PT/PN samples appear to be totally different samples according to supp. table from article
+metaHIT <- metadata_final %>%
+  filter((str_detect(sample_id, "SAMEA233|SAMEA2041|SAMEA2042|SAMEA2043|SAMEA1972440|SAMEA1972159|SAMEA1967055|SAMEA1966253|SAMEA1965906|SAMEA1964914|SAMEA1963786|SAMEA483|SAMEA214|SAMEA215|SAMEA216|SAMEA1972381|SAMEA1972188|SAMEA1970465|SAMEA1969417|SAMEA1967891|SAMEA1965149|SAMEA1964852|SAMEA1964687"))) %>%
+  mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA233|SAMEA2041|SAMEA2042|SAMEA2043|SAMEA1972440|SAMEA1972159|SAMEA1967055|SAMEA1966253|SAMEA1965906|SAMEA1964914|SAMEA1963786"), str_extract(`sample name`, "^[^-]+"), `host subject id`)) %>%
+  mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA483"), str_extract(`sample name`, "^[^-_]+"), `host subject id`)) %>%
+  mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA214|SAMEA215|SAMEA216|SAMEA1972381|SAMEA1972188|SAMEA1970465|SAMEA1969417|SAMEA1967891|SAMEA1965149|SAMEA1964852|SAMEA1964687"), str_extract(`sample name`, "(?<=-)[^-]+"), `host subject id`)) %>%
+  relocate(`sample name`, .before = `host subject id`)
+
+# which subjects have more than one sample?
+metaHIT_dups <- metaHIT %>%
+  group_by(`host subject id`) %>%
+  filter(n() > 1) %>%
+  ungroup()
+
+# find the sample name before _assemblies was added (PRJEB28245 samples)
+prefixes <- metaHIT_dups$`sample name`[!str_detect(metaHIT_dups$`sample name`, "_assemblies")] %>% 
+  str_remove("MetaHIT-")
+
+# take the metaHIT df and remove duplicates
+metaHIT_dups_removed <- metaHIT %>%
+  # remove rows where sample name contains _assemblies if it is a duplicate of another sample
+  filter(!(str_detect(`sample name`, "_assemblies") & 
+           str_remove(`sample name`, "_assemblies") %in% prefixes)) %>%
+  # remove these as they are duplicates of the V1.CD1-0-PT sample, etc.
+  filter(!(str_detect(`sample name`, "V1.CD-PT1-0_assemblies|V1.CD-PT2-0_assemblies|V1.CD-PT3-0_assemblies|V1.CD-PT4-0_assemblies|V1.CD-PT6-0_assemblies")))
+
+# the only things left over are the dups of MetaHIT-MH0001/MH0001 (others are longitudinal samples)
+metaHIT_dups_left <- metaHIT_dups_removed %>%
+  group_by(`host subject id`) %>%
+  filter(n() > 1) %>%
+  ungroup() %>%
+  filter(str_detect(`sample name`, "MH"))
+
+# which have more hits? not super critical these are 10-30 hits we are talking about
+leftover1220 <- metaHIT_dups_left %>%
+  filter(!(str_detect(`sample name`, "MetaHIT")))
+
+leftover4336 <- metaHIT_dups_left %>%
+  filter(str_detect(`sample name`, "MetaHIT"))
+
+#need to go down a bit and run hits_final ages first then come back here
+hits1220 <- hits %>%
+  filter(biosample_id %in% leftover1220$sample_id)
+
+hits4336 <- hits %>%
+  filter(biosample_id %in% leftover4336$sample_id)
+
+#chose to keep samples from PRJEB4336 since Bilophila hits are present and also it was published first 
+metaHIT_dups_removed_final <- metaHIT_dups_removed %>%
+  filter(!(sample_id %in% leftover1220$sample_id))
+
+# get list of samples that were removed by taking difference between original metaHIT df and df with dups removed
+samples_remove_metaHIT <- setdiff(metaHIT, metaHIT_dups_removed_final)
+
+```
+
+
+```{r}
+metadata_final_two <- metadata_final %>%
+  #853 samples to remove
+  filter(!(sample_id %in% samples_remove_metaHIT$sample_id)) %>%
+  # Remove extra samples from the athlete study because there was not longitudinal sampling. Keep the sample with more hits for the subject (see name in `unique ID`). For one subject, SAMN04329868 was selected since it had the same number of hits as the other sample but longer hits.
+  filter(!(str_detect(sample_id, "SAMN04329816|SAMN04329819|SAMN04329764|SAMN04329873|SAMN04329767|SAMN04329773|SAMN04329774|SAMN04329778|SAMN04329779")))
+##6332 samples left! THIS IS THE FINAL COUNT FOR PREVALENCE CALCULATIONS
+
+metadata_removed <- setdiff(metadata, metadata_final_two)
+
+saveRDS(metadata_final_two, file = paste0(dataDir, "/metadata_final.rds"))
+#0420 was the csv written before removal of duplicate metaHIT samples
+write.csv(metadata_final_two, file = paste0(configDir, "/metadata_final_0504.csv"), row.names = FALSE)
+
+```
+
+```{r}
 ## remove from final hits 
 hits_final <- hits %>%
-  filter(!str_detect(biosample_id, paste(samples_remove, collapse = "|")))
-
+  filter((biosample_id %in% metadata_final_two$sample_id))
+#4243 hits
 ## add ages
 hits_final_ages <- hits_final %>%
-  left_join(metadata_final %>% select(sample_id, under_over_3), by = c("biosample_id" = "sample_id"))
+  left_join(metadata_final_two %>% select(sample_id, under_over_3), by = c("biosample_id" = "sample_id"))
 
 saveRDS(hits_final_ages, file = paste0(dataDir, "/hits_final_ages.rds"))
 
-## remove from tree??
 ```
 
+## add subject info for samples with hits for cooccurrence network
+#ie is it longitudinal? 
+# move subject IDs from other columns to the host subject id and if there is none, add the biosampleID in that column (only one sample for that subject)
+```{r}
+metadata_final_subjects <- metadata_final_two %>%
+  filter(sample_id %in% hits_final_ages$biosample_id) %>%
+  # no repeats for subject sampling 
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN1465|SAMN1238|SAMN0824|SAMN061153|SAMN061154|SAMN061155|SAMN05214|SAMN04978193|SAMN044804|SAMN04161035|SAMN02712088|SAMEA4378|SAMD00036524"), sample_id, `host subject id`)) %>%
+  # only one of the subject's samples has hits 
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN0906"), sample_id, `host subject id`)) %>%
+  # no manuscript and no way to tell if samples are longitudinal
+  filter(!(str_detect(sample_id, "SAMN061") & `local-scale environmental context` == "ankylosing spondylitis patient")) %>%
+  # the following had patient descriptors on NCBI
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN06018971|SAMN06018972|SAMN06018973|SAMN06018974"), "Donor", `host subject id`)) %>%
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN06018975|SAMN06018976|SAMN06018977"), "Recipient_1", `host subject id`)) %>%
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN06018979"), "Recipient_2", `host subject id`)) %>%
+  # no repeats for subject sampling (using sample_id instead of sampleID so sample identifiers are not one or two digit numbers)
+  mutate(`host subject id` = 
+           ifelse(str_detect(notes, "Human gut microbiome in AS"), sample_id, `host subject id`)) %>%
+  # patient descriptors on NCBI for "Human fecal microbiome before and after consumption of AH1206"
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05356889|SAMN05194733|SAMN05194711"), "Subject_X", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05356887|SAMN05194731|SAMN05194709"), "Subject_V", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05356884|SAMN05194706"), "Subject_S", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05356879|SAMN05194723|SAMN05194701"), "Subject_M", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05356872|SAMN05194694"), "Subject_E", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194727"), "Subject_R", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194722|SAMN05194700"), "Subject_K", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194721|SAMN05194699"), "Subject_J", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194720"), "Subject_I", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194718|SAMN05194696"), "Subject_G", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194707"), "Subject_T", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194697"), "Subject_H", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN05194692"), "Subject_C", `host subject id`)) %>%
+  # likely not from the same subject (only two samples)
+  mutate(`host subject id` = 
+           ifelse(str_detect(sample_id, "SAMN0502"), sample_id, `host subject id`)) %>%
+  # subject IDs from "sample reference" variable; sampled at Baseline and days 28 and 56
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04158616|SAMN04158617|SAMN04158618"), "Subject_40870", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04158619"), "Subject_41952", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04158622|SAMN04158623|SAMN04158624"), "Subject_42827", `host subject id`)) %>%
+  # no repeats for subject sampling
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN036536"), patient_name, `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN00715|SAMN00791|SAMN00792|SAMN00993"), sample_id, `host subject id`)) %>%
+  # portion before the first dash is the subject ID (supp. table 1 from paper) PRJEB5224 (SAMEA233)
+  # PRJEB1220 are the others
+ mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA233|SAMEA2041|SAMEA2042|SAMEA2043|SAMEA1972440|SAMEA1967055|SAMEA1966253|SAMEA1965906|SAMEA1964914|SAMEA1963786"), str_extract(`sample name`, "^[^-]+"), `host subject id`)) %>%
+  #PRJEB28245
+  mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA483"), str_extract(`sample name`, "^[^-_]+"), `host subject id`)) %>%
+  #PRJEB4336 -> participants recruited from inter99 study but have very similar naming to other metaHIT samples and project name is MetaHIT-Richness
+  mutate(`host subject id` = ifelse(str_detect(sample_id, "SAMEA214|SAMEA215|SAMEA216|SAMEA1972381|SAMEA1972188|SAMEA1970465|SAMEA1969417|SAMEA1967891|SAMEA1965149|SAMEA1964852|SAMEA1964687"), str_extract(`sample name`, "(?<=-)[^-]+"), `host subject id`)) %>%
+  relocate(`sample name`, .before = `host subject id`) %>%
+  # keep just the samples from SAMEA273 with "individual name" since we cannot be sure about subjects
+  filter(!(str_detect(sample_id, "SAMEA273") & is.na(`individual name`))) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMEA273"), `individual name`, `host subject id`)) %>%
+  # the 86 duplicates were removed for this project
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMD000361|SAMD000362|SAMD000363|SAMD000364"), `sample name`, `host subject id`)) %>%
+  # according to the manuscript, the subject id is the apr## portion
+  mutate(`host subject id` = if_else(str_detect(`host subject id`, "apr"),
+                                     str_remove(`host subject id`, "S\\d+$"),
+                                     `host subject id`)) %>%
+  #132 samples and 132 unique identifiers under "common name"; same for SAMEA443 with 3 samples
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMEA3708|SAMEA443"), `common name`, `host subject id`)) %>%
+  # for PRJEB12123 need to remove the time points to get the subject ID (SAMEA3708)
+  mutate(`host subject id` = str_remove(`host subject id`, "-S1-|-S2-|-S3-")) %>%
+  # only two samples, from different countries
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN06699"), `submitted subject id`, `host subject id`)) %>%
+  # based NCBI subject names for the samples poooled to make these five coassemblies
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN09866707"), "Subject_T26", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN09866710"), "Subject_T18", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN09866716"), "Subject_T16", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN09866719"), "Subject_T23", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN09866722"), "Subject_T15", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329766"), "Enve", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329776"), "SantaCruz", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329780"), "Ibis", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329851"), "Cove", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329852"), "Norco", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329853"), "SRAM", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329854"), "Thomson", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329856"), "Easton", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329857"), "Renthal", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329858"), "Jamis", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329859"), "Niner", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329860"), "Intense", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329862"), "Pivot", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329863"), "Pinarello", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329864"), "Merlin", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329865"), "Commencal", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329866"), "Yeti", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329867"), "Giant", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329868"), "Juliana", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329869"), "Huffy", `host subject id`)) %>%
+  mutate(`host subject id` =
+           ifelse(str_detect(sample_id, "SAMN04329871"), "Speedplay", `host subject id`))
+
+# to double check we don't have any duplicate subject names between unrelated projects. everything looks how i expect it to 
+checking <- metadata_final_subjects %>% filter(!(str_detect(`host subject id`, "SAMN|SAMD|SAMEA")))
+
+
+saveRDS(metadata_final_subjects, file = paste0(dataDir, "/metadata_final_subjects.rds"))
+
+
+# In this df, there are several biosamples that say "FALSE" under SRM_present but they have hits. The portions of the metadata table associated with species/hits/etc. are outdated. The only columns used in the most recent analysis of the data are the ones downloaded from NCBI.
+```
+
+# removing hits from contigs with hits to different species that could influence the cooccurrence analysis (produced after an initial look at the cooccurrence plot made using the hits_final_ages as input instead of hits_final_cooccur made below)
+# i.e., if there is one contig with a hit to bilohila and a hit to d. piger it will seem like the two species are cooccurring when it is just a consequence of fragment insertion
+```{r}
+# which samples have hits to different species on the same contig?
+contig_check <- hits_final_ages %>%
+  filter(biosample_id %in% metadata_final_subjects$sample_id) %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  group_by(biosample_id, contig) %>%
+  # is there a hit to more than one species on one contig and are these part of the same cluster?
+  summarize(n_diff_hits = n_distinct(single_closest_ref),
+            closest_refs = paste(unique(single_closest_ref), collapse = ", ")) %>%
+  filter(n_diff_hits > 1) %>%
+  # remove rows where all refs are bilophila or d. piger or DsvSp (the ones in this df are from the same cluster)
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Bilophila")))) %>%
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Desulfovibrio_piger")))) %>%
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "DsvSp")))) %>%
+  # gordonibacter not involved in cooccurrence
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Gordonibacter")))) %>%
+  # these are paired with species from the same cluster
+  filter(!str_detect(closest_refs, "DslDes17")) %>%
+  # the NAs are not an issue because they are not in the matrix
+  filter(!str_detect(closest_refs, "\\bNA\\b")) %>%
+  # two uncultured bacteria from the same cluster
+  filter(!str_detect(biosample_id, "SAMD00036432"))
+
+
+# for the contigs in contig_check, we want to select one subunit
+species_to_keep_by_subject <- hits_final_ages %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  filter(contig %in% contig_check$contig) %>%
+  group_by(biosample_id, contig) %>%
+  #take subunit on the contig that is the closest to its reference
+  slice_min(distance) %>%
+  # remove manually extra hits from contigs that all map to NA
+  # remove shorter hit
+  filter(!hit_id %in% c("OPVH01.34419.1_1/63-228", 
+                        "ORTY01.76057.1_1/1-124",
+                        "OVYH01.71234.1_1/42-206",
+                        "OWRT01.35758.1_2/1-115",
+                        "OXYJ01.14281.1_2/2-102",
+                        "ULWZ01.63543.1_1/1-84",
+                        "UPEG01.53870.1_2/1-91",
+                        "UXIV01.20473.1_2/1-126",
+                        "UZHO01.27007.1_1/11-102"))
+
+species_to_remove_by_subject <- hits_final_ages %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  filter(contig %in% contig_check$contig) %>%
+  filter(!hit_id %in% species_to_keep_by_subject$hit_id)
+
+
+hits_final_cooccur <- hits_final %>%
+  filter(!hit_id %in% species_to_remove_by_subject$hit_id)
+
+saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
+```
+
+
+
+## make a matrix that has a 1 for a species*subject combo when there is a hit present for that combo
+# code developed with Claude AI, all double-checking done by me
+```{r}
+all_refs <- unique(hits_final_cooccur$single_closest_ref)
+nas <- hits_final_cooccur %>% filter(is.na(single_closest_ref))
+#filtering out the NAs as these appear to not have been successfully inserted into the tree. 
+all_refs <- all_refs[!is.na(all_refs)]
+
+# collapse by `host subject id`, make a sample ids variable
+matrix <- metadata_final_subjects %>%
+  group_by(`host subject id`) %>%
+  summarise(sample_ids = paste(sample_id, collapse = ", ")) %>%
+  mutate(across(all_of(all_refs), ~ 0)) # initialize all ref columns to 0
+
+for (ref in all_refs) {
+  # get all biosample_ids that have a hit for this ref
+  samples_with_hit <- hits_final_cooccur$biosample_id[hits_final_cooccur$single_closest_ref == ref]
+  
+  # for each row, check if any of its sample_ids are in samples_with_hit
+  matrix[[ref]] <- sapply(matrix$sample_ids, function(ids) {
+    id_list <- str_split(ids, ", ")[[1]]
+    as.integer(any(id_list %in% samples_with_hit))
+  })
+}
+
+# #checking to see that I am getting the values I expect 
+# 14040721 should have hits for D. piger 2,3,4 and EF645667
+# Subject_42827 should have hits for D. alkalitolerans, T. narugense, Anaerobic_bacterium_sk.prop8__Bv2Prop2, and d. desulfuricans DQ092635
+# apr12 should have hits for B. wadsworthia 3+6
+# MH0309 should have hits for Anaerobic_bacterium_sk.prop8__Bv2Prop2
+check <- matrix %>% 
+  filter(str_detect(`host subject id`, "14040721|Subject_42827|apr12|MH0309"))
+
+subject_OTU_matrix <- matrix %>% select(-"sample_ids")
+
+saveRDS(subject_OTU_matrix, file = paste0(dataDir, "/subject_OTU_matrix_0504.rds"))
+
+
+```

@@ -11,41 +11,46 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 # Read in OTU table and taxa table
 ```{r}
-taxa_table <- read_csv("taxa_table.csv")
-otu_subject_df <- read_csv(paste0(clusterDir, "/otu_subject_matrix_ref_0316.csv"))
-otu_subject_matrix <- otu_subject_df %>%
-  column_to_rownames(., var = "...1") %>%
+taxa_table <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv"))
+
+otu_subject_matrix <- readRDS(paste0(dataDir, "/subject_OTU_matrix_0504.rds")) %>% 
+  column_to_rownames(., var = "host subject id") %>%
+  t() %>%
   as.matrix()
 ```
 # Read in tree and root
 ```{r}
-ref_tree <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018.newick"))
+library(phyloseq)
+ref_tree <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018_assemblies.newick"))
 rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 TREE <- phy_tree(rooted_ref_tree)
 ```
-## HERE 
 
 # prep reference phyloseq object
 ```{r}
 OTU = otu_table(otu_subject_matrix, taxa_are_rows = TRUE)
 
 # format taxa_table
-taxa_table <- taxa_table %>% select(-"...1") %>%
+taxa_table <- taxa_table %>%
   column_to_rownames(var = "OTU") %>%
   select(-c("environmental_category","dsrab_type"))
 
 taxa_table <- as.matrix(taxa_table)
+# missing two taxa in the clusters_df (see code at bottom) so I am renaming them in taxa_table to match their names in the other phyloseq components. DslDes16 and DsvAlas8 have the same taxonomical classifications
+rownames(taxa_table) <- dplyr::recode(rownames(taxa_table),
+  "Candidatus_Desulfovibrio_trichonymphae__AB444072" = "Candidatus_Desulfovibrio_trichonymphae",
+  "Desulfovibrio_desulfuricans_G20__DslDes16" = "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"
+)
 TAX = tax_table(taxa_table)
 
 # make phyloseq object
 phyloseq <- phyloseq(TREE, TAX, OTU)
-
-## want to add sample data?
 ```
 
-# tip_glom at 0.1 and get list of OTUs that are in each cluster
+
+# tip_glom at 0.15 and get list of OTUs that are in each cluster
 ```{r}
-ps_tipglom <- tip_glom(phyloseq, h = 0.1)
+ps_tipglom <- tip_glom(phyloseq, h = 0.15)
 # find which tips were retained after tip_glom
 cluster_reps <- taxa_names(ps_tipglom)
 
@@ -53,6 +58,7 @@ cluster_reps <- taxa_names(ps_tipglom)
 tree_dist <- cophenetic(phy_tree(phyloseq))
 ```
 
+# make df that gives the cluster representative for each of the 1256 taxa in the non tip-glommed ps object
 ```{r}
 clusters_df <- data.frame(
   OTU = taxa_names(phyloseq),
@@ -63,81 +69,274 @@ clusters_df <- data.frame(
                    }))
 )
 
-# # write one file per cluster
-# for (cluster in cluster_reps) {
-#   otus_in_cluster <- clusters_df$OTU[clusters_df$cluster == cluster]
-#   if (length(otus_in_cluster) > 1) {
-#     write_lines(otus_in_cluster,
-#                 file = paste0(clusterDir, "/", cluster, "_otus_in_cluster.txt"))
-#   }
-# }
-```
+# read in final hits df 
+hits_final <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds"))
 
+# want to include only the OTUs that have hits 
+names <- hits_final$single_closest_ref
+hits_in_cluster_df <- clusters_df %>% filter(OTU %in% names) 
 
-## from ani_zoom_trees.Rmd by RC
-
-# overall purpose: get a table for each reference leaf and which cluster they fall into with h=0.1 for tip_glom
-
-# packages to install
-```{r}
-library(ggplot2)
-library(treeio)
-library(ggtree)
-library(dplyr)
-library(ape)
-library(phytools)
-library(phyloseq)
-```
-
-# prep tree, OTU, and TAX
-```{r}
-pruned_tree <- drop.tip(rooted_ref_tree, c(moorella_copy_2_labels, ox_bact_labels))
-
-hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
-hit_otus <- gsub("[.]", "-", hit_otus)
-hit_otus <- gsub("sp-", "sp.", hit_otus)
-hit_otus <- gsub("sk-", "sk.", hit_otus)
-hit_otus <- gsub("str-", "str.", hit_otus)
-```
-
-```{r}
-faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
-
-faca_tree <- phyloseq(faca_tax, OTU, pruned_tree)
-
-plot_tree(tip_glom(faca_tree, h = 0), label.tips = "taxa_names" %in% hit_otus, text.size = 2)
-plot_tree(tip_glom(faca_tree, h = 0.25), label.tips = "taxa_names", text.size = 2)
-```
-
-# make df for each leaf in each cluster at h = 0.2
-```{r}
-df <- taxa_table_firmicutes_notipglom
-
-df$tip_glom_01_clusters <- ifelse(df$otu %in% df$tip_glom_01_clusters,
-                              df$otu,
-                              NA)
-
-for (n_row in 1:nrow(df)) {
-  if (is.na(df[n_row, "tip_glom_01_clusters"])) {
-    df[n_row, "tip_glom_01_clusters"] <- df[n_row - 1, "tip_glom_01_clusters"]
-  }
+# testing in console
+for (cluster in unique(hits_in_cluster_df$cluster)) {
+  otus_in_cluster <- hits_in_cluster_df$OTU[hits_in_cluster_df$cluster == cluster]
+  print(paste("Cluster:", cluster))
+  print(otus_in_cluster)
+  print(paste("Length:", length(otus_in_cluster)))
 }
 
-clusters_freq <- as.data.frame(table(df$tip_glom_01_clusters))
-clusters <- subset(clusters_freq$Var1, clusters_freq$Freq > 1)
+# # write one file per cluster
+for (cluster in hits_in_cluster_df$cluster) {
+  otus_in_cluster <- hits_in_cluster_df$OTU[hits_in_cluster_df$cluster == cluster]
+  if (length(otus_in_cluster) > 1) {
+    cluster_clean <- gsub("ö", "o", cluster)
+    cluster_clean <- gsub("sp-", "sp.", cluster_clean)
+    cluster_clean <- gsub("sk-", "sk.", cluster_clean)
+    write_lines(otus_in_cluster,
+                file = paste0(clusterDir, "/", cluster_clean, "_otus_in_cluster_015.txt"))
+  }
+}
+```
 
-taxa_table_firmicutes_notipglom <- df
-
-# for (cluster in clusters) {
-#   otus_in_cluster <- df$out[df$tip_glom_01_clusters == cluster]
+```{r}
+# ## missing two taxon at the end
+# ## there are some OTUs from the reference tree fasta that are named differently than the reference taxonomy fasta (presumably they are two species/taxa that are very close)
+# ps_object <- unique(hits_in_cluster_df$OTU)
+# hits <- unique(hits_final$single_closest_ref)
+# hits_not_ps_object <- setdiff(hits, ps_object)
+# #moorella was removed and the NAs have "FALSE" for srm_present (these are not in the matrix because they were removed before making it, see dm_NCBI.rmd)
+# # need to make sure DslDes16, DsvAlas8, and Candidatus Desulfovibrio triconymphae are kept 
 # 
-#   write_lines(otus_in_cluster, file = paste("/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/workflow/out/cluster_otus/ids/firmicutes/", cluster, "_otus_in_cluster.txt", sep = ""))
-# }
-
-# write_lines(unique(clusters),
-#             file = "/Users/rebeccachristensen/Desktop/Cremer_Lab_2022/main/config/firmicutes_cluster_names.txt", 
-#             sep = "\n")
-
+# # figure out where they are missing and change the names before creating ps object
+# taxon <- "Candidatus_Desulfovibrio_trichonymphae"
+# 
+# # Check presence in each component
+# taxon %in% phy_tree(TREE)$tip.label        # in tree?
+# taxon %in% rownames(taxa_table)            # in TAX?
+# taxon %in% rownames(otu_subject_matrix)    # in OTU?
+# 
+# taxon2 <- "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"
+# 
+# # Check presence in each component
+# taxon2 %in% phy_tree(TREE)$tip.label        # in tree?
+# taxon2 %in% rownames(taxa_table)            # in TAX?
+# taxon2 %in% rownames(otu_subject_matrix)    # in OTU?
 ```
 
 
+
+
+# rename the OTUs in the matrix to species-level based on the clustering 
+```{r}
+otu_subject_matrix_subset <- otu_subject_matrix %>% .[rowSums(.) > 0, ] 
+
+
+before = rownames(otu_subject_matrix)
+after = rownames(otu_subject_matrix_subset)
+setdiff(before, after)
+# lost these three OTUs (Polluted_aquifer_clone__UncS1623, Polluted_aquifer_clone_LGWK16__UncS1633, Desulfosporosinus_youngiae__DfpYoun5) because the only samples they were present in were removed from the subject df in dm_NCBI.Rmd
+
+species_subject_matrix <- otu_subject_matrix[rownames(otu_subject_matrix) 
+                                                 != "Moorella_thermoacetica_Y72_copy_2__MooTher5", ]
+
+rownames(species_subject_matrix) <- hits_in_cluster_df$cluster[match(rownames(species_subject_matrix), 
+                                                                     hits_in_cluster_df$OTU)]
+row_names <- rownames(otu_subject_matrix_subset)
+# seeing if the OTUs from the matrix match the OTUs from the clustering
+setdiff(row_names, hits_in_cluster_df$OTU)
+# only moorella thermoacetica is missing which is what I expect since that is used for rooting the tree
+setdiff(hits_in_cluster_df$OTU, row_names)
+# again, the two OTUs lost are only found in samples not in the subject matrix; clustering is based off the taxa table, not the otu matrix
+
+# double check the row sums are the same before and after renaming -> yes!
+# Bilophila cluster -> 825 subjects with a hit
+rowSums(otu_subject_matrix_subset[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ])
+rowSums(species_subject_matrix[grep("Bilophila_wadsworthia", rownames(species_subject_matrix)), ])
+# D. piger -> 333 subjects with a hit
+rowSums(otu_subject_matrix_subset[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), ])
+rowSums(species_subject_matrix[grep("Desulfovibrio_piger", rownames(species_subject_matrix)), ])
+# desulfovibrio cluster -> 165 subjects with a hit
+rowSums(otu_subject_matrix_subset[c("uncultured_bacterium__EF645664","uncultured_bacterium__EF645667","uncultured_bacterium__EF645665", "Desulfovibrio_africanus__DslAfri3", "Desulfovibrio_simplex__DslSimpl", "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358", "Desulfovibrio_desulfuricans__DslDes17"), ])
+rowSums(species_subject_matrix[grep("uncultured_bacterium__EF645667", rownames(species_subject_matrix)), ])
+```
+## collapse the rows by cluster and make the cooccurrence network
+```{r}
+groups <- gsub("\\.[1-6]$", "", rownames(species_subject_matrix))
+species_subject_matrix_by_cluster <- apply(species_subject_matrix, 2, function(col) {
+  tapply(col, groups, max)
+})
+
+rowSums(species_subject_matrix_by_cluster[1:23, ])
+# sums are different now since each cluster has a value of 1 (rather than a value of 1 for each species in the cluster)
+
+# 610 subjects with either bilophila species, as expected
+bil_cluster_check <- otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
+```
+
+```{r}
+cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 20)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/8
+V(igraph_net)$label.size <- 0
+deg <- igraph::degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+species_labels <- c(
+  "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia",
+  "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger",
+  "uncultured_bacterium__EF645667" = "Desulfovibrio species cluster",
+  "Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+  "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "uncultured Firmicute from industrial environment AY751286"
+)
+V(igraph_net)$label <- species_labels[V(igraph_net)$name]
+
+# add colors
+# Desulfovibrionaceae in purple
+desulfo <- c("Bilophila_wadsworthia__BilWads6", 
+                    "Desulfovibrio_piger__DslPige3", 
+                    "uncultured_bacterium__EF645667")
+# color plot by "degree", suggested by Claude
+firmicute_orange <- brewer.pal(2, "Set2")[2]
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+E(igraph_net)$color <- firmicute_orange  # default single line color
+E(igraph_net)[.inc(V(igraph_net)[name %in% desulfo])]$color <- desulfovibrionaceae_purple
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+#setting distances from vertices for labels
+lab.locs[V(igraph_net)$name == "Anaerobic_bacterium_sk.prop8__Bv2Prop2"] <- -pi/20
+lab.locs[V(igraph_net)$name == "uncultured_bacterium__EF645667"] <- pi/3
+V(igraph_net)["Anaerobic_bacterium_sk.prop8__Bv2Prop2"]$label.dist <- 10
+V(igraph_net)["Bilophila_wadsworthia__BilWads6"]$label.dist <- 2
+V(igraph_net)["Desulfovibrio_piger__DslPige3"]$label.dist <- 6
+V(igraph_net)["uncultured_bacterium__EF645667"]$label.dist <- 2
+V(igraph_net)["Desulfitibacter_alkalitolerans__DfiAlka2"]$label.dist <- 2
+
+l <- layout_in_circle(igraph_net)
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, edge.alpha = 0.5)
+
+```
+
+# some double checking
+```{r}
+# there are indeed 77 co-occurrences of bilophila and d. piger (matches edgelist) 
+edgelist_check <- species_subject_matrix_by_cluster[c("Bilophila_wadsworthia__BilWads6", "Desulfovibrio_piger__DslPige3"), colSums(species_subject_matrix_by_cluster[c("Bilophila_wadsworthia__BilWads6", "Desulfovibrio_piger__DslPige3"), ]) == 2]
+```
+
+
+
+## FOR SAMPLE LEVEL PREVALENCE CALCULATIONS
+# read in the sample_OTU_matrix 
+# rename the OTUs in the matrix to species-level based on the clustering 
+```{r}
+otu_sample_matrix <- readRDS(file = paste0(dataDir, "/sample_OTU_matrix_0506.rds")) %>%
+  column_to_rownames(., var = "sample_id") %>%
+  t() %>%
+  as.matrix()
+
+species_sample_matrix <- otu_sample_matrix[rownames(otu_sample_matrix) 
+                                                 != "Moorella_thermoacetica_Y72_copy_2__MooTher5", ]
+
+rownames(species_sample_matrix) <- hits_in_cluster_df$cluster[match(rownames(species_sample_matrix), 
+                                                                     hits_in_cluster_df$OTU)]
+otu_sample_matrix_subset <- otu_sample_matrix %>% .[rowSums(.) > 0, ]
+row_names <- rownames(otu_sample_matrix_subset)
+# seeing if the OTUs from the matrix match the OTUs from the clustering
+setdiff(row_names, hits_in_cluster_df$OTU)
+# only moorella thermoacetica is missing which is what I expect since that is used for rooting the tree
+setdiff(hits_in_cluster_df$OTU, row_names)
+# nothing missing now since all of the samples are included in this matrix
+
+# double check the row sums are the same before and after renaming -> yes!
+# Bilophila cluster -> 1014 samples with a hit
+rowSums(otu_sample_matrix_subset[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ])
+rowSums(species_sample_matrix[grep("Bilophila_wadsworthia", rownames(species_sample_matrix)), ])
+# D. piger -> 404 samples with a hit
+rowSums(otu_sample_matrix_subset[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), ])
+rowSums(species_sample_matrix[grep("Desulfovibrio_piger", rownames(species_sample_matrix)), ])
+# desulfovibrio cluster -> 207 samples with a hit
+rowSums(otu_sample_matrix_subset[c("uncultured_bacterium__EF645664","uncultured_bacterium__EF645667","uncultured_bacterium__EF645665", "Desulfovibrio_africanus__DslAfri3", "Desulfovibrio_simplex__DslSimpl", "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358", "Desulfovibrio_desulfuricans__DslDes17"), ])
+rowSums(species_sample_matrix[grep("uncultured_bacterium__EF645667", rownames(species_sample_matrix)), ])
+```
+## collapse the rows by cluster
+```{r}
+groups_sample <- gsub("\\.[1-6]$", "", rownames(species_sample_matrix))
+species_sample_matrix_by_cluster <- apply(species_sample_matrix, 2, function(col) {
+  tapply(col, groups_sample, max)
+})
+
+rowSums(species_sample_matrix_by_cluster[1:23, ])
+# sums are different now since each cluster has a value of 1 (rather than a value of 1 for each species in the cluster)
+
+#this looks right! 757 samples where either of the bilophila are present
+bil_cluster_check <- otu_sample_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_sample_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
+
+```
+
+# prevalence of clusters across SSRM-positive subjects and samples
+```{r}
+total_samples = ncol(species_sample_matrix_by_cluster)
+total_subjects = ncol(species_subject_matrix_by_cluster)
+
+n_subj = rowSums(species_subject_matrix_by_cluster[1:23, ])
+n_samples = rowSums(species_sample_matrix_by_cluster[1:23, ])
+cluster_prevalence <- data.frame(
+  n_subj = n_subj,
+  # 960 is the number of subjects in the matrix
+  subj_prev = (n_subj/total_subjects),
+  n_samples = n_samples,
+  sample_prev = (n_samples/total_samples)) %>%
+  rownames_to_column(var = "cluster")
+
+
+#make larger groups for each cluster
+cluster_groups_fig <- taxa_table %>% filter(OTU %in% cluster_prevalence$cluster | str_detect(OTU, "trich|DslDes16"))
+
+desulfo_family <- cluster_groups_fig %>% filter(supercluster == "Deltaproteobacteria supercluster")
+firmicutes <- cluster_groups_fig %>% filter(supercluster == "FACA group sensu lato")
+environ <- cluster_groups_fig %>% filter(supercluster == "Environmental supercluster 1")
+archaeoglobus <- cluster_groups_fig %>% filter(supercluster == "Archaeoglobus cluster")
+
+cluster_prevalence_long <- cluster_prevalence %>%
+  select(-c("n_subj", "n_samples")) %>%
+  pivot_longer(c("subj_prev", "sample_prev")) %>%
+  mutate(group = case_when(
+    cluster %in% desulfo_family$OTU | str_detect(cluster, "Candidatus_Desulfovibrio_trichonymphae|DslDes16") ~ "Desulfovibrionaceae family",
+    cluster %in% firmicutes$OTU ~ "Firmicutes group",
+    cluster %in% environ$OTU ~ "Environmental supercluster 1",
+    cluster %in% archaeoglobus$OTU ~ "Archaeoglobus supercluster"))
+
+cluster_prevalence_long$group <- factor(cluster_prevalence_long$group, 
+                                         levels = c("Desulfovibrionaceae family",
+                                                    "Firmicutes group",
+                                                    "Environmental supercluster 1",
+                                                    "Archaeoglobus supercluster"))
+cluster_prevalence_long$name <- factor(cluster_prevalence_long$name, 
+                                         levels = c("subj_prev", "sample_prev"))
+
+colors <- brewer.pal(name = "Set2", 8)
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+breaks = c(0, 0.1, 1, 10, 100)
+#minor_breaks = c()
+(plot <- ggplot(cluster_prevalence_long, aes(y = reorder(cluster, value), x = value*100, color = group)) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(desulfovibrionaceae_purple, colors[2], colors[1], colors[3])) +
+  facet_grid(group~name, scales = "free_y", space = "free") +
+  theme_bw() +
+  #scale_fill_manual(values = c(colors[3], colors[4])) +
+  guides(fill = "none", color = "none") +
+  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 10), axis.text.y= element_text(size = 10), axis.text.x= element_text(size = 10)) +
+    scale_x_log10(breaks = breaks, limits = c(NA,100)))
+
+ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_0506.jpeg")
+
+
+```

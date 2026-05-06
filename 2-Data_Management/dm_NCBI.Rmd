@@ -296,7 +296,7 @@ saveRDS(metadata_final_subjects, file = paste0(dataDir, "/metadata_final_subject
 contig_check <- hits_final_ages %>%
   filter(biosample_id %in% metadata_final_subjects$sample_id) %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
-  group_by(biosample_id, contig) %>%
+  group_by(biosample_id, contig, query_id) %>%
   # is there a hit to more than one species on one contig and are these part of the same cluster?
   summarize(n_diff_hits = n_distinct(single_closest_ref),
             closest_refs = paste(unique(single_closest_ref), collapse = ", ")) %>%
@@ -318,10 +318,11 @@ contig_check <- hits_final_ages %>%
 # for the contigs in contig_check, we want to select one subunit
 species_to_keep_by_subject <- hits_final_ages %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
-  filter(contig %in% contig_check$contig) %>%
+  #contig needs to be specific to the biosample_id
+  filter(contig %in% contig_check$contig & biosample_id %in% contig_check$biosample_id) %>%
   group_by(biosample_id, contig) %>%
   #take subunit on the contig that is the closest to its reference
-  slice_min(distance) %>%
+  slice_min(distance, with_ties = FALSE) %>%
   # remove manually extra hits from contigs that all map to NA
   # remove shorter hit
   filter(!hit_id %in% c("OPVH01.34419.1_1/63-228", 
@@ -334,18 +335,56 @@ species_to_keep_by_subject <- hits_final_ages %>%
                         "UXIV01.20473.1_2/1-126",
                         "UZHO01.27007.1_1/11-102"))
 
-species_to_remove_by_subject <- hits_final_ages %>%
+species_to_remove_by_subject <- hits_final %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
-  filter(contig %in% contig_check$contig) %>%
+  filter(contig %in% contig_check$contig & biosample_id %in% contig_check$biosample_id) %>%
   filter(!hit_id %in% species_to_keep_by_subject$hit_id)
 
 
 hits_final_cooccur <- hits_final %>%
   filter(!hit_id %in% species_to_remove_by_subject$hit_id)
+#3957 hits
 
 saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```
 
+# also need to do this for the sample prevalence analysis 
+```{r}
+contig_check_for_samples <- hits_final_ages %>%
+  #already did these
+  filter(!biosample_id %in% metadata_final_subjects$sample_id) %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  group_by(biosample_id, contig) %>%
+  # is there a hit to more than one species on one contig and are these part of the same cluster?
+  summarize(n_diff_hits = n_distinct(single_closest_ref),
+            closest_refs = paste(unique(single_closest_ref), collapse = ", ")) %>%
+  filter(n_diff_hits > 1) %>%
+  # remove rows where all refs are bilophila or d. piger
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Bilophila")))) %>%
+  filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Desulfovibrio_piger")))) %>%
+  filter(!str_detect(closest_refs, "Gordonibacter")) %>%
+  # the NAs are not an issue because they are not in the matrix
+  filter(!str_detect(closest_refs, "\\bNA\\b"))
+
+species_to_keep_by_sample <- hits_final %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  filter(contig %in% contig_check_for_samples$contig & biosample_id %in% contig_check_for_samples$biosample_id) %>%
+  group_by(biosample_id, contig) %>%
+  #take subunit on the contig that is the closest to its reference
+  slice_min(distance, with_ties = FALSE)
+
+species_to_remove_by_sample <- hits_final_cooccur %>%
+  mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
+  filter(contig %in% contig_check_for_samples$contig & biosample_id %in% contig_check_for_samples$biosample_id) %>%
+  filter(!hit_id %in% species_to_keep_by_sample$hit_id)
+
+hits_final_sample_prev <- hits_final_cooccur %>%
+  filter(!hit_id %in% species_to_remove_by_sample$hit_id)
+
+#3931 hits
+
+saveRDS(hits_final_sample_prev, file = paste0(dataDir, "/hits_final_sample_prev.rds"))
+```
 
 
 ## make a matrix that has a 1 for a species*subject combo when there is a hit present for that combo
@@ -386,4 +425,32 @@ subject_OTU_matrix <- matrix %>% select(-"sample_ids")
 saveRDS(subject_OTU_matrix, file = paste0(dataDir, "/subject_OTU_matrix_0504.rds"))
 
 
+```
+
+
+
+
+## make a matrix that has a 1 for a species*subject combo when there is a hit present for that combo
+# code developed with Claude AI, all double-checking done by me
+```{r}
+all_refs_sample <- unique(hits_final_sample_prev$single_closest_ref)
+#filtering out the NAs as these appear to not have been successfully inserted into the tree. 
+#techincally one less OTU than the subject_OTU_matrix because the sample with the polluted aquifer clone was removed in hits_final_sample_prev (and the sample where that occurs is not part of the metadata_final_subjects df either) i.e., this is not important
+all_refs_sample <- all_refs_sample[!is.na(all_refs_sample)]
+
+matrix_sample <- metadata_final_two %>%
+  filter(sample_id %in% hits_final_ages$biosample_id) %>%
+  select(sample_id) %>%
+  mutate(across(all_of(all_refs_sample), ~ 0)) # initialize all ref columns to 0
+
+for (ref in all_refs_sample) {
+  # place a one if a species has a hit for a given sample and a zero if not 
+  samples_with_hit_samples <- hits_final_sample_prev$biosample_id[hits_final_sample_prev$single_closest_ref == ref]
+  matrix_sample[[ref]] <- as.integer(matrix_sample$sample_id %in% samples_with_hit_samples)
+}
+
+# The number of samples with bilophila wadsworthia 6 and d. piger 3 is what I expect 
+# checked a few samples and they have ones where they have hits 
+
+saveRDS(matrix_sample, file = paste0(dataDir, "/sample_OTU_matrix_0506.rds"))
 ```

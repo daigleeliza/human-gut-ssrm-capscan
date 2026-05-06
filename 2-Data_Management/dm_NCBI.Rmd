@@ -111,6 +111,7 @@ metadata_final_two <- metadata_final %>%
 ##6332 samples left! THIS IS THE FINAL COUNT FOR PREVALENCE CALCULATIONS
 
 metadata_removed <- setdiff(metadata, metadata_final_two)
+metadata_removed_one_two <- setdiff(metadata_final, metadata_final_two)
 
 saveRDS(metadata_final_two, file = paste0(dataDir, "/metadata_final.rds"))
 #0420 was the csv written before removal of duplicate metaHIT samples

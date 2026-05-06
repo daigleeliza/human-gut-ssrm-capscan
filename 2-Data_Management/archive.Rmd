@@ -170,5 +170,14 @@ which_query <- hits_for_assemblies %>%
 
 ```
 
-
-
+#wanted to see if I actually need to make the matrix in python; i dont 
+```{r}
+# 14040721 should have hits for D. piger 2,3,4 and EF645667
+# 71869016 should have hits for moorella thermoacetica
+# D124_G should have hits for D. piger 3 and 4
+# D113 should have hits for Anaerobic_bacterium_sk.prop8__Bv2Prop2, B. wadsworthia 6, D. alkalitolerans, D. vulgaris, Gordonibacter_pamelaeae__GrdPame5, and EF645667
+# D205_M should have hits for B. wadsworthia 6, D. piger 3, D. vulgaris, and EF645667
+otu_subject_df <- read_csv(paste0(clusterDir, "/otu_subject_matrix_ref_0420.csv")) %>% select(c("...1","14040721","71869016","D124_G","D113","D205_M"))
+# these all match except for the hits where distance = NA (meaning it is an sdup). That is fine because we still want to include those!
+# just keep in mind that the reference is populated from whatever sequence the sdup is assigned to 
+```

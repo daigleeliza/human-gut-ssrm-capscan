@@ -37,6 +37,9 @@ library(ggtree)
 library(tidytree)
 library(RColorBrewer)
 library(patchwork)
+library(cooccur)
+library(igraph)
+library(phyloseq)
 
 # fix conflicts between packages
 library(conflicted)

@@ -14,7 +14,11 @@ source(paste0(here::here(), "/1-Config/config.R"))
 # Read in metadata and hits from dm_NCBI.Rmd
 ```{r}
 metadata_final <- readRDS(paste0(dataDir, "/metadata_final.rds"))
-hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds"))
+
+# remove hits that were not inserted properly or are too far (Moorella thermoacetica)
+hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds")) %>%
+  filter(!SRM_present == FALSE) %>%
+  filter(!single_closest_ref == "Moorella_thermoacetica_Y72_copy_2__MooTher5")
 ```
 
 
@@ -52,8 +56,6 @@ over_3 <- hits_final_ages %>%
 
 prevalence <- bind_rows(overall, under_3, over_3) %>%
   relocate(group, .before = n_biosamples_hits)
-  
-  
 ```
 
 # number of countries 

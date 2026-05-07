@@ -341,7 +341,7 @@ species_to_remove_by_subject <- hits_final %>%
   filter(!hit_id %in% species_to_keep_by_subject$hit_id)
 
 
-hits_final_cooccur <- hits_final %>%
+hits_final_cooccur <- hits_final_ages %>%
   filter(!hit_id %in% species_to_remove_by_subject$hit_id)
 #3957 hits
 

@@ -296,9 +296,11 @@ cluster_prevalence <- data.frame(
   sample_prev = (n_samples/total_samples)) %>%
   rownames_to_column(var = "cluster")
 
+taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+
 
 #make larger groups for each cluster
-cluster_groups_fig <- taxa_table %>% filter(OTU %in% cluster_prevalence$cluster | str_detect(OTU, "trich|DslDes16"))
+cluster_groups_fig <- taxa_table_df %>% filter(OTU %in% cluster_prevalence$cluster | str_detect(OTU, "trich|DslDes16"))
 
 desulfo_family <- cluster_groups_fig %>% filter(supercluster == "Deltaproteobacteria supercluster")
 firmicutes <- cluster_groups_fig %>% filter(supercluster == "FACA group sensu lato")
@@ -312,7 +314,33 @@ cluster_prevalence_long <- cluster_prevalence %>%
     cluster %in% desulfo_family$OTU | str_detect(cluster, "Candidatus_Desulfovibrio_trichonymphae|DslDes16") ~ "Desulfovibrionaceae family",
     cluster %in% firmicutes$OTU ~ "Firmicutes group",
     cluster %in% environ$OTU ~ "Environmental supercluster 1",
-    cluster %in% archaeoglobus$OTU ~ "Archaeoglobus supercluster"))
+    cluster %in% archaeoglobus$OTU ~ "Archaeoglobus supercluster")) %>%
+  mutate(cluster_label = case_when(
+    cluster == "Anaerobic_bacterium_EtOH8__Bv2EtOH2" ~ "uncultured Firmicute from industrial environment AY751284",
+    cluster == "Anaerobic_bacterium_sk.prop8__Bv2Prop2" ~ "uncultured Firmicute from industrial environment AY751286",
+    cluster == "Archaeoglobus_sulfaticallidus__ArgSulfa" ~ "Archaeoglobus sulfaticallidus",
+    cluster == "Arctic_sediment_clone_AH5_5__AtcSed67" ~ "uncultured Firmicute from arctic sediment",
+    cluster == "Bilophila_wadsworthia__BilWads6" ~ "Bilophila wadsworthia",
+    cluster == "Bioreactor_clone__UncS2029" ~ "uncultured Firmicute from bioreactor",
+    cluster == "Candidatus_Desulfovibrio_trichonymphae" ~ "Candidatus Desulfovibrio trichonymphae",
+    cluster == "Desulfitibacter_alkalitolerans__DfiAlka2" ~ "Desulfitibacter alkalitolerans",
+    cluster == "Desulfosporosinus_youngiae__DfpYoun5" ~ "Desulfosporosinus youngiae",
+    cluster == "Desulfotomaculum_hydrothermale__DscHydr2" ~ "Desulfotomaculum hydrothermale",
+    cluster == "Desulfovibrio_carbinoliphilus__JQ031012" ~ "Desulfovibrio carbinoliphilus",
+    cluster == "Desulfovibrio_desulfuricans__DQ092635" ~ "Desulfovibrio desulfuricans DQ092635",
+    cluster == "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8" ~ "Desulfovibrio desulfuricans NC_007519",
+    cluster == "Desulfovibrio_piger__DslPige3" ~ "Desulfovibrio piger",
+    cluster == "Desulfovibrio_sp._6_1_46AFAA__DsvSp231" ~ "Desulfovibrio species ACWM01000066",
+    cluster == "Desulfovibrio_vulgaris__DQ826729" ~ "Desulfovibrio vulgaris",
+    cluster == "Desulfurispora_thermophila__DprTher2" ~ "Desulfurispora thermophila",
+    cluster == "Gordonibacter_pamelaeae__GrdPame5" ~ "Gordonibacter pamelaeae",
+    cluster == "MSW_digester_clone__Unc01cxc" ~ "uncultured Firmicute from digester",
+    cluster == "Polluted_aquifer_clone_LGWK16__UncS1633" ~ "uncultured Firmicute from aquifer",
+    cluster == "Rice_field_soil_clone_Bu-23__JN615148" ~ "uncultured bacterium from rice field",
+    cluster == "Thermodesulfobium_narugense__CP002690" ~ "Thermodesulfobium narugense",
+    cluster == "uncultured_bacterium__EF645667" ~ "uncultured Desulfovibrio species",
+    TRUE ~ cluster
+  ))
 
 cluster_prevalence_long$group <- factor(cluster_prevalence_long$group, 
                                          levels = c("Desulfovibrionaceae family",
@@ -326,14 +354,14 @@ colors <- brewer.pal(name = "Set2", 8)
 desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
 breaks = c(0, 0.1, 1, 10, 100)
 #minor_breaks = c()
-(plot <- ggplot(cluster_prevalence_long, aes(y = reorder(cluster, value), x = value*100, color = group)) +
+(plot <- ggplot(cluster_prevalence_long, aes(y = reorder(cluster_label, value), x = value*100, color = group)) +
   geom_point(size = 2) +
   scale_color_manual(values = c(desulfovibrionaceae_purple, colors[2], colors[1], colors[3])) +
   facet_grid(group~name, scales = "free_y", space = "free") +
   theme_bw() +
   #scale_fill_manual(values = c(colors[3], colors[4])) +
   guides(fill = "none", color = "none") +
-  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 10), axis.text.y= element_text(size = 10), axis.text.x= element_text(size = 10)) +
+  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 8), axis.text.y= element_text(size = 8), axis.text.x= element_text(size = 8)) +
     scale_x_log10(breaks = breaks, limits = c(NA,100)))
 
 ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_0506.jpeg")

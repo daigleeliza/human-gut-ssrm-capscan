@@ -4,6 +4,8 @@ output: html_document
 Author: "Elizabeth Daigle"
 date: "16 March 2026"
 ---
+# This rmd makes species-level clusters with ANI of >=90%, creates a plot showing cooccurrence of clusters in subjects, and creates a plot showing the percentage of SSRM-positive subjects and samples in which each cluster is found
+
 # Read in packages and functions
 ```{r}
 source(paste0(here::here(), "/1-Config/config.R"))

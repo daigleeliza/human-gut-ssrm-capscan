@@ -4,6 +4,9 @@ output: html_document
 author: "Elizabeth Daigle"
 date: "16 April 2026"
 ---
+# this .rmd gets the sample prevalence of SSRMs by age 
+# also calculates number of countries represented 
+
 # Read in packages and functions
 ```{r}
 source(paste0(here::here(), "/1-Config/config.R"))
@@ -11,14 +14,13 @@ source(paste0(here::here(), "/1-Config/config.R"))
 # Read in metadata and hits from dm_NCBI.Rmd
 ```{r}
 metadata_final <- readRDS(paste0(dataDir, "/metadata_final.rds"))
-hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_ages.rds"))
-
+hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds"))
 ```
 
 
 # calculate SSRM sample prevalence
+# grouping by biosample avoids the need to remove the excess query IDs (some samples have multiple)
 ```{r}
-
 n_samples <- n_distinct(metadata_final$sample_id)
 
 n_samples_under_3 <- n_distinct(metadata_final$sample_id[metadata_final$under_over_3 == "under 3"])
@@ -46,8 +48,18 @@ over_3 <- hits_final_ages %>%
   mutate(group = "Subjects over age 3")
 
 prevalence <- bind_rows(overall, under_3, over_3) %>%
-  relocate(group, .before = n_biosamples_hits)
+  relocate(group, .before = n_biosamples_hits) %>%
+  mutate(percentage = round(sample_SSRM_prevalence*100, digits = 2))
   
 ```
 
-## for the prevalence above, grouping by biosample avoids the need to remove the excess query IDs; there is the one weird project that runs 8 aliquots from the same people
+# number of countries 
+```{r}
+countries <- metadata_final %>% 
+  mutate(country = case_when(
+    str_detect(country, "USA") ~ "United States of America",
+    TRUE ~ country)) %>%
+  group_by(country) %>% 
+  summarize(n=n())
+```
+

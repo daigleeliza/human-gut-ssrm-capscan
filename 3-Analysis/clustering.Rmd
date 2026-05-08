@@ -320,27 +320,27 @@ cluster_prevalence_long <- cluster_prevalence %>%
   mutate(cluster_label = case_when(
     cluster == "Anaerobic_bacterium_EtOH8__Bv2EtOH2" ~ "uncultured Firmicute from industrial environment AY751284",
     cluster == "Anaerobic_bacterium_sk.prop8__Bv2Prop2" ~ "uncultured Firmicute from industrial environment AY751286",
-    cluster == "Archaeoglobus_sulfaticallidus__ArgSulfa" ~ "Archaeoglobus sulfaticallidus",
+    cluster == "Archaeoglobus_sulfaticallidus__ArgSulfa" ~ "*Archaeoglobus sulfaticallidus*",
     cluster == "Arctic_sediment_clone_AH5_5__AtcSed67" ~ "uncultured Firmicute from arctic sediment",
-    cluster == "Bilophila_wadsworthia__BilWads6" ~ "Bilophila wadsworthia",
+    cluster == "Bilophila_wadsworthia__BilWads6" ~ "*Bilophila wadsworthia*",
     cluster == "Bioreactor_clone__UncS2029" ~ "uncultured Firmicute from bioreactor",
-    cluster == "Candidatus_Desulfovibrio_trichonymphae" ~ "Candidatus Desulfovibrio trichonymphae",
-    cluster == "Desulfitibacter_alkalitolerans__DfiAlka2" ~ "Desulfitibacter alkalitolerans",
-    cluster == "Desulfosporosinus_youngiae__DfpYoun5" ~ "Desulfosporosinus youngiae",
-    cluster == "Desulfotomaculum_hydrothermale__DscHydr2" ~ "Desulfotomaculum hydrothermale",
-    cluster == "Desulfovibrio_carbinoliphilus__JQ031012" ~ "Desulfovibrio carbinoliphilus",
-    cluster == "Desulfovibrio_desulfuricans__DQ092635" ~ "Desulfovibrio desulfuricans DQ092635",
-    cluster == "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8" ~ "Desulfovibrio desulfuricans NC_007519",
-    cluster == "Desulfovibrio_piger__DslPige3" ~ "Desulfovibrio piger",
-    cluster == "Desulfovibrio_sp._6_1_46AFAA__DsvSp231" ~ "Desulfovibrio species ACWM01000066",
-    cluster == "Desulfovibrio_vulgaris__DQ826729" ~ "Desulfovibrio vulgaris",
-    cluster == "Desulfurispora_thermophila__DprTher2" ~ "Desulfurispora thermophila",
-    cluster == "Gordonibacter_pamelaeae__GrdPame5" ~ "Gordonibacter pamelaeae",
+    cluster == "Candidatus_Desulfovibrio_trichonymphae" ~ "*Candidatus Desulfovibrio trichonymphae*",
+    cluster == "Desulfitibacter_alkalitolerans__DfiAlka2" ~ "*Desulfitibacter alkalitolerans*",
+    cluster == "Desulfosporosinus_youngiae__DfpYoun5" ~ "*Desulfosporosinus youngiae*",
+    cluster == "Desulfotomaculum_hydrothermale__DscHydr2" ~ "*Desulfotomaculum hydrothermale*",
+    cluster == "Desulfovibrio_carbinoliphilus__JQ031012" ~ "*Desulfovibrio carbinoliphilus*",
+    cluster == "Desulfovibrio_desulfuricans__DQ092635" ~ "*Desulfovibrio desulfuricans* DQ092635",
+    cluster == "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8" ~ "*Desulfovibrio desulfuricans* NC_007519",
+    cluster == "Desulfovibrio_piger__DslPige3" ~ "*Desulfovibrio piger*",
+    cluster == "Desulfovibrio_sp._6_1_46AFAA__DsvSp231" ~ "*Desulfovibrio* species ACWM01000066",
+    cluster == "Desulfovibrio_vulgaris__DQ826729" ~ "*Desulfovibrio vulgaris*",
+    cluster == "Desulfurispora_thermophila__DprTher2" ~ "*Desulfurispora thermophila*",
+    cluster == "Gordonibacter_pamelaeae__GrdPame5" ~ "*Gordonibacter pamelaeae*",
     cluster == "MSW_digester_clone__Unc01cxc" ~ "uncultured Firmicute from digester",
     cluster == "Polluted_aquifer_clone_LGWK16__UncS1633" ~ "uncultured Firmicute from aquifer",
     cluster == "Rice_field_soil_clone_Bu-23__JN615148" ~ "uncultured bacterium from rice field",
-    cluster == "Thermodesulfobium_narugense__CP002690" ~ "Thermodesulfobium narugense",
-    cluster == "uncultured_bacterium__EF645667" ~ "uncultured Desulfovibrio species",
+    cluster == "Thermodesulfobium_narugense__CP002690" ~ "*Thermodesulfobium narugense*",
+    cluster == "uncultured_bacterium__EF645667" ~ "uncultured *Desulfovibrio* species",
     TRUE ~ cluster
   ))
 
@@ -363,7 +363,7 @@ breaks = c(0, 0.1, 1, 10, 100)
   theme_bw() +
   #scale_fill_manual(values = c(colors[3], colors[4])) +
   guides(fill = "none", color = "none") +
-  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 8), axis.text.y= element_text(size = 8), axis.text.x= element_text(size = 8)) +
+  theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 8), axis.text.y= element_markdown(size = 8), axis.text.x= element_text(size = 8)) +
     scale_x_log10(breaks = breaks, limits = c(NA,100)))
 
 ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_0506.jpeg")

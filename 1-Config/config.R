@@ -40,6 +40,10 @@ library(patchwork)
 library(cooccur)
 library(igraph)
 library(phyloseq)
+library(ComplexHeatmap)
+library(finalfit)
+library(ggrepel)
+library(ggtext)
 
 # fix conflicts between packages
 library(conflicted)

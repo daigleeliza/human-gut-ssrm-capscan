@@ -133,179 +133,110 @@ tree <-
 tree
 ggsave(plot = tree,file = "circular_tree.jpeg", width = 5, height = 5)
 ```
-### HERE
-# barchart by cluster
 ```{r}
-# prepare taxonomy table
-# rownames(taxa_table) <- taxa_table$OTU
-# taxa_table <- as.matrix(taxa_table)
-# taxa_table <- taxa_table[,-c(1:2)]
-# TAX = tax_table(taxa_table)
-# dummy otu_table
-# ref_otu_matrix <- matrix(data = 1, nrow = nrow(taxa_table))
-# rownames(ref_otu_matrix) <- rownames(taxa_table)
-# colnames(ref_otu_matrix) <- c("sample1")
-# OTU = otu_table(ref_otu_matrix, taxa_are_rows = TRUE)
-#
-
-# hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$closest_single_ref)))
-# hit_otus <- gsub("[.]", "-", hit_otus)
-# hit_otus <- gsub("sp-", "sp.", hit_otus)
-# hit_otus <- gsub("sk-", "sk.", hit_otus)
-# hit_otus <- gsub("str-", "str.", hit_otus)
-# hit_otus
-# 
-# # hits_list <- as.vector(otu_hits_table$Var1)
-# hits_list <- hit_otus
-# hits_only_tree <- keep.tip(pruned_tree, c(hits_list))
-# phylotree <- phyloseq(TAX, OTU, hits_only_tree)
-# # 
-# plot_tree(phylotree)
-# 
-# desulfovibrionaceae_node <- intersect(as.vector(subset(taxa_table$OTU, taxa_table$level3_taxon == "Desulfovibrionaceae")), pruned_tree$tip.label)
-# 
-desulfovibrionaceae_tax <- subset_taxa(taxa_table, level3_taxon == "Desulfovibrionaceae")
-# 
-desulfovibrionaceae_tree <- phyloseq(desulfovibrionaceae_tax, OTU, hits_only_tree)
-
-
-# plot_tree(tip_glom(phylotree, h = 0), label.tips = "taxa_names", text.size = 2)
-
-# desulfovibrionnaceae_tree_clustered <- tip_glom(desulfovibrionaceae_tree, h = 0)
-
-plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0), label.tips = "taxa_names", text.size = 2)
-plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0.1), label.tips = "taxa_names", text.size = 2)
-plot_tree(tip_glom(desulfovibrionaceae_tree, h = 0.2), label.tips = "taxa_names", text.size = 2)
+species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger__DslPige3" = "italic(Desulfovibrio~piger~3)",
+                    "Desulfovibrio_piger__DslPige4" = "italic(Desulfovibrio~piger~4)",
+                    "Bilophila_wadsworthia__BilWads6" = "italic(Bilophila~wadsworthia~6)",
+                    "uncultured_bacterium__EF645667" = "uncultured~italic(Desulfovibrio)~species~EF645667",
+                    "Bilophila_sp._4_1_30__BilSpec3" = "italic(Bilophila~species~3)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Gordonibacter_pamelaeae_7-10-1-b__FP929047" = "italic(Gordonibacter~pamelaeae)~FP929047",
+                    "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'uncultured Firmicute from industrial environment AY751286'",
+                    "Desulfovibrio_piger__DslPige2" = "italic(Desulfovibrio~piger~2)",
+                    "Candidatus_Desulfovibrio_trichonymphae" = "italic(Candidatus~Desulfovibrio~trichonymphae)",
+                    "Desulfovibrio_desulfuricans_subsp._desulfuricans_str._ATCC_27774__CP001358" = "italic(Desulfovibrio~desulfuricans)~subsp.~desulfuricans",
+                    "Desulfovibrio_vulgaris__DQ826729" = "italic(Desulfovibrio~vulgaris)",
+                    "MSW_digester_clone__Unc01cxc" = "'uncultured Firmicute from digester'",
+                    "Desulfovibrio_desulfuricans__DslDes17" = "italic(Desulfovibrio~desulfuricans)~AJ249777",
+                    "Desulfovibrio_sp._6_1_46AFAA__DsvSp231" = "italic(Desulfovibrio)~species~ACWM01000066",
+                    "Desulfovibrio_sp._3_1_syn3__DsvSp230" = "italic(Desulfovibrio)~species~ADDR01000049",
+                    "Thermodesulfobium_narugense__CP002690" = "italic(Thermodesulfobium~narugense)",
+                    "Desulfosporosinus_youngiae__DfpYoun5" = "italic(Desulfosporosinus~youngiae)",
+                    "Arctic_sediment_clone_AH5_5__AtcSed67" = "'uncultured Firmicute from arctic sediment'", 
+                    "Archaeoglobus_sulfaticallidus__ArgSulfa" = "italic(Archaeoglobus~sulfaticallidus)",     
+                    "Desulfovibrio_sp._Dsv1__DsvSp233" = "italic(Desulfovibrio)~species~APFI01000049",
+                    "Desulfotomaculum_hydrothermale__DscHydr2" = "italic(Desulfotomaculum~hydrothermale)",
+                    "Desulfovibrio_africanus__DslAfri3" = "italic(Desulfovibrio~africanus)",
+                    "uncultured_bacterium__EF645665" = "uncultured~italic(Desulfovibrio)~species~EF645665",
+                    "Desulfovibrio_carbinoliphilus__JQ031012" = "italic(Desulfovibrio~carbinoliphilus)",
+                    "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8" = "italic(Desulfovibrio~desulfuricans)~NC_007519",
+                    "Desulfovibrio_desulfuricans__DQ092635" = "italic(Desulfovibrio~desulfuricans)~DQ092635",
+                    "uncultured_bacterium__EF645664" = "uncultured~italic(Desulfovibrio)~species~EF645664",
+                    "Rice_field_soil_clone_Bu-23__JN615148" = "'uncultured bacterium from rice field'",
+                    "Anaerobic_bacterium_EtOH8__Bv2EtOH2" = "'uncultured Firmicute from industrial environment AY751284'",
+                    "Desulfovibrio_simplex__DslSimpl" = "italic(Desulfovibrio~simplex)",
+                    "Polluted_aquifer_clone_LGWK16__UncS1633" = "'uncultured Firmicute from aquifer'",
+                    "Bioreactor_clone__UncS2029" = "'uncultured Firmicute from bioreactor'",
+                    "Desulfurispora_thermophila__DprTher2" = "italic(Desulfurispora~thermophila)")
 
 
-# ggtree(desulfovibrionnaceae_tree_clustered, layout = "fan", open.angle = 250, color = purple) +
-#   geom_tippoint(aes(subset= label %in%  hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
-#   geom_tiplab(size = 2, offset = 0.01)
-
-# desulfovibrionaceae_tree_plot_unlabeled <- ggtree(desulfovibrionnaceae_tree_clustered, color = purple) +
-#   geom_tippoint(aes(subset=(label %in% closest_ref_leaves)), color = "black", size = 1)
-
-# desulfovibrionaceae_tree_plot_labeled <-
-#   ggtree(desulfovibrionnaceae_tree_clustered, color = purple) +
-#   # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
-#   geom_tiplab(aes(subset=(label %in% closest_ref_leaves)), size = 2)
-#   # geom_text(aes(label=node), size = 2)
-
-
-# ggsave(plot = desulfovibrionaceae_tree_plot_labeled, file = "desulfovibrionaceae_tree_plot_labeled.jpeg", width = 7, height = 7)
-# # 
-# ggsave(plot = desulfovibrionaceae_tree_plot_unlabeled, file = "desulfovibrionaceae_tree_plot_unlabeled.jpeg", width = 7, height = 7)
-
-# desulfovibrionaceae_tree <- phyloseq(desulfovibrionaceae_tax, OTU, pruned_tree)
-
-# write.xlsx(as.data.frame(tax_table(tip_glom(desulfovibrionaceae_tree, h = 0))), "taxa_table_desulfovibrionaceae_notipglom.xlsx")
-write.xlsx(as.data.frame(tax_table(tip_glom(desulfovibrionaceae_tree, h = 0.1))), "taxa_table_desulfovibrionaceae_tipglom_01.xlsx")
-
+firmicute_orange <- brewer.pal(2, "Set2")[2]
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
 ```
 
-# firmicutes group
 ```{r}
+firmicutes_node <- MRCA(rooted_ref_tree, "Gordonibacter_pamelaeae__GrdPame5", "Polluted_aquifer_clone_LGWK16__UncS1633")
+firmicutes_subset_tree <- tree_subset(rooted_ref_tree, firmicutes_node, levels_back = 0)
 
-# faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
+firmicutes_subset_tree_plot <- ggtree(firmicutes_subset_tree)
 
-# faca_tree <- phyloseq(faca_tax, OTU, hits_only_tree)
-# plot_tree(tip_glom(faca_tree, h = 0), label.tips = "taxa_names", text.size = 2)
-# plot_tree(tip_glom(faca_tree, h = 0.1), label.tips = "taxa_names", text.size = 2)
-# plot_tree(tip_glom(faca_tree, h = 0.2), label.tips = "taxa_names", text.size = 2)
+inset_firmicutes <- firmicutes_subset_tree_plot +
+  geom_tippoint(aes(subset = label %in% hit_otus), size = 1.5, color = firmicute_orange) +
+  geom_text_repel(aes(subset = label %in% hit_otus,
+                    label = species_labels[label]), 
+                  parse = TRUE,
+                  size = 3.5, 
+                  align = F, 
+                  hjust = 0,
+                  nudge_x = 1,
+                  direction = "y", 
+                  force = 0.5, 
+                  force_pull = 0.1,
+                  max.overlaps = Inf,
+                  min.segment.length = 0,
+                  box.padding = 0.1,
+                  segment.size = 0.25,
+                  segment.linetype = "dashed") +
+  theme(legend.position = "right",
+        plot.margin = margin(5, 10, 5, 5)) +  # Right margin for labels
+  hexpand(0.2, direction = 1)
+  
+inset_firmicutes
 
-# hit_otus <- tip_glom_cluster$otu
-# hit_otus <- gsub("[.]", "-", hit_otus)
-# hit_otus <- gsub("sp-", "sp.", hit_otus)
-# hit_otus <- gsub("sk-", "sk.", hit_otus)
-# hit_otus <- gsub("str-", "str.", hit_otus)
+ggsave("NCBI_tree_firmicutes.png",
+       width = 10, height = 10, units = "in",   # increase for larger output
+       dpi = 600)
 
+desulfovibionaceae_node <- MRCA(rooted_ref_tree, "uncultured_bacterium__EF645666", "Desulfovibrio_desulfuricans__DslDes24")
+desulfovibrionaceae_subset_tree <- tree_subset(rooted_ref_tree, desulfovibionaceae_node, levels_back = 0)
 
-# faca_tree_clustered <-
-#   tip_glom(faca_tree, h = 0)
+desulfo_subset_tree_plot <- ggtree(desulfovibrionaceae_subset_tree) 
 
-faca_tree_plot_labeled <-
-  ggtree(faca_tree_clustered, color = colors[2]) +
-  # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
-  geom_tiplab(aes(subset=(label %in% hit_otus)), size = 2)
-  # geom_text(aes(label=node), sizec = 2)c
+inset_desulfo <- desulfo_subset_tree_plot +
+  geom_tippoint(aes(subset = label %in% hit_otus), size = 1.5, color = desulfovibrionaceae_purple) +
+  geom_text_repel(aes(subset = label %in% hit_otus,
+                    label = species_labels[label]), 
+                  parse = TRUE,
+                  size = 3.5, 
+                  align = F, 
+                  hjust = 0, 
+                  nudge_x = 0.2,
+                  direction = "y", 
+                  force = 0.5,
+                  force_pull = 0.1,
+                  max.overlaps = Inf,
+                  min.segment.length = 0,
+                  box.padding = 0.1,
+                  segment.size = 0.25,
+                  segment.linetype = "dashed") +
+  theme(legend.position = "right",
+        plot.margin = margin(5, 10, 5, 5)) +
+  hexpand(0.2, direction = 1)
+ 
+inset_desulfo
 
-faca_tree_plot_unlabeled <-
-ggtree(faca_tree_clustered,color = colors[2]) +
-geom_tippoint(aes(subset=(label %in% hit_otus)), color = "black", size = 1)
-
-ggsave(plot = faca_tree_plot_labeled, file = "faca_tree_plot_labeled.jpeg", width = 7, height = 7)
-
-ggsave(plot = faca_tree_plot_unlabeled, file = "faca_tree_plot_unlabeled.jpeg", width = 7, height = 7)
-# ggtree(faca_tree_clustered) + geom_tiplab(size = 1.5, offset = 0.01) 
-
-
-# faca_tree_plot %>%
-#   flip(12,23) %>%
-#   flip(14,22) %>%
-#   flip(1,16) %>%
-#   flip(8,17) %>%
-#   flip(18,19) %>%
-#   flip(9,15)
-
-
+ggsave("NCBI_tree_desulfovibrio.png",
+       width = 10, height = 10, units = "in",
+       dpi = 600)
 ```
-
-# firmicutes tree with all leaves (not just hit references)
-```{r}
-# faca_tax <- subset_taxa(TAX, supercluster == "FACA group sensu lato")
-
-faca_tree <- phyloseq(faca_tax, OTU, pruned_tree)
-
-# labels <- as.vector(c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
-            # "Deep_sea_sediment_clone_NTd-III05__UncSu254",  
-            # "Deep_sea_sediment_clone_NTd-III03__UncSu252",
-            # "Deep_sea_sediment_clone_NTd-III02__UncSu251",
-            # "Deep_sea_sediment_clone_NTd-III01__UncSu250",
-            # "Deep_sea_sediment_clone_NTd-III06__UncSu255",
-            # "Deep_sea_sediment_clone_NTd-III07__UncSu256",
-            # "Deep_sea_sediment_clone_NTd-III08__UncSu257"))
-
-# ggtree(tip_glom(faca_tree, h = 0)) +
-#   geom_tiplab(aes(subset= label %in% hit_otus), size = 1, color = "red", alpha = 0.8)
-# 
-# ggtree(tip_glom(faca_tree, h = 0.2)) +
-#   geom_tiplab(aes(subset= label %in% hit_otus), size = 1, color = "red", alpha = 0.8)
-
-ggtree(tip_glom(faca_tree, h = 0)) +
-  geom_tiplab(aes(subset = label %in% c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
-            "Deep_sea_sediment_clone_NTd-III05__UncSu254",
-            "Deep_sea_sediment_clone_NTd-III03__UncSu252",
-            "Deep_sea_sediment_clone_NTd-III02__UncSu251",
-            "Deep_sea_sediment_clone_NTd-III01__UncSu250",
-            "Deep_sea_sediment_clone_NTd-III06__UncSu255",
-            "Deep_sea_sediment_clone_NTd-III07__UncSu256",
-            "Deep_sea_sediment_clone_NTd-III08__UncSu257", "Polluted_aquifer_clone_LGWN06__UncS1609")), size = 1, color = "red", alpha = 0.8)
-
-ggtree(tip_glom(faca_tree, h = 0.2)) +
-  geom_tiplab(aes(subset = label %in% c("Deep_sea_sediment_clone_NTd-III04__UncSu253", 
-            "Deep_sea_sediment_clone_NTd-III05__UncSu254",
-            "Deep_sea_sediment_clone_NTd-III03__UncSu252",
-            "Deep_sea_sediment_clone_NTd-III02__UncSu251",
-            "Deep_sea_sediment_clone_NTd-III01__UncSu250",
-            "Deep_sea_sediment_clone_NTd-III06__UncSu255",
-            "Deep_sea_sediment_clone_NTd-III07__UncSu256",
-            "Deep_sea_sediment_clone_NTd-III08__UncSu257", "Polluted_aquifer_clone_LGWN06__UncS1609")), size = 1, color = "red", alpha = 0.8)
-
-# ggsave(plot1, "firm_tree_unclustered.pdf")
-# ggsave(plot2, "firm_tree_clustered.pdf")
-
-# write.xlsx(as.data.frame(tax_table(tip_glom(faca_tree, h = 0))), "taxa_table_firmicutes_notipglom.xlsx")
-write.xlsx(as.data.frame(tax_table(tip_glom(faca_tree, h = 0.1))), "taxa_table_firmicutes_tipglom_01.xlsx")
-
-# plot_tree(tip_glom(faca_tree, h = 0.25), label.tips = "taxa_names", text.size = 2)
-
-# faca_tree_clustered <- tip_glom(faca_tree, h = 0.2)
-
-# faca_tree_plot <-
-#   ggtree(faca_tree_clustered, layout = "fan", open.angle = 250, color = colors[2]) +
-#   # geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "identity") +
-#   geom_tiplab(size = 1.5, offset = 0.01)
-#   # geom_text(aes(label=node), size = 2)
-```
-
-

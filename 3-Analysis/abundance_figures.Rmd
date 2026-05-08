@@ -481,6 +481,7 @@ hm_split <- ComplexHeatmap::pheatmap(
   show_colnames = TRUE,
   angle_col = "45",
   labels_col = col_labels_parsed_split,
+  fontsize_col = 9,
   
   show_row_dend = FALSE,
   show_column_dend = FALSE,

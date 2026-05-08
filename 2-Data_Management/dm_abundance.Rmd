@@ -30,14 +30,13 @@ samples <- bind_rows(capsule, stool) %>%
 # want to make sure they all get filtered out since they have NA for distance
 closest_ref_no_2018 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_capsule.csv")) 
 dups <- closest_ref_no_2018 %>%
-  filter(is.na(distance))
+  filter(is.na(distance)) %>%
+  # agree that all but two are duplicates (they have another hit to the same gene)
+# Stool_14 220955_5 and Capsule_14 148417_5 should be added back in because they were marked as duplicates for genes in different coassemblies!
+  filter(!str_detect(hit_id, "Stool_14.k141_220955_5/63-175|Capsule_14.k141_148417_5/63-175"))
 
 samples_no_dups <- samples %>%
   filter(!geneLoc %in% dups$hit_id)
-
-# agree that all but two are duplicates (they have another hit to the same gene)
-# Stool_14 220955_5 and Capsule_14 148417_5 should be added back in because they were marked as duplicates for genes in different coassemblies!
-# d. piger 3 for both with distances of < 2.5
 ```
 
 ```{r}

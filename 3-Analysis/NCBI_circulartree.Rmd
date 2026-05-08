@@ -1,15 +1,9 @@
-
-#packages to load
-```{r}
-library(ggplot2)
-library(treeio)
-library(ggtree)
-library(dplyr)
-library(ape)
-library(phytools)
-library(phyloseq)
-```
-
+---
+title: "NCBI tree figures"
+output: html_document
+author: "Elizabeth Daigle"
+date: "7 May 2026"
+---
 # Read in packages, functions, and directories
 ```{r}
 source(paste0(here::here(), "/1-Config/config.R"))
@@ -17,22 +11,16 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 ```{r}
 #root tree
-ref_tree = read.tree(paste0(dataDir, "/RAxML_originalLabelledTree_noBootstrap_wKarthikSeqs_rooted.newick"))
-#ref_tree = read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap.newick"))
-
-#out_group = as.vector(archaeaRootsetIDs$X1)
-
-rooted_ref_tree <-root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
-
+ref_tree <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018_assemblies.newick"))
+rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 ```
 
 # read in the taxa table
 ```{r}
-taxa_table <- read_csv(paste0(dataDir,"/taxa_table.csv"))
+taxa_table <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv"))
 ```
 
 # remove oxidative bacterial node and moorella thermoacetica cp 2
-
 ```{r}
 # also referenced in hit_clusters_tree.Rmd
 moorella_copy_2_labels <- c("Moorella_thermoacetica_Y72_copy_2__MooTher5", "Moorella_thermoacetica_ATCC_39073_copy_2__MooThe10")
@@ -45,9 +33,10 @@ pruned_tree <- tidytree::drop.tip(rooted_ref_tree, c(moorella_copy_2_labels, ox_
 
 # get otu table for labeling tree
 ```{r}
-closestRefInfo_allScoreThresholdHits_singleRefOnly <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef.csv"))
+closestRefInfo_allScoreThresholdHits_singleRefOnly <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018.csv"))
+hits_final <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds"))
 
-hit_otus <- unique(subset(closestRefInfo_allScoreThresholdHits_singleRefOnly$single_closest_ref, closestRefInfo_allScoreThresholdHits_singleRefOnly$distance < 2.5 & !is.na(closestRefInfo_allScoreThresholdHits_singleRefOnly$single_closest_ref)))
+hit_otus <- unique(subset(hits_final$single_closest_ref, hits_final$distance < 2.5 & hits_final$SRM_present == TRUE))
 hit_otus <- gsub("[.]", "-", hit_otus)
 hit_otus <- gsub("sp-", "sp.", hit_otus)
 hit_otus <- gsub("sk-", "sk.", hit_otus)
@@ -84,37 +73,6 @@ nitrospirae_node <- intersect(as.vector(subset(taxa_table$OTU, taxa_table$superc
 tree <- ggtree(pruned_tree, layout = "circular", linewidth = 0.15) +
   theme(plot.title = element_text(hjust = 0.5, size = 13), legend.title = element_text(hjust = 0.5, size = 8))
 
-
-```
-
-# adding node points for HIT reference leaves
-```{r}
-# hit_otus <- otu_hits_table$Var
-
-tree + 
-  
-  geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "jitter") +
-  
-  geom_hilight(node = MRCA(pruned_tree, desulfovibrionaceae_node), fill = "yellow", alpha = 0.3) +
-  
-  geom_hilight(node = MRCA(pruned_tree, faca_node), fill = "pink", alpha = 0.3) +
-
-
-  # geom_hilight(node = MRCA(pruned_tree, red_arch_node), fill = "blue", alpha = 0.25) +
-  geom_cladelabel(node = MRCA(pruned_tree, red_arch_node), label = "Crenarchaeota", align = TRUE, barsize = 1, fontsize = 3.5) +
-  
-  # geom_hilight(node = MRCA(pruned_tree, nitrospirae), fill = "orange", alpha = 0.25) +
-  geom_cladelabel(node = MRCA(pruned_tree, nitrospirae_node), label = "Nitrospirae supercluster", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
-  
-  # geom_hilight(node = MRCA(pruned_tree, archaeoglobus_node), fill = "purple", alpha = 0.25) +
-  geom_cladelabel(node = MRCA(pruned_tree, archaeoglobus_node), label = "Euryarchaeota", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
-  
-  # geom_hilight(node = MRCA(pruned_tree, env_supercluster1_node), fill = "red", alpha = 0.25) +
-  geom_cladelabel(node = MRCA(pruned_tree, env_supercluster1_node), label = "Environmental Supercluster 1", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white") +
-  
-  geom_cladelabel(node = MRCA(pruned_tree, deltaproteobacteria_node), label = "Deltaproteobacteria", align = TRUE, barsize = 1, fontsize = 3.5, fill = "white")
-  
-  
 
 ```
 
@@ -175,7 +133,7 @@ tree <-
 tree
 ggsave(plot = tree,file = "circular_tree.jpeg", width = 5, height = 5)
 ```
-
+### HERE
 # barchart by cluster
 ```{r}
 # prepare taxonomy table

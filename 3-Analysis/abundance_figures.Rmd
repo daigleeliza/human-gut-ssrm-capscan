@@ -43,7 +43,7 @@ samples_unique_subunit_manual <- samples_unique_gene_casette %>%
   filter(!geneNum %in% unknown_species) %>%
   mutate(single_closest_ref = ifelse(contig == "k141_113757", "Desulfovibrio_piger__DslPige3", single_closest_ref))
 
-## value of 330 comes from this
+## value of 339 comes from this
 samples_unique_subunit_RPKG <- samples_unique_subunit_manual %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
@@ -121,7 +121,7 @@ species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacte
                     "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
                     "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
                     "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
-                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
+                    "uncultured_bacterium__EF645667" = "uncultured Desulfovibrio species",
                     "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
                     "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
                     "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica",
@@ -130,7 +130,7 @@ species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacte
 species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
                     "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
                     "Bilophila_species" = "italic(Bilophila)~species",
-                    "uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+                    "uncultured_bacterium__EF645667" = "uncultured~italic(Desulfovibrio)~species",
                     "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
                     "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "italic(Moorella~thermoacetica)",
                     "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "'Anaerobic bacterium'")
@@ -365,7 +365,7 @@ row_types_2 <- sapply(strsplit(rownames(matrix_sample_type_log), "_"), function(
 
 
 
-species_labels_combine_species_no_moorella <- c("uncultured_bacterium__EF645667" = "italic(Desulfovibrio~desulfuricans)",
+species_labels_combine_species_no_moorella <- c("uncultured_bacterium__EF645667" = "uncultured~italic(Desulfovibrio)~species",
                     "Desulfovibrio_piger" = "italic(Desulfovibrio~piger)",
                     "Bilophila_species" = "italic(Bilophila)~species",
                     "Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",

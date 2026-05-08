@@ -12,8 +12,6 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 # get tree
 ```{r}
-rooted_ref_tree_pre2020 <- read.tree(paste0(dataDir, "/RAxML_labelledTree_2015_2018_noBootstrap_rooted.newick"))
-
 ref_tree_2015 <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018_capsule.newick"))
 rooted_ref_tree_2015 <- root(ref_tree_2015, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
 ```
@@ -21,7 +19,7 @@ rooted_ref_tree_2015 <- root(ref_tree_2015, c("Moorella_thermoacetica_Y72_copy_2
 # get names of closest references and filter to remove gene duplicates
 ```{r}
 ## 2015 only 
-closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_capsule_no_2018.csv"))
+closest_ref_2015 <- read_csv(paste0(dataDir, "closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_capsule.csv"))
 
 # read in df that filters out gene duplicates in each sample (selects the domain with the highest bit score) 
 # this df is made in dm_abundance.Rmd
@@ -50,14 +48,14 @@ closest_ref_filtered_2015 <- closest_ref_2015 %>%
 ```
 # get labels for the species 
 ```{r}
-species_labels_2015 <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
-                    "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger 3",
-                    "Desulfovibrio_piger__DslPige4" = "Desulfovibrio piger 4",
-                    "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia 6",
-                    "uncultured_bacterium__EF645667" = "Desulfovibrio desulfuricans",
-                    "Bilophila_sp._4_1_30__BilSpec3" = "Bilophila species 3",
-                    "Gordonibacter_pamelaeae__GrdPame5" = "Gordonibacter pamelaeae",
-                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "Moorella thermoacetica")
+species_labels_2015 <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
+                    "Desulfovibrio_piger__DslPige3" = "italic(Desulfovibrio~piger~3)",
+                    "Desulfovibrio_piger__DslPige4" = "italic(Desulfovibrio~piger~4)",
+                    "Bilophila_wadsworthia__BilWads6" = "italic(Bilophila~wadsworthia~6)",
+                    "uncultured_bacterium__EF645667" = "uncultured~italic(Desulfovibrio)~species",
+                    "Bilophila_sp._4_1_30__BilSpec3" = "italic(Bilophila~species~3)",
+                    "Gordonibacter_pamelaeae__GrdPame5" = "italic(Gordonibacter~pamelaeae)",
+                    "Moorella_thermoacetica_Y72_copy_2__MooTher5" = "italic(Moorella~thermoacetica)")
 ```
 
 
@@ -114,6 +112,7 @@ inset_firmicutes_2015 <- firmicutes_subset_tree_plot_2015 %<+%
                        name = "Number of subjects with hits") +
   geom_text_repel(aes(subset = label %in% subjects_per_species_2015$single_closest_ref,
                     label = species_labels_2015[label]), 
+                  parse = TRUE,
                   size = 3, 
                   align = F, 
                   hjust = -.85, 
@@ -146,6 +145,7 @@ inset_desulfo_2015 <- desulfo_subset_tree_plot_2015 %<+%
                        labels = scales::label_number(accuracy = 1)) +
   geom_text_repel(aes(subset = label %in% subjects_per_species_2015$single_closest_ref,
                     label = species_labels_2015[label]), 
+                  parse = TRUE,
                   size = 3, 
                   align = F, 
                   hjust = -.85, 

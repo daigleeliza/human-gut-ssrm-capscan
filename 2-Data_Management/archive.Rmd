@@ -181,3 +181,238 @@ otu_subject_df <- read_csv(paste0(clusterDir, "/otu_subject_matrix_ref_0420.csv"
 # these all match except for the hits where distance = NA (meaning it is an sdup). That is fine because we still want to include those!
 # just keep in mind that the reference is populated from whatever sequence the sdup is assigned to 
 ```
+
+---
+title: "clustering_original"
+output: html_document
+date: "2026-04-30"
+---
+# purpose is to replicate figure 2 from the original manuscript using RC's hgm_subject_df -> make sure code was working 
+
+# Read in packages and functions
+```{r}
+source(paste0(here::here(), "/1-Config/config.R"))
+```
+
+# Read in OTU table and taxa table
+```{r}
+taxa_table <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv"))
+otu_subject_df_not_filtered <- read_csv(paste0(clusterDir, "/otu_subject_matrix_ref_0430_notFiltered.csv"))
+otu_subject_matrix <- otu_subject_df_not_filtered %>%
+  column_to_rownames(., var = "...1") %>%
+  as.matrix()
+```
+# Read in tree and root
+```{r}
+library(phyloseq)
+ref_tree <- read.tree(paste0(raxmlDir, "/RAxML_originalLabelledTree_noBootstrap_no_2018.newick"))
+rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5"), r = TRUE)
+TREE <- phy_tree(rooted_ref_tree)
+```
+
+# prep reference phyloseq object
+```{r}
+OTU = otu_table(otu_subject_matrix, taxa_are_rows = TRUE)
+
+# format taxa_table
+taxa_table <- taxa_table %>%
+  column_to_rownames(var = "OTU") %>%
+  select(-c("environmental_category","dsrab_type"))
+
+taxa_table <- as.matrix(taxa_table)
+# missing two taxa in the clusters_df (see code at bottom) so I am renaming them in taxa_table to match their names in the other phyloseq components. DslDes16 and DsvAlas8 have the same taxonomical classifications
+rownames(taxa_table) <- dplyr::recode(rownames(taxa_table),
+  "Candidatus_Desulfovibrio_trichonymphae__AB444072" = "Candidatus_Desulfovibrio_trichonymphae",
+  "Desulfovibrio_desulfuricans_G20__DslDes16" = "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"
+)
+TAX = tax_table(taxa_table)
+
+# make phyloseq object
+phyloseq <- phyloseq(TREE, TAX, OTU)
+```
+
+
+# tip_glom at 0.15 and get list of OTUs that are in each cluster
+```{r}
+ps_tipglom <- tip_glom(phyloseq, h = 0.15)
+# find which tips were retained after tip_glom
+cluster_reps <- taxa_names(ps_tipglom)
+
+# find the distances between tips on the tree so that each OTU can be assigned to its closest relative retained after tip_glom
+tree_dist <- cophenetic(phy_tree(phyloseq))
+```
+
+# Read in info on closest references to hits
+```{r}
+closestRefInfo_allScoreThresholdHits_no_2018_noFilter <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018.csv"))
+
+get_single_ref <- function(ref_list) {
+  ref_list <- gsub("\\]", "", ref_list)
+  ref_list <- gsub("\\[", "", ref_list)
+  ref_list <- gsub(" ", "", ref_list)
+  ref_list <- gsub("'", "", ref_list)
+  ref_list <- strsplit(ref_list, ",")[[1]]
+  
+  # check if all of the closest ref sequences are Anantharaman2018 seqs
+  if (length(grep("QUERY", ref_list)) == length(ref_list)) {
+    # single ref is assigned as first seq in list
+    return(ref_list[1])
+  }
+  
+  # case if there is a non-Anantharaman2018 seq in the list of closest_ref
+  if (length(grep("QUERY", ref_list)) != length(ref_list)) {
+    single_ref_index <- grep("QUERY", ref_list, invert = T)[[1]]
+    return(ref_list[single_ref_index])
+  }
+}
+
+#non filtered NCBI 
+closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_noFilter <- closestRefInfo_allScoreThresholdHits_no_2018_noFilter %>%
+  mutate(single_closest_ref = sapply(closest_ref, get_single_ref))
+```
+
+
+
+# make df that gives the cluster representative for each of the 1256 taxa in the non tip-glommed ps object
+```{r}
+clusters_df <- data.frame(
+  OTU = taxa_names(phyloseq),
+  cluster = ifelse(taxa_names(phyloseq) %in% cluster_reps,
+                   taxa_names(phyloseq),
+                   sapply(taxa_names(phyloseq), function(tip) {
+                     cluster_reps[which.min(tree_dist[tip, cluster_reps])]
+                   }))
+)
+
+# read in hits_final
+
+# want to include only the OTUs that have hits 
+names <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_noFilter$single_closest_ref
+hits_in_cluster_df <- clusters_df %>% filter(OTU %in% names) 
+
+# testing in console
+for (cluster in unique(hits_in_cluster_df$cluster)) {
+  otus_in_cluster <- hits_in_cluster_df$OTU[hits_in_cluster_df$cluster == cluster]
+  print(paste("Cluster:", cluster))
+  print(otus_in_cluster)
+  print(paste("Length:", length(otus_in_cluster)))
+}
+
+# # write one file per cluster
+for (cluster in hits_in_cluster_df$cluster) {
+  otus_in_cluster <- hits_in_cluster_df$OTU[hits_in_cluster_df$cluster == cluster]
+  if (length(otus_in_cluster) > 1) {
+    cluster_clean <- gsub("ö", "o", cluster)
+    cluster_clean <- gsub("sp-", "sp.", cluster_clean)
+    cluster_clean <- gsub("sk-", "sk.", cluster_clean)
+    write_lines(otus_in_cluster,
+                file = paste0(clusterDir, "/", cluster_clean, "_otus_in_cluster_015.txt"))
+  }
+}
+```
+
+```{r}
+## missing two taxon at the end
+## there are some OTUs from the reference tree fasta that are named differently than the reference taxonomy fasta (presumably they are two species/taxa that are very close)
+ps_object <- unique(hits_in_cluster_df$OTU)
+hits_final_cluster <- closestRefInfo_allScoreThresholdHits_wSingleClosestRef_no_2018_noFilter
+hits_cluster <- unique(hits_final_cluster$single_closest_ref)
+hits_not_ps_object <- setdiff(hits_cluster, ps_object)
+#moorella was removed and the NAs have "FALSE" for srm_present
+# need to make sure DslDes16, DsvAlas8, and Candidatus Desulfovibrio triconymphae are kept
+
+# figure out where they are missing and change the names before creating ps object
+taxon <- "Candidatus_Desulfovibrio_trichonymphae"
+
+# Check presence in each component
+taxon %in% phy_tree(TREE)$tip.label        # in tree?
+taxon %in% rownames(taxa_table)            # in TAX?
+taxon %in% rownames(otu_subject_matrix)    # in OTU?
+
+taxon2 <- "Desulfovibrio_desulfuricans__DslDes16_DsvAlas8"
+
+# Check presence in each component
+taxon2 %in% phy_tree(TREE)$tip.label        # in tree?
+taxon2 %in% rownames(taxa_table)            # in TAX?
+taxon2 %in% rownames(otu_subject_matrix)    # in OTU?
+```
+
+
+
+# rename the OTUs in the matrix to species-level based on the clustering 
+```{r}
+otu_subject_matrix_subset <- otu_subject_matrix %>% .[rowSums(.) > 0, ] 
+species_subject_matrix <- otu_subject_matrix %>% .[rowSums(.) > 0, ] 
+species_subject_matrix <- species_subject_matrix[rownames(species_subject_matrix) 
+                                                 != "Moorella_thermoacetica_Y72_copy_2__MooTher5", ]
+
+rownames(species_subject_matrix) <- hits_in_cluster_df$cluster[match(rownames(species_subject_matrix), 
+                                                                     hits_in_cluster_df$OTU)]
+row_names <- rownames(otu_subject_matrix_subset)
+# seeing if the OTUs from the matrix match the OTUs from the clustering
+setdiff(row_names, hits_in_cluster_df$OTU)
+# only moorella thermoacetica is missing which is what I expect since that is used for rooting the tree
+setdiff(hits_in_cluster_df$OTU, row_names)
+# why are these two (Desulfitobacterium_hafniense_Y51__DsfHaf15 and Bioreactor_clone__UncS2028) not in the species_subject_matrix but they are in the clustering?
+# SAMN02299420 and SAMEA6784066 are the only two samples with hits, respectively, and they are not in the matrix (not in hgm_subject_df that makes the matrix, either)
+
+# double check the row sums are the same before and after renaming 
+# uncultured bacterium EF645667 -> 175 samples with a hit
+rowSums(otu_subject_matrix_subset[2:6, ])
+rowSums(species_subject_matrix[1:5, ])
+# B. wadsworthia -> 625 samples with a hit
+rowSums(otu_subject_matrix_subset[19:20, ])
+rowSums(species_subject_matrix[18:19, ])
+# D. piger 3 -> 285 samples with a hit
+rowSums(otu_subject_matrix_subset[16:18, ])
+rowSums(species_subject_matrix[15:17, ])
+```
+## collapse the rows by cluster and make the cooccurrence network
+```{r}
+species_subject_matrix_by_cluster <- rowsum(species_subject_matrix,
+                                           gsub("\\.[1-4]$", "", rownames(species_subject_matrix)))
+
+# again, make sure sums make sense
+# these match the total sums found for the three clusters in the previous chunk
+rowSums(species_subject_matrix_by_cluster[1:27, ])
+```
+
+```{r}
+cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 20)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/10
+V(igraph_net)$label.size <- 0
+deg <- igraph::degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+
+l <- layout_in_circle(igraph_net)
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, vertex.label.dist=4, edge.alpha = 0.5)
+
+```
+# which samples have both the anaerobic bacterium and d. alkalitolerans?
+```{r}
+interest <- c("Anaerobic_bacterium_sk.prop8__Bv2Prop2", "Desulfitibacter_alkalitolerans__DfiAlka2")
+hits_final_interest <- hits_final_cluster %>% 
+  filter(single_closest_ref %in% interest) %>%
+  group_by(biosample_id) %>%
+  summarize(n_species = n_distinct(single_closest_ref)) %>%
+  filter(n_species == length(interest))
+
+saveRDS(hits_final_interest, file = paste0(clusterDir, "/samples_with_cooccurrence_of_interest"))
+```
+
+

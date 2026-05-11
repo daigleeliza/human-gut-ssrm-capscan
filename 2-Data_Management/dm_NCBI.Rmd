@@ -430,7 +430,7 @@ saveRDS(subject_OTU_matrix, file = paste0(dataDir, "/subject_OTU_matrix_0504.rds
 
 
 
-## make a matrix that has a 1 for a species*subject combo when there is a hit present for that combo
+## make a matrix that has a 1 for a species*sample combo when there is a hit present for that combo
 # code developed with Claude AI, all double-checking done by me
 ```{r}
 all_refs_sample <- unique(hits_final_sample_prev$single_closest_ref)

@@ -173,7 +173,7 @@ rowSums(species_subject_matrix_by_cluster[1:23, ])
 # 610 subjects with either bilophila species, as expected
 bil_cluster_check <- otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
 ```
-
+# cooccur with cutoff of 20 subjects
 ```{r}
 cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
 edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
@@ -185,24 +185,35 @@ V(igraph_net)$label.size <- 0
 deg <- igraph::degree(igraph_net, mode="all")
 V(igraph_net)$size <- 1
 species_labels <- c(
-  "Bilophila_wadsworthia__BilWads6" = "Bilophila wadsworthia",
-  "Desulfovibrio_piger__DslPige3" = "Desulfovibrio piger",
-  "uncultured_bacterium__EF645667" = "Desulfovibrio species cluster",
-  "Desulfitibacter_alkalitolerans__DfiAlka2" = "Desulfitibacter alkalitolerans",
+  "Bilophila_wadsworthia__BilWads6" = expression(italic("Bilophila wadsworthia")),
+  "Desulfovibrio_piger__DslPige3" = expression(italic("Desulfovibrio piger")),
+  "uncultured_bacterium__EF645667" = expression(paste("uncultured ", italic("Desulfovibrio"), " species")),
+  "Desulfitibacter_alkalitolerans__DfiAlka2" = expression(italic("Desulfitibacter alkalitolerans")),
   "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "uncultured Firmicute from industrial environment AY751286"
 )
 V(igraph_net)$label <- species_labels[V(igraph_net)$name]
 
-# add colors
-# Desulfovibrionaceae in purple
-desulfo <- c("Bilophila_wadsworthia__BilWads6", 
-                    "Desulfovibrio_piger__DslPige3", 
-                    "uncultured_bacterium__EF645667")
-# color plot by "degree", suggested by Claude
+# add colors by supercluster
+taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+# supercluster identity
+desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
+firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
+environ <- taxa_table_df %>% filter(supercluster == "Environmental supercluster 1")
+archaeoglobus <- taxa_table_df %>% filter(supercluster == "Archaeoglobus cluster")
+
+#colors 
 firmicute_orange <- brewer.pal(2, "Set2")[2]
 desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
-E(igraph_net)$color <- firmicute_orange  # default single line color
-E(igraph_net)[.inc(V(igraph_net)[name %in% desulfo])]$color <- desulfovibrionaceae_purple
+colors <- brewer.pal(name = "Set2", 8)
+
+V(igraph_net)$label.color <- "black"  # default
+V(igraph_net)[name %in% desulfo_family$OTU]$label.color <- desulfovibrionaceae_purple
+V(igraph_net)[name %in% firmicutes$OTU]$label.color <- firmicute_orange
+V(igraph_net)[name %in% environ$OTU]$label.color <- colors[1]
+V(igraph_net)[name %in% archaeoglobus$OTU]$label.color <- colors[3]
+
+# E(igraph_net)$color <- firmicute_orange  # default single line color
+# E(igraph_net)[.inc(V(igraph_net)[name %in% desulfo])]$color <- desulfovibrionaceae_purple
 
 radian.rescale <- function(x, start=0, direction=1) {
   c.rotate <- function(x) (x + start) %% (2 * pi) * direction
@@ -214,7 +225,7 @@ lab.locs[V(igraph_net)$name == "Anaerobic_bacterium_sk.prop8__Bv2Prop2"] <- -pi/
 lab.locs[V(igraph_net)$name == "uncultured_bacterium__EF645667"] <- pi/3
 V(igraph_net)["Anaerobic_bacterium_sk.prop8__Bv2Prop2"]$label.dist <- 10
 V(igraph_net)["Bilophila_wadsworthia__BilWads6"]$label.dist <- 2
-V(igraph_net)["Desulfovibrio_piger__DslPige3"]$label.dist <- 6
+V(igraph_net)["Desulfovibrio_piger__DslPige3"]$label.dist <- 7
 V(igraph_net)["uncultured_bacterium__EF645667"]$label.dist <- 2
 V(igraph_net)["Desulfitibacter_alkalitolerans__DfiAlka2"]$label.dist <- 2
 
@@ -222,9 +233,9 @@ l <- layout_in_circle(igraph_net)
 
 plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
 
-
-plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = "black", vertex.label.degree = lab.locs, edge.alpha = 0.5)
-
+jpeg("cooccurrence_20subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
+dev.off()
 ```
 
 # some double checking
@@ -232,6 +243,158 @@ plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.fram
 # there are indeed 77 co-occurrences of bilophila and d. piger (matches edgelist) 
 edgelist_check <- species_subject_matrix_by_cluster[c("Bilophila_wadsworthia__BilWads6", "Desulfovibrio_piger__DslPige3"), colSums(species_subject_matrix_by_cluster[c("Bilophila_wadsworthia__BilWads6", "Desulfovibrio_piger__DslPige3"), ]) == 2]
 ```
+
+# cooccur with cutoff of 15 subjects
+```{r}
+cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 15)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/8
+V(igraph_net)$label.size <- 0
+deg <- igraph::degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+species_labels <- c(
+  "Bilophila_wadsworthia__BilWads6" = expression(italic("Bilophila wadsworthia")),
+  "Desulfovibrio_piger__DslPige3" = expression(italic("Desulfovibrio piger")),
+  "uncultured_bacterium__EF645667" = expression(paste("uncultured ", italic("Desulfovibrio"), " species")),
+  "Desulfitibacter_alkalitolerans__DfiAlka2" = expression(italic("Desulfitibacter alkalitolerans")),
+  "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "uncultured Firmicute from industrial environment AY751286",
+  "Gordonibacter_pamelaeae__GrdPame5" = expression(italic("Gordonibacter pamelaeae")))
+V(igraph_net)$label <- species_labels[V(igraph_net)$name]
+
+# add colors by supercluster
+taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+# supercluster identity
+desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
+firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
+environ <- taxa_table_df %>% filter(supercluster == "Environmental supercluster 1")
+archaeoglobus <- taxa_table_df %>% filter(supercluster == "Archaeoglobus cluster")
+
+#colors 
+firmicute_orange <- brewer.pal(2, "Set2")[2]
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+colors <- brewer.pal(name = "Set2", 8)
+
+V(igraph_net)$label.color <- "black"  # default
+V(igraph_net)[name %in% desulfo_family$OTU]$label.color <- desulfovibrionaceae_purple
+V(igraph_net)[name %in% firmicutes$OTU]$label.color <- firmicute_orange
+V(igraph_net)[name %in% environ$OTU]$label.color <- colors[1]
+V(igraph_net)[name %in% archaeoglobus$OTU]$label.color <- colors[3]
+
+# E(igraph_net)$color <- firmicute_orange  # default single line color
+# E(igraph_net)[.inc(V(igraph_net)[name %in% desulfo])]$color <- desulfovibrionaceae_purple
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+#setting distances from vertices for labels
+lab.locs[V(igraph_net)$name == "Anaerobic_bacterium_sk.prop8__Bv2Prop2"] <- -pi/20
+lab.locs[V(igraph_net)$name == "uncultured_bacterium__EF645667"] <- pi/2.5
+lab.locs[V(igraph_net)$name == "Desulfovibrio_piger__DslPige3"] <- -pi/2
+lab.locs[V(igraph_net)$name == "Gordonibacter_pamelaeae__GrdPame5"] <- pi/2
+# 
+V(igraph_net)["Anaerobic_bacterium_sk.prop8__Bv2Prop2"]$label.dist <- 17
+V(igraph_net)["Bilophila_wadsworthia__BilWads6"]$label.dist <- 2
+V(igraph_net)["Desulfovibrio_piger__DslPige3"]$label.dist <- 2
+V(igraph_net)["uncultured_bacterium__EF645667"]$label.dist <- 2
+V(igraph_net)["Desulfitibacter_alkalitolerans__DfiAlka2"]$label.dist <- -3
+V(igraph_net)["Gordonibacter_pamelaeae__GrdPame5"]$label.dist <- 1
+
+
+l <- layout_in_circle(igraph_net)
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+jpeg("cooccurrence_15subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
+dev.off()
+```
+
+# cooccur with cutoff of 10 subjects
+```{r}
+cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+edgeList <- subset(edgeList, obs_cooccur > 10)
+
+igraph_net <- graph_from_data_frame(d = edgeList, directed = F)
+E(igraph_net)$width <- E(igraph_net)$obs_cooccur/8
+V(igraph_net)$label.size <- 0
+deg <- igraph::degree(igraph_net, mode="all")
+V(igraph_net)$size <- 1
+species_labels <- c(
+  "Bilophila_wadsworthia__BilWads6" = expression(italic("Bilophila wadsworthia")),
+  "Desulfovibrio_piger__DslPige3" = expression(italic("Desulfovibrio piger")),
+  "uncultured_bacterium__EF645667" = expression(paste("uncultured ", italic("Desulfovibrio"), " species")),
+  "Desulfitibacter_alkalitolerans__DfiAlka2" = expression(italic("Desulfitibacter alkalitolerans")),
+  "Anaerobic_bacterium_sk.prop8__Bv2Prop2" = "uncultured Firmicute from industrial environment AY751286",
+  "Desulfovibrio_sp._6_1_46AFAA__DsvSp231" = expression(paste(italic("Desulfovibrio"), " species")),
+  "Desulfovibrio_vulgaris__DQ826729" = expression(italic("Desulfovibrio vulgaris")),
+  "Gordonibacter_pamelaeae__GrdPame5" = expression(italic("Gordonibacter pamelaeae")))
+
+V(igraph_net)$label <- species_labels[V(igraph_net)$name]
+
+# add colors by supercluster
+taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+# supercluster identity
+desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
+firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
+environ <- taxa_table_df %>% filter(supercluster == "Environmental supercluster 1")
+archaeoglobus <- taxa_table_df %>% filter(supercluster == "Archaeoglobus cluster")
+
+#colors 
+firmicute_orange <- brewer.pal(2, "Set2")[2]
+desulfovibrionaceae_purple <- brewer.pal(10, "Set3")[10]
+colors <- brewer.pal(name = "Set2", 8)
+
+V(igraph_net)$label.color <- "black"  # default
+V(igraph_net)[name %in% desulfo_family$OTU]$label.color <- desulfovibrionaceae_purple
+V(igraph_net)[name %in% firmicutes$OTU]$label.color <- firmicute_orange
+V(igraph_net)[name %in% environ$OTU]$label.color <- colors[1]
+V(igraph_net)[name %in% archaeoglobus$OTU]$label.color <- colors[3]
+
+# E(igraph_net)$color <- firmicute_orange  # default single line color
+# E(igraph_net)[.inc(V(igraph_net)[name %in% desulfo])]$color <- desulfovibrionaceae_purple
+
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:vcount(igraph_net), direction=-1, start=0)
+#setting distances from vertices for labels
+lab.locs[V(igraph_net)$name == "Anaerobic_bacterium_sk.prop8__Bv2Prop2"] <- -pi/25
+lab.locs[V(igraph_net)$name == "uncultured_bacterium__EF645667"] <- pi/3
+lab.locs[V(igraph_net)$name == "Desulfovibrio_piger__DslPige3"] <- -pi/2
+lab.locs[V(igraph_net)$name == "Gordonibacter_pamelaeae__GrdPame5"] <- pi/2
+lab.locs[V(igraph_net)$name == "Desulfitibacter_alkalitolerans__DfiAlka2"] <- -pi/2
+# 
+V(igraph_net)["Anaerobic_bacterium_sk.prop8__Bv2Prop2"]$label.dist <- 17
+V(igraph_net)["Bilophila_wadsworthia__BilWads6"]$label.dist <- 2
+V(igraph_net)["Desulfovibrio_piger__DslPige3"]$label.dist <- 2
+V(igraph_net)["uncultured_bacterium__EF645667"]$label.dist <- 2
+V(igraph_net)["Desulfitibacter_alkalitolerans__DfiAlka2"]$label.dist <- 2
+V(igraph_net)["Gordonibacter_pamelaeae__GrdPame5"]$label.dist <- 2
+V(igraph_net)["Desulfovibrio_vulgaris__DQ826729"]$label.dist <- 2
+V(igraph_net)["Desulfovibrio_sp._6_1_46AFAA__DsvSp231"]$label.dist <- 2
+
+l <- layout_in_circle(igraph_net)
+
+plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
+
+jpeg("cooccurrence_10subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
+dev.off()
+```
+
+
+
+
+
+
+
 
 
 

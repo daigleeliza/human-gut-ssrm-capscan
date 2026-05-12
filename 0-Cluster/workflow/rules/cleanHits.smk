@@ -1,15 +1,15 @@
 # bit filter csv and faa files
 rule scoreFilter_NCBI:
 	input:
-		bactCSV = join(config["summaryDir"],"compiled_dsrAB_bact_hits.csv"),
-		archCSV = join(config["summaryDir"],"compiled_dsrAB_arch_hits.csv"),
-		bactFASTA=join(config["summaryDir"],"compiled_dsrAB_bact_hits.faa"),
-		archFASTA=join(config["summaryDir"],"compiled_dsrAB_arch_hits.faa")
+		bactCSV = join(config["summaryDir"],"compiled_dsrAB_bact_hits_assemblies.csv"),
+		archCSV = join(config["summaryDir"],"compiled_dsrAB_arch_hits_assemblies.csv"),
+		bactFASTA=join(config["summaryDir"],"compiled_dsrAB_bact_hits_assemblies.faa"),
+		archFASTA=join(config["summaryDir"],"compiled_dsrAB_arch_hits_assemblies.faa")
 	output:
-		bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
-		archCSV = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.csv"),
-		bactFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.faa"),
-		archFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.faa")
+		bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold_assemblies.csv"),
+		archCSV = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold_assemblies.csv"),
+		bactFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold_assemblies.faa"),
+		archFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold_assemblies.faa")
 	conda:
 		"../envs/biopython.yml"
 	resources:
@@ -27,13 +27,13 @@ rule scoreFilter_NCBI:
 # combine bact and arch hits
 rule combineArchBact_NCBI:
 	input:
-		bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.csv"),
-		archCSV = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.csv"),
-		bactFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold.faa"),
-		archFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold.faa")
+		bactCSV = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold_assemblies.csv"),
+		archCSV = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold_assemblies.csv"),
+		bactFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_bact_hits_scoreThreshold_assemblies.faa"),
+		archFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_arch_hits_scoreThreshold_assemblies.faa")
 	output:
-		combinedFASTA=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa"),
-		combinedCSV=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.csv")
+		combinedFASTA=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_assemblies.faa"),
+		combinedCSV=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_assemblies.csv")
 	conda:
 		"../envs/biopython.yml"
 	resources:
@@ -48,11 +48,11 @@ rule combineArchBact_NCBI:
 # remove duplicates
 rule removeDuplicates_NCBI:
 	input:
-		join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold.faa")
+		join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_assemblies.faa")
 	output:
-		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
-		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noDups.json"),
-		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_noEDups.faa")
+		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_assemblies_noDups.faa"),
+		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_assemblies_noDups.json"),
+		join(config["cleanHitsDir"], "compiled_dsrAB_hits_scoreThreshold_assemblies_noEDups.faa")
 	conda:
 		"../envs/biopython.yml"
 	params:
@@ -66,11 +66,11 @@ rule removeDuplicates_NCBI:
 # get MSA
 rule runMAFFT_NCBI:
 	input:
-		hitsFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_noDups.faa"),
+		hitsFASTA = join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_assemblies_noDups.faa"),
 		refMSA=config["refMSA"]
 	output:
-		withRefMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_withRef.faa"),
-		noRefMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa")
+		withRefMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_withRef.faa"),
+		noRefMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_noRef.faa")
 	conda:
 		"../envs/mafft.yml"
 	threads: 4
@@ -88,11 +88,11 @@ rule runMAFFT_NCBI:
 # trim gaps
 rule trimGaps_identifySubunit_NCBI:
 	input:
-		MSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef.faa"),
-		dupsInfo=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_noDups.json"),
+		MSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_noRef.faa"),
+		dupsInfo=join(config["cleanHitsDir"],"compiled_dsrAB_hits_scoreThreshold_assemblies_noDups.json"),
 	output:
-		gapPercCSV=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_gapPercentageInfo.csv"),
-		trimmedGapsMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa")
+		gapPercCSV=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_assemblies_noDups_gapPercentageInfo.csv"),
+		trimmedGapsMSA=join(config["cleanHitsDir"],"compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_noRef_trimmedGaps.faa")
 	conda:
 		"../envs/biopython.yml"
 	params:
@@ -104,12 +104,11 @@ rule trimGaps_identifySubunit_NCBI:
 		"""
 
 # get final MSA for fragment insertion
-rule compileFinalMSA_NCBI:
-	input:
-		hitsMSA=join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_noRef_trimmedGaps.faa"),
+input:
+		hitsMSA=join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_noRef_trimmedGaps.faa"),
 		refMSA=config["refMSA"]
 	output:
-		join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_noDups_msa_withRef_trimmedGaps.faa")
+		join(config["cleanHitsDir"], "compiled_dsrAB_scoreThreshold_assemblies_noDups_msa_withRef_trimmedGaps.faa")
 	shell:
 		"""
 		cat {input.hitsMSA} {input.refMSA} > {output}

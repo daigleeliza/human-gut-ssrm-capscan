@@ -16,6 +16,7 @@ dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
 
 # reference dsrAB files
 refMSA: "config/dsrAB_referenceSequences_aa.faa"
+refMSA_nuc: "config/DSRAB_REF_NUC_ungapped.fasta"
 
 # raxml input files
 treeFileExtension: "Daigle2026"

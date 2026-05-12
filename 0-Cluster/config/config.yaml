@@ -16,15 +16,9 @@ dsrAB_arch_HMMProfile: "config/profileHMM_archaea_aa.phmm"
 # reference dsrAB files
 refMSA: "config/dsrAB_referenceSequences_aa.faa"
 
-# reference leaves to select from tree
-#refListToSelect: "config/ref_leaves_to_select.txt"
-
-# BLAST db
-blastDB: "workflow/out/sequenceSimilarity/db"
-
 # raxml input files
-treeFileExtension: Daigle2026
-treeFileExtension_no_2018: "Daigle2026_no_2018"
+treeFileExtension: "Daigle2026"
+treeFileExtension_no_2018_assemblies: "Daigle2026_no_2018_assemblies"
 treeFileExtension_no_2018_capsule: "Daigle2026_no_2018_capsule"
 
 binaryModelParams: "workflow/out/modelParams/RAxML_binaryModelParameters."
@@ -61,6 +55,13 @@ asr_C_tc: 324.10
 # Tree files
 raxmlOutputDir: "workflow/out/raxmlOutput"
 modelParamsDir: "workflow/out/modelParams"
+
+# ANI for clusters
+clusterIdsDir: "workflow/out/clustering_otus/ids/"
+clusterSeqsDir: "workflow/out/clustering_otus/seqs/"
+clusterBlastDB: "workflow/out/clustering_otus/db/"
+clusterBlastOutput: "workflow/out/clustering_otus/blast_output/"
+clusterANI: "workflow/out/clustering_otus/ani_per_cluster"
 
 # Directories for capsule abundance rules
 tmpDir: "/scratch/ehd5113/capsule/meta/tmp"

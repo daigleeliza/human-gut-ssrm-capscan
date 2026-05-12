@@ -1,0 +1,6 @@
+name: R_minimal
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - r-base

@@ -100,7 +100,10 @@ rule all:
 		"workflow/out/treeInfo/queryDistanceInfo_no_2018_assemblies.csv",
 		"workflow/out/treeInfo/queryDistanceInfo_no_2018_assemblies.json",		
 		"workflow/out/treeInfo/closestRefInfo_allScoreThresholdHits_no_2018_assemblies.csv",
-		"workflow/out/treeInfo/closestRefList_no_2018_assemblies.txt"
+		"workflow/out/treeInfo/closestRefList_no_2018_assemblies.txt",
+  
+    # make taxa table
+    "workflow/out/clustering_otus/taxa_table_0420.csv",
 
 		# run blast on clusters to find ANI
 		expand(join(config["clusterSeqsDir"], "{cluster}_cluster_seqs_015.fasta"), cluster=clusters_015),
@@ -122,4 +125,5 @@ include: "workflow/rules/extractAssemblies.smk"
 include: "workflow/rules/cleanHits.smk"
 include: "workflow/rules/fragmentInsertion.smk"
 include: "workflow/rules/getTreeInfo.smk"
+include: "workflow/rules/makeTaxaTable.smk"
 include: "workflow/rules/ANI_for_clusters.smk"

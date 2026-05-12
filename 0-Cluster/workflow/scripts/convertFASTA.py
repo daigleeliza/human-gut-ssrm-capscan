@@ -22,3 +22,14 @@ for hit in msa:
         )
     records.append(record)
 SeqIO.write(records, FASTA, "fasta")
+# if this is not working, recommeded to use what was used for asr portion 
+#esl-reformat -u fasta {input.A} |
+#		awk -v coassembly="{wildcards.coassembly}" '
+#			/^>/ {{
+#				sub(/\\s*\\[.*$/, "", $0)
+#				contig = substr($0, 2)
+#				print ">" coassembly "." contig
+#				next
+#			}}
+#			{{print}}
+#		' > {output.A}

@@ -533,3 +533,23 @@ ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_0506.jpe
 
 
 ```
+
+# for results, percent of subjects with desulfo and firmicutes
+```{r}
+# find the number of columns (subjects) in the matrix where there is at least one hit to a firmicutes cluster
+subj_num_firm <- sum(colSums(species_subject_matrix_by_cluster[rownames(species_subject_matrix_by_cluster) %in% firmicutes$OTU, ]) >= 1)
+subj_num_firm/960
+
+# find the number of columns (subjects) in the matrix where there is at least one hit to a desulfovibrionaceae cluster
+subj_num_des <- sum(colSums(species_subject_matrix_by_cluster[rownames(species_subject_matrix_by_cluster) %in% desulfo_family$OTU, ]) >= 1)
+subj_num_des/960
+
+
+desulfo_family_no_bil <- cluster_groups_fig %>% filter(supercluster == "Deltaproteobacteria supercluster") %>%
+  filter(!OTU == "Bilophila_wadsworthia__BilWads6")
+# excluding bilophila prevalence
+subj_num_des_no_bil <- sum(colSums(species_subject_matrix_by_cluster[rownames(species_subject_matrix_by_cluster) %in% desulfo_family_no_bil$OTU, ]) >= 1)
+subj_num_des_no_bil/960
+
+```
+

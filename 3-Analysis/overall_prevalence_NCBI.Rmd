@@ -91,7 +91,7 @@ unique_hits <- hits_final_ages %>%
 noDups <- read_csv(paste0(treeInfoDir, "queryDistanceInfo_no_2018_assemblies.csv")) 
 #1481 unique dsrAB sequences
 ```
-# desulfovibrionaceae family and firmicutes group prevalences
+# for results, desulfovibrionaceae family and firmicutes group prevalences
 ```{r}
 firmicute <- c("Anaerobic_bacterium_EtOH8__Bv2EtOH2", "Desulfitibacter_alkalitolerans__DfiAlka2", "Gordonibacter_pamelaeae__GrdPame5", "Gordonibacter_pamelaeae_7-10-1-b__FP929047", "Thermodesulfobium_narugense__CP002690", "MSW_digester_clone__Unc01cxc", "Anaerobic_bacterium_sk.prop8__Bv2Prop2", "Bioreactor_clone__UncS2029", "Arctic_sediment_clone_AH5_5__AtcSed67", "Desulfurispora_thermophila__DprTher2", "Desulfotomaculum_hydrothermale__DscHydr2", "Polluted_aquifer_clone_LGWK16__UncS1633", "Desulfosporosinus_youngiae__DfpYoun5")
 

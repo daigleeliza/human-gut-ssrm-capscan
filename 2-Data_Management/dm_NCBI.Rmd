@@ -379,9 +379,12 @@ species_to_remove_by_sample <- hits_final_cooccur %>%
   filter(!hit_id %in% species_to_keep_by_sample$hit_id)
 
 hits_final_sample_prev <- hits_final_cooccur %>%
-  filter(!hit_id %in% species_to_remove_by_sample$hit_id)
+  filter(!hit_id %in% species_to_remove_by_sample$hit_id) %>%
+  # remove the one archaeoglobus hit that has a distance > 2.5 
+  # the others with dist. > 2.5 (moorella thermoacetica get removed later)
+  filter(!hit_id == "OOYY01.37298.1_1/16-276")
 
-#3931 hits
+#3930 hits
 
 saveRDS(hits_final_sample_prev, file = paste0(dataDir, "/hits_final_sample_prev.rds"))
 ```

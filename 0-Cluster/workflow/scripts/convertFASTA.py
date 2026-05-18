@@ -22,7 +22,7 @@ for hit in msa:
         )
     records.append(record)
 SeqIO.write(records, FASTA, "fasta")
-# if this is not working, recommeded to use what was used for asr portion 
+# if this is not working, recommended to use what was used for asr portion 
 #esl-reformat -u fasta {input.A} |
 #		awk -v coassembly="{wildcards.coassembly}" '
 #			/^>/ {{

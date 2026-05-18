@@ -233,7 +233,7 @@ l <- layout_in_circle(igraph_net)
 
 plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
 
-jpeg("cooccurrence_20subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+jpeg(paste0(figureDir, "cooccurrence_20subj_cutoff.jpeg"), width = 9, height = 4.5, units = "in", res = 300)
 plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
 dev.off()
 ```
@@ -309,7 +309,7 @@ l <- layout_in_circle(igraph_net)
 
 plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
 
-jpeg("cooccurrence_15subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+jpeg(paste0(figureDir, "cooccurrence_15subj_cutoff.jpeg"), width = 9, height = 4.5, units = "in", res = 300)
 plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
 dev.off()
 ```
@@ -384,7 +384,7 @@ l <- layout_in_circle(igraph_net)
 
 plot(igraph_net, layout = l, edge.curved=.3, vertex.label = NA, edge.alpha = 0.5, vertex.color = "black", vertex.frame.color = "black")
 
-jpeg("cooccurrence_10subj_cutoff.jpeg", width = 9, height = 4.5, units = "in", res = 300)
+jpeg(paste0(figureDir, "cooccurrence_10subj_cutoff.jpeg"), width = 9, height = 4.5, units = "in", res = 300)
 plot(igraph_net, layout = l, edge.curved=.3, vertex.color = "black", vertex.frame.color = "black", vertex.label.cex = 0.7, vertex.label.color = V(igraph_net)$label.color, vertex.label.degree = lab.locs, edge.alpha = 0.5)
 dev.off()
 ```
@@ -529,7 +529,7 @@ breaks = c(0, 0.1, 1, 10, 100)
   theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_text(angle = 0, size = 8), axis.text.y= element_markdown(size = 8), axis.text.x= element_text(size = 8)) +
     scale_x_log10(breaks = breaks, limits = c(NA,100)))
 
-ggsave(plot = plot, width = 8, height = 5, file = "percentages_barchart_0506.jpeg")
+ggsave(plot = plot, width = 8, height = 5, file = paste0(figureDir, "percentages_barchart_0506.jpeg"))
 
 
 ```

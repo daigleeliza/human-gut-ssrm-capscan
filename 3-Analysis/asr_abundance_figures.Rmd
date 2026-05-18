@@ -168,7 +168,7 @@ all_genes %>%
     plot.subtitle = element_text(size = 14, hjust = 0.5))
 
 
-ggsave("median_RPKG_asrABC_v_dsrAB.png",
+ggsave(paste0(figureDir, "median_RPKG_asrABC_v_dsrAB.png"),
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
 ```
@@ -216,7 +216,7 @@ plot_ratios %>%
     legend.title = element_text(size = 14),
     plot.title = element_text(size = 20, hjust = 0.5))
 
-ggsave("ratio_RPKG_asrABC_v_dsrAB.png",
+ggsave(paste0(figureDir, "ratio_RPKG_asrABC_v_dsrAB.png"),
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
   

@@ -131,7 +131,7 @@ tree <-
   geom_tippoint(aes(subset= label %in% hit_otus), size = 0.5, color = "red", alpha = 0.8, position = "jitter")
 
 tree
-ggsave(plot = tree,file = "circular_tree.jpeg", width = 5, height = 5)
+ggsave(plot = tree,file = paste0(figureDir, "circular_tree.jpeg"), width = 5, height = 5)
 ```
 ```{r}
 species_labels <- c("Desulfitibacter_alkalitolerans__DfiAlka2" = "italic(Desulfitibacter~alkalitolerans)",
@@ -204,7 +204,7 @@ inset_firmicutes <- firmicutes_subset_tree_plot +
   
 inset_firmicutes
 
-ggsave("NCBI_tree_firmicutes.png",
+ggsave(paste0(figureDir, "NCBI_tree_firmicutes.png"),
        width = 10, height = 10, units = "in",   # increase for larger output
        dpi = 600)
 
@@ -236,7 +236,7 @@ inset_desulfo <- desulfo_subset_tree_plot +
  
 inset_desulfo
 
-ggsave("NCBI_tree_desulfovibrio.png",
+ggsave(paste0(figureDir, "NCBI_tree_desulfovibrio.png"),
        width = 10, height = 10, units = "in",
        dpi = 600)
 ```

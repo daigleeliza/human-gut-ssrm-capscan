@@ -222,14 +222,16 @@ ggsave("ratio_RPKG_asrABC_v_dsrAB.png",
   
 ```
 ```{r}
-#ratios are not normally distributed and the samples are not independent of one another
-hist(plot_ratios$ratio_dsr_asr)
-
+# t test to see if there is a statistically significant difference in the median dsr:asr ratio between capsule and stool samples
 median_ratios <- plot_ratios %>%
   group_by(subject, sample_type) %>%
   summarize(median_ratio = median(ratio_dsr_asr))
 
-wilcox.test(median_ratio ~ sample_type, data = median_ratios)
+pp = median_ratios %>% 
+  # subjects 1 and 4 don't have dsr in stool
+  filter(!subject %in% c(1,4)) %>% 
+  dplyr::arrange(sample_type, subject) %>% 
+  pivot_wider(id_cols = subject, names_from = sample_type, values_from = median_ratio)
 
+t.test(pp$Capsule, pp$Stool)
 ```
-

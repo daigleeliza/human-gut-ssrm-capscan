@@ -16,7 +16,7 @@ closestRefInfo_allScoreThresholdHits_no_2018 <- read_csv(paste0(treeInfoDir, "cl
 closestRefInfo_allScoreThresholdHits_no_2018_capsule <- read_csv(paste0(treeInfoDir, "closestRefInfo_allScoreThresholdHits_no_2018_capsule.csv"))
 ```
 
-# For hit sequences with multiple "closest ref sequences", select a single reference sequence as the representative. Choose the first of Mueller2015's sequences in the list. If none of Mueller2015's sequences are in the closest ref list, choose the first of Anantharaman2018's sequences.
+# For hit sequences with multiple "closest ref sequences", select a single reference sequence as the representative. Choose the first of Mueller2015's sequences in the list. If none of Mueller2015's sequences are in the closest ref list, choose the first of Anantharaman2018's sequences (this is no longer applicable since 2018 sequences are not used)
 ```{r}
 get_single_ref <- function(ref_list) {
   ref_list <- gsub("\\]", "", ref_list)

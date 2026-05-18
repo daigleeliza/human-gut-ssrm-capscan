@@ -77,4 +77,4 @@ abundanceDirASR = paste0(here::here(), "/0-Cluster/workflow/out/asrABC_CapsuleSt
 clusterDir = paste0(here::here(), "/0-Cluster/workflow/out/clustering_test")
 
 dataDir = paste0(here::here(), "/data/")
-figureDir = paste0(here::here(), "/4-figures/")
+figureDir = paste0(here::here(), "/4-Figures/")

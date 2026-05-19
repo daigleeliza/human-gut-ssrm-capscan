@@ -8,7 +8,7 @@ configfile: "config/config.yaml"
 df=pd.read_table(config['sampleFileRaw'])
 
 ## These are the samples which had poor sequencing depth (<10,000 total reads) or were controls
-# D17_2 was not working for RPKM
+# D17_2 was not working for RPKM calculating (tested before switching to RPKG)
 samples_drop={'D17_2', 'P17_1', 'O5_1', 'O15_1', 'N17_1', 'M4_2', 'M20_2', 'M19_1', 'M16_2', 'K1_1', 'K21_2', 'K19_2', 'K17_2', 'K11_1', 'J7_2', 'J1_2', 'J17_1', 'I13_1', 'H5_2', 'H13_2', 'F5_2', 'F23_2', 'F21_2', 'F1_2', 'E7_1', 'E21_1', 'E18_2', 'E16_2', 'E12_2', 'E10_2', 'D5_2', 'D19_1', 'D11_2', 'C3_1', 'C1_1', 'B15_1', 'A23_1', 'A21_1', 'A13_2', 'A14_2',              'A21_1', 'A23_1', 'C1_1', 'C3_1', 'F21_2', 'K17_2', 'K19_2', 'K21_2', 'K23_2'}
 samples_keep_prodigal=[s for s in samples if s not in samples_drop]
 

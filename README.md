@@ -3,7 +3,7 @@ Snakemake pipeline (cluster folder -> to be downloaded onto cluster and run via 
 - for NCBI data (Snakefile_NCBI)
   1. prepAnantharaman.smk: Remove sequences from Anantharaman that are already found in Mueller.
   2. downloadMetagenomicData.smk: Pull data from NCBI using accession numbers in NCBI_WGS_accessionNumbers.txt and convert to .faa.
-  3. extractAssemblies.smk: Selects NCBI data that are gut metagenomic assemblies.
+  3. extractAssemblies.smk: Selects NCBI data that are gut metagenomic assemblies. This data is selected in 2-Data_Management/1-removingNonAssemblies.Rmd
   4. runHMMER.smk: Run prodigal to predict genes then run hmmer search to find dsrAB genes. convert output to fasta and csv formats.
   5. cleanHits.smk: Filter fasta and csv files by bit score (100), find/remove duplicate HMMER hits, and run multiple sequence alignment between the fasta and the reference sequences. 
   6. fragmentInsertion.smk: Use RAxML to estimate model parameters and insert query sequences into the reference tree.
@@ -24,5 +24,15 @@ Snakemake pipeline (cluster folder -> to be downloaded onto cluster and run via 
 Move into RStudio for data visualization
   1. Ensure packages listed in config are installed
   2. Data management
-  3. Analysis
-     -> use ANI_for_clusters.smk to find ANI within clusters made in clustering_cooccur_prevalences.Rmd
+       1. removingNonAssemblies.Rmd
+       2. get_closest_single_ref.Rmd
+       3. dm_NCBI.Rmd
+       4. dm_abundance.Rmd
+  3.  Analysis
+       1. clustering_cooccur_prevalence.Rmd
+       -> go back to cluster and use ANI_for_clusters.smk to find ANI within clusters made in clustering_cooccur_prevalences.Rmd
+       3. tree_visualization_NCBI.Rmd
+       4. overall_prevalence_NCBI.Rmd
+       5. tree_visualization_capsule.Rmd
+       6. abundance_figures.Rmd
+       7. asr_abundance_figures.Rmd

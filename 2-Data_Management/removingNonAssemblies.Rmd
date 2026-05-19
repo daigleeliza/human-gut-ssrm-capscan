@@ -275,7 +275,7 @@ srb_lite_four_wnotes <- srb_lite_four %>%
 
 
 #this was exporting a csv for Liam to look at 
-#write.csv(srb_lite, file = "srb_lite_20-03.csv", row.names = FALSE)
+#write.csv(srb_lite, file = paste0(dataDir, "/srb_lite_20-03.csv"), row.names = FALSE)
 ```
 
 ## adding ages

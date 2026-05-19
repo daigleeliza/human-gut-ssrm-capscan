@@ -30,7 +30,7 @@ Move into RStudio for data visualization
        4. dm_abundance.Rmd
   3.  Analysis
        1. clustering_cooccur_prevalence.Rmd
-       -> go back to cluster and use ANI_for_clusters.smk to find ANI within clusters made in clustering_cooccur_prevalences.Rmd
+            - go back to cluster and use ANI_for_clusters.smk to find ANI within clusters made in clustering_cooccur_prevalences.Rmd
        3. tree_visualization_NCBI.Rmd
        4. overall_prevalence_NCBI.Rmd
        5. tree_visualization_capsule.Rmd

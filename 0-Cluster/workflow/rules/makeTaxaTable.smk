@@ -1,6 +1,6 @@
 rule makeTaxaTable:
 	input: "config/Mueller2015_dsrABref_wTaxa.faa"
-	output: "workflow/out/clustering_otus/taxa_table_0420.csv"
+	output: "workflow/out/clustering_test/taxa_table_0420.csv"
 	conda:
 		"../envs/biopython.yml"
 	threads: 1

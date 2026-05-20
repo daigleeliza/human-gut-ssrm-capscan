@@ -28,19 +28,18 @@ rule filterHMMStool:
 		awk -F',' '$8 >= 100' {input} > {output}
 		"""
 
-#the redo fixes the string search so that it only takes rows with exact _genenumber matches. 
-#fixes the count rule not skipping one of the header lines and the concat rule skipping a data line
-rule countHMMinSamplesCapsule:
+rule countHMMinSamplesCapsuleRPKG:
 	input:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/CapsuleData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
-		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
-	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"
+		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_microbeCensus_RPKG.txt")
+	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_RPKG_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
 		time=60
 	shell:
 		"""
+		set -euo pipefail
 		temp_file=$(mktemp)
 		awk 'NR==2{{print $0"\\tgeneLoc\\tgeneNum\\tScore"}}' {input.geneReads} > $temp_file
 		for hmm_file in {input.hmm}; do
@@ -51,7 +50,7 @@ rule countHMMinSamplesCapsule:
 					contig=$(echo "$col2" | awk -F'_' '{{print $2"_"$3}}' | sed 's/.*\\.//')
 					gene_number=$(echo "$col2" | awk -F'_' '{{print $NF}}')
 					tail -n +3 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
-						$2 == Chr && $1 ~ "_"gene_number"$" {{print $0"\\t"c1"\\t"c2"\\t"c8}}
+						$2 == Chr && substr($1, index($1,"_")+1) == gene_number {{print $0"\\t"c1"\\t"c2"\\t"c8}}
 					' >> $temp_file
 				fi
 			done
@@ -59,17 +58,15 @@ rule countHMMinSamplesCapsule:
 		mv $temp_file {output}
 		"""
 
-#fix geneID to be contig_number again. prodigal_output makes a different geneID that ends up in the RPKM output
-#Also fixes string extraction in column 2 so that it is just the sample name and not the whole file name
-rule concatGeneHitsCapsule:
+rule concatGeneHitsCapsuleRPKG:
 	input:
 		expand(
-			join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
+			join("workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/{coassembly}/{sample}_RPKG_redo.txt"),
 			zip,
 			coassembly=[c for c in capsule for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in capsule for s in get_subject_sample_list_dropped(c)])
 	output:
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_col8score_Capsule_Abundances_RPKM_redo.txt"
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Capsule/concat_dsrAB_Capsule_Abundances_RPKG_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,
@@ -77,7 +74,7 @@ rule concatGeneHitsCapsule:
 	#make one file including all capsule samples: keep only tab separated portion of input, add column for identifying sample, rename columns
 	shell:
 		"""
-		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKM\\tgeneLoc\\tgeneNum\\tScore" > {output}
+		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKG\\tgeneLoc\\tgeneNum\\tScore" > {output}
 		for x in {input}; do
 			coassembly=$(basename "$(dirname "$x")")
 			sample=$(basename "$x" | awk -F'_' '{{print $1"_"$2}}')
@@ -90,17 +87,18 @@ rule concatGeneHitsCapsule:
 		done >> {output}
 		"""
 
-rule countHMMinSamplesStool:
+rule countHMMinSamplesStoolRPKG:
 	input:
 		hmm=expand(join(config["dsrHMMERDir"],"coassemblies/StoolData_parsedHMMDomainTableSummary_dsrAB_{microorganism}_hits_FILTERED_col8.csv"), microorganism=microorganism),
-		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_RPKM.txt")
-	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"
+		geneReads=join(config["geneReadsDir"],"{coassembly}/{sample}_microbeCensus_RPKG.txt")
+	output: "workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_RPKG_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=4000,
 		time=60
 	shell:
 		"""
+		set -euo pipefail
 		temp_file=$(mktemp)
 		awk 'NR==2{{print $0"\\tgeneLoc\\tgeneNum\\tScore"}}' {input.geneReads} > $temp_file
 		for hmm_file in {input.hmm}; do
@@ -111,7 +109,7 @@ rule countHMMinSamplesStool:
 					contig=$(echo "$col2" | awk -F'_' '{{print $2"_"$3}}' | sed 's/.*\\.//')
 					gene_number=$(echo "$col2" | awk -F'_' '{{print $NF}}')
 					tail -n +3 {input.geneReads} | awk -F'\\t' -v Chr="$contig" -v gene_number="$gene_number" -v c1="$col1" -v c2="$col2" -v c8="$col8" '
-						$2 == Chr && $1 ~ "_"gene_number"$" {{print $0"\\t"c1"\\t"c2"\\t"c8}}
+						$2 == Chr && substr($1, index($1,"_")+1) == gene_number {{print $0"\\t"c1"\\t"c2"\\t"c8}}
 					' >> $temp_file
 				fi
 			done
@@ -119,15 +117,15 @@ rule countHMMinSamplesStool:
 		mv $temp_file {output}
 		"""
 
-rule concatGeneHitsStool:
+rule concatGeneHitsStoolRPKG:
 	input:
 		expand(
-			join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_dsrAB_col8score_RPKM_redo.txt"),
+			join("workflow/out/dsrAB_CapsuleStool_Abundances/Stool/{coassembly}/{sample}_RPKG_redo.txt"),
 			zip,
 			coassembly=[c for c in stool for _ in get_subject_sample_list_dropped(c)],
 			sample=[s for c in stool for s in get_subject_sample_list_dropped(c)])
 	output:
-		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_col8score_Stool_Abundances_RPKM_redo.txt"
+		"workflow/out/dsrAB_CapsuleStool_Abundances/Stool/concat_dsrAB_Stool_Abundances_RPKG_redo.txt"
 	threads: 1
 	resources:
 		mem_mb=2000,
@@ -135,7 +133,7 @@ rule concatGeneHitsStool:
 	#make one file including all stool samples: keep only tab separated portion of input, add column for identifying sample, rename columns
 	shell:
 		"""
-		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKM\\tgeneLoc\\tgeneNum\\tScore" > {output}
+		echo -e "coassembly\\tsample\\tgeneID\\tcontig\\tstart\\tstop\\tstrand\\tlength\\tmapped\\tRPKG\\tgeneLoc\\tgeneNum\\tScore" > {output}
 		for x in {input}; do
 			coassembly=$(basename "$(dirname "$x")")
 			sample=$(basename "$x" | awk -F'_' '{{print $1"_"$2}}')

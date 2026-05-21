@@ -17,7 +17,7 @@ rooted_ref_tree <- root(ref_tree, c("Moorella_thermoacetica_Y72_copy_2__MooTher5
 
 # read in the taxa table
 ```{r}
-taxa_table <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv"))
+taxa_table <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv"))
 ```
 
 # remove oxidative bacterial node and moorella thermoacetica cp 2

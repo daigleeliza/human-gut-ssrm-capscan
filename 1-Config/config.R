@@ -75,6 +75,7 @@ raxmlDir = paste0(here::here(), "/0-Cluster/workflow/out/raxmlOutput")
 abundanceDir = paste0(here::here(), "/0-Cluster/workflow/out/dsrAB_CapsuleStool_Abundances/")
 abundanceDirASR = paste0(here::here(), "/0-Cluster/workflow/out/asrABC_CapsuleStool_Abundances/")
 clusterDir = paste0(here::here(), "/0-Cluster/workflow/out/clustering_otus/ids")
+taxaDir = paste0(here::here(), "/0-Cluster/workflow/out/clustering_test")
 
 dataDir = paste0(here::here(), "/data/")
 figureDir = paste0(here::here(), "/4-Figures/")

@@ -13,7 +13,7 @@ source(paste0(here::here(), "/1-Config/config.R"))
 
 # Read in OTU table and taxa table
 ```{r}
-taxa_table <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv"))
+taxa_table <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv"))
 
 otu_subject_matrix <- readRDS(paste0(dataDir, "/subject_OTU_matrix_0504.rds")) %>% 
   column_to_rownames(., var = "host subject id") %>%
@@ -194,7 +194,7 @@ species_labels <- c(
 V(igraph_net)$label <- species_labels[V(igraph_net)$name]
 
 # add colors by supercluster
-taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+taxa_table_df <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv")) 
 # supercluster identity
 desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
 firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
@@ -265,7 +265,7 @@ species_labels <- c(
 V(igraph_net)$label <- species_labels[V(igraph_net)$name]
 
 # add colors by supercluster
-taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+taxa_table_df <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv")) 
 # supercluster identity
 desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
 firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
@@ -338,7 +338,7 @@ species_labels <- c(
 V(igraph_net)$label <- species_labels[V(igraph_net)$name]
 
 # add colors by supercluster
-taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+taxa_table_df <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv")) 
 # supercluster identity
 desulfo_family <- taxa_table_df %>% filter(supercluster == "Deltaproteobacteria supercluster")
 firmicutes <- taxa_table_df %>% filter(supercluster == "FACA group sensu lato")
@@ -461,7 +461,7 @@ cluster_prevalence <- data.frame(
   sample_prev = (n_samples/total_samples)) %>%
   rownames_to_column(var = "cluster")
 
-taxa_table_df <- read_csv(paste0(clusterDir, "/taxa_table_0420.csv")) 
+taxa_table_df <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv")) 
 
 
 #make larger groups for each cluster

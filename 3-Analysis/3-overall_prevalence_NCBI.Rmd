@@ -23,10 +23,31 @@ hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds")) %>%
   filter(!single_closest_ref == "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   # removes one of archaeoglobus hits that wasn't removed in other spots but had no bearing on results
   filter(is.na(distance) | distance <= 2.50) %>%
-  #remove one of the hits from the three exact duplicates
+  #remove one of the hits from the three exact duplicates ("ORJZ01.17253.1_1/2-182", "OWUN01.41726.1_1/1-246", "OWAH01.53685.1_1/1-179")
   distinct()
 
 ## 3781 is the number of "putative dsrAB hits" -> filtered for no closest reference, distance >2.5 but still contains dups (sdups and edups for the sequence itself)
+```
+
+# what are the bit scores for the 3,781 hits used in the prevalence calculation?
+```{r}
+scores <- read_csv(paste0(cleanHitsDir, "compiled_dsrAB_hits_scoreThreshold_assemblies.csv"),
+                   col_names = FALSE,
+                   col_select = c(1, 8)) %>%
+  mutate(hit_id = X1, score = X8) %>%
+  select(hit_id, score)
+
+bit_score <- hits_final_ages %>%
+  left_join(scores, by = "hit_id") %>%
+  filter(score <200)
+#1116
+
+#again there are those three exact duplicates which is why this df has 3784 rows
+#one of them is below 200 and one above 200 for their bit score
+setdiff(hits_final_ages$hit_id, bit_score2$hit_id)
+setdiff(bit_score2$hit_id, hits_final_ages$hit_id)
+
+#so, excluding those three duplicates, 1113/3781 hits are below a bit score of 200
 ```
 
 

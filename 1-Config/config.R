@@ -70,6 +70,7 @@ conflicts_prefer(base::remove)
 # define repository paths
 #--------------------------------------------
 configDir = paste0(here::here(), "/0-Cluster/config/")
+cleanHitsDir = paste0(here::here(), "/0-Cluster/workflow/out/cleanHits/")
 treeInfoDir = paste0(here::here(), "/0-Cluster/workflow/out/treeInfo/")
 raxmlDir = paste0(here::here(), "/0-Cluster/workflow/out/raxmlOutput")
 abundanceDir = paste0(here::here(), "/0-Cluster/workflow/out/dsrAB_CapsuleStool_Abundances/")

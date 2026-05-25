@@ -137,7 +137,7 @@ species_labels_combine_species <- c("Desulfitibacter_alkalitolerans__DfiAlka2" =
 ```
 
 
-# plot RPKG for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species and subject
+# plot RPKG for unique genes (each hit would be one subunit) in each sample to compare between location; facet by species
 # this plot combines the two D. piger and two B. wadsworthia species
 ```{r}
 samples_unique_subunit_RPKG %>%
@@ -197,9 +197,24 @@ ggsave(paste0(figureDir, "dsrAB_RPKG_combine_species.png"),
        dpi = 600)
 
 ```
-## SUPP. FIG. 5
+## SUPP. FIG. 4
 ```{r}
-# anotha option 
+# plot_capsule_differences <- samples_unique_subunit_RPKG %>%
+#   filter(!Type == "Stool") %>%
+#   filter(!single_closest_ref %in% c("uncultured_bacterium__EF645667","Desulfitibacter_alkalitolerans__DfiAlka2")) %>%
+#   mutate(combine_species = case_when(
+#     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+#     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+#     TRUE ~ single_closest_ref)) %>%
+#   mutate(combine_species = factor(combine_species, 
+#                                   levels = c("Desulfovibrio_piger",
+#                                             "Bilophila_species",
+#                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+#   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+#   group_by(subject, Type, combine_species) %>%
+#   summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop")
+
+#make this plot with median sums across a subjects' capsule ones, twos, etc.
 plot_capsule_differences <- samples_unique_subunit_RPKG %>%
   filter(!Type == "Stool") %>%
   filter(!single_closest_ref %in% c("uncultured_bacterium__EF645667","Desulfitibacter_alkalitolerans__DfiAlka2")) %>%
@@ -212,11 +227,14 @@ plot_capsule_differences <- samples_unique_subunit_RPKG %>%
                                             "Bilophila_species",
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  group_by(sample, subject, Type, combine_species) %>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop") %>%
   group_by(subject, Type, combine_species) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop")
+  summarize(median_RPKG_per_1000=median(sum_RPKG_per_1000))
+  
 
 ggplot(plot_capsule_differences, 
-       aes(x = Type, y = log10(sum_RPKG_per_1000), group = subject)) +
+       aes(x = Type, y = log10(median_RPKG_per_1000), group = subject)) +
   geom_point(size = 2, alpha = 0.8, col = "gray60") +
   geom_line(alpha = 0.4, col = "gray60") +  # connects same subject across capsule types
   facet_wrap(~ combine_species, nrow = 1, labeller = label_parsed) +
@@ -308,54 +326,93 @@ RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
   #group_by(sample, subject_sample_type, combine_species) %>%
   #summarize(sample_RPKG_per_1000=sum(RPKG)*1000) %>%
   group_by(subject_sample_type, combine_species) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000)%>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
   pivot_wider(
     names_from = combine_species,
     values_from = sum_RPKG_per_1000,
     values_fill = 0) %>%
     column_to_rownames(., var = "subject_sample_type")
 
-# transform  
-# pseudocount because there are species with no hits for some samples. this also means that we can add zeroes for the 2 stool samples where there are no hits
-matrix_sample_type_log <- round(log10(RPKG_by_sample_type+1),4) %>%
-  as.matrix()
-```
-# does d.piger or bilophila have a greater abundance across subjects in the stool? what about SI?
-```{r}
-(RPKG_by_sample_type %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Bilophila_species) %>%
-  sum())
-(RPKG_by_sample_type %>%
-  filter(grepl("Capsule", rownames(.))) %>%
-  select(Bilophila_species) %>%
-  sum())
-
-(RPKG_by_sample_type %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Desulfovibrio_piger) %>%
-  sum())
-(RPKG_by_sample_type %>%
-  filter(grepl("Capsule", rownames(.))) %>%
-  select(Desulfovibrio_piger) %>%
-  sum())
-
-```
-# comparison of bilophila abundance in the SI to the stool
-```{r}
-bilophila_abun <- samples_unique_subunit_RPKG %>%
+# testing corrected version 
+RPKG_by_sample_type_MEDIAN <- samples_unique_subunit_RPKG %>%
   # combine d. piger and bilophila species
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
     TRUE ~ single_closest_ref)) %>%
-  group_by(subject, sample_type, combine_species) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
-  select(subject, sample_type, combine_species, sum_RPKG_per_1000) %>%
-  filter(combine_species == "Bilophila_species") %>%
-  pivot_wider(names_from = sample_type, values_from = sum_RPKG_per_1000) %>%
-  group_by(subject) %>%
-  summarize(ratio=Capsule/Stool)
+  mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
+  group_by(sample, subject_sample_type, combine_species) %>%
+  summarize(sum_RPKG_per_1000 = sum(RPKG)*1000) %>%
+  ungroup() %>%
+  group_by(subject_sample_type, combine_species) %>%
+  summarize(median_RPKG_per_1000=median(sum_RPKG_per_1000))%>%
+  pivot_wider(
+    names_from = combine_species,
+    values_from = median_RPKG_per_1000,
+    values_fill = 0) %>%
+    column_to_rownames(., var = "subject_sample_type")
+
+
+# transform  
+# pseudocount because there are species with no hits for some samples. this also means that we can add zeroes for the 2 stool samples where there are no hits
+# just change the df to RPKG_by_sample_type to get original plot
+matrix_sample_type_log <- round(log10(RPKG_by_sample_type_MEDIAN+1),4) %>%
+  as.matrix()
+```
+# does d.piger or bilophila have a greater abundance across subjects in the stool? what about SI?
+```{r}
+(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.))) %>%
+  select(Bilophila_species) %>%
+  sum())
+(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Capsule", rownames(.))) %>%
+  select(Bilophila_species) %>%
+  sum())
+
+(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.))) %>%
+  select(Desulfovibrio_piger) %>%
+  sum())
+(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Capsule", rownames(.))) %>%
+  select(Desulfovibrio_piger) %>%
+  sum())
+
+# get number for results
+(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.))) %>%
+  select(Desulfovibrio_piger) %>%
+  sum())/(RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.))) %>%
+  select(Bilophila_species) %>%
+  sum())
+```
+# comparison of bilophila abundance in the SI to the stool
+```{r}
+#old version that was biased by number of capsule samples
+# bilophila_abun <- samples_unique_subunit_RPKG %>%
+#   # combine d. piger and bilophila species
+#   mutate(combine_species = case_when(
+#     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+#     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+#     TRUE ~ single_closest_ref)) %>%
+#   group_by(subject, sample_type, combine_species) %>%
+#   summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
+#   select(subject, sample_type, combine_species, sum_RPKG_per_1000) %>%
+#   filter(combine_species == "Bilophila_species") %>%
+#   pivot_wider(names_from = sample_type, values_from = sum_RPKG_per_1000) %>%
+#   group_by(subject) %>%
+#   summarize(ratio=Capsule/Stool)
+
+bilophila_abun <- RPKG_by_sample_type_MEDIAN %>% 
+  select("Bilophila_species") %>%
+  rownames_to_column("subject_type") %>%
+  mutate(subject = str_extract(subject_type, "\\d+"),
+         type = str_extract(subject_type, "Capsule|Stool")) %>%
+  select(-subject_type) %>%
+  pivot_wider(names_from = type, values_from = Bilophila_species, values_fill = 0) %>%
+  mutate(ratio = Capsule / Stool)
 ```
 
 
@@ -466,7 +523,8 @@ col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorel
 ```
 
 ```{r}
-png(paste0(figureDir, "heatmap_split.png"), width = 8, height = 6, units = "in", res = 600)
+## this was originally heatmap_split
+png(paste0(figureDir, "heatmap_split_median.png"), width = 8, height = 6, units = "in", res = 600)
 
 hm_split <- ComplexHeatmap::pheatmap(
   matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)

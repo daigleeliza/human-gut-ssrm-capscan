@@ -67,16 +67,6 @@ unique_hits_summary_asr <- asr_unique %>%
 figure_6a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, by = "sample_type", suffix = c("_dsr", "_asr"))
 ```
 
-#How many dsrAB hits have scores <200
-```{r}
-under200 <- dsr_unique %>%
-  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
-  filter(Score<200)
-(length(unique(under200$contig)))
-  
-```
-
-
 # How do RPKGs compare to the dsrAB genes? 
 # Cannot plot total RPKG since asrABC protein has 3 subunits while dsrAB has 2.
 # Using median to account for this

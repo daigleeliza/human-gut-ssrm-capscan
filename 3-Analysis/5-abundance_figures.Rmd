@@ -399,20 +399,14 @@ RPKG_by_sample_type_MEDIAN %>%
   mean()
 
 # subject 12 and subject 14 have d. piger and b. wadsworthia in both their SI and stool samples
-#sub_12_bil_ratio 
-RPKG_by_sample_type_MEDIAN["12_Capsule", "Bilophila_species"] / 
+#sub_12_ratio 
+sub_12_ratio <- RPKG_by_sample_type_MEDIAN["12_Stool", "Desulfovibrio_piger"] / 
         RPKG_by_sample_type_MEDIAN["12_Stool", "Bilophila_species"]
-#sub_14_bil_ratio
-RPKG_by_sample_type_MEDIAN["14_Capsule", "Bilophila_species"] / 
+#sub_14_ratio
+sub_14_ratio <- RPKG_by_sample_type_MEDIAN["14_Stool", "Desulfovibrio_piger"] / 
         RPKG_by_sample_type_MEDIAN["14_Stool", "Bilophila_species"]
 
-#sub_12_piger_ratio
-RPKG_by_sample_type_MEDIAN["12_Capsule", "Desulfovibrio_piger"] / 
-        RPKG_by_sample_type_MEDIAN["12_Stool", "Desulfovibrio_piger"]
-#sub_14_piger_ratio
-RPKG_by_sample_type_MEDIAN["14_Capsule", "Desulfovibrio_piger"] / 
-        RPKG_by_sample_type_MEDIAN["14_Stool", "Desulfovibrio_piger"]
-
+(mean_ratio_piger_bil <- (sub_12_ratio+sub_14_ratio)/2)
 ```
 # comparison of bilophila abundance in the SI to the stool
 ```{r}

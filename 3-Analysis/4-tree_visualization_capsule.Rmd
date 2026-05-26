@@ -35,7 +35,7 @@ samples_unique_subunit_manual <- samples_unique_genes_with_names_2015 %>%
   filter(!geneNum %in% unknown_species) %>%
   mutate(single_closest_ref = ifelse(contig == "k141_113757", "Desulfovibrio_piger__DslPige3", single_closest_ref))
 
-# filter to get one subunit
+# filter to get one subunit (10 are Moorella which is why there is 341 instead of 331 like in abundance_figures.rmd)
 samples_unique_subunit_RPKG_2015 <- samples_unique_subunit_manual %>%
   group_by(contig, sample) %>%
   slice_max(RPKG, n = 1, with_ties = FALSE) %>%

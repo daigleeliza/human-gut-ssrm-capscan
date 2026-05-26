@@ -497,7 +497,7 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
   # Draw left half (capsule)
 
   fill1 <- if (val1 == 0) {
-      "gray95"
+      "white"
     } else {
      col_fun(val1)
    }
@@ -508,7 +508,7 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
   
   # Draw right half (stool)  
   fill2 <- if (val2 == 0) {
-      "gray95"
+      "white"
     } else {
       col_fun(val2)
     }

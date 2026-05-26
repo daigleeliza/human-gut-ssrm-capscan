@@ -75,6 +75,8 @@ figure_6a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, b
 # then find the sum of RPKG per 1000 cells in a sample
 plot_RPKG_dsr_median <- dsr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # need to remove this partial gene because it was removed to make the other abundance figures and when it is removed, one sample is no longer in the df. This way, both the abundance figures and the asr/dsr figures will have 146 samples included in the analysis
+  filter(!geneNum == "Stool_14.k141_240693_1") %>%
   group_by(sample, contig, sample_type, subject) %>%
   summarize(n=n(), median_RPKG=median(RPKG)*1000) %>%
   ungroup() %>%
@@ -87,7 +89,6 @@ plot_RPKG_asr_median <- asr_unique %>%
   ungroup() %>%
   group_by(sample, subject, sample_type) %>%
   summarize(sum_RPKG_per_1000=sum(median_RPKG))
-
 
 ##this is what i was doing previously 
 #plot_RPKG_asr_median <- asr_unique %>%

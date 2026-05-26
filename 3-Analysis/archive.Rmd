@@ -992,5 +992,42 @@ hits_of_interest <- NCBI_wSingleRef_wScores %>%
 #40647106 only one cluster with one subunit hitting each
 ```
 
+# old version of heatmap df 
+```{r}
+#extract species, subject, RPKG columns to make a matrix that has subjects as row names and species as column names
+RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
+  # combine d. piger and bilophila species
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
+  # values are the same whether you get the rpkg per 1000 at a sample or subject level
+  #group_by(sample, subject_sample_type, combine_species) %>%
+  #summarize(sample_RPKG_per_1000=sum(RPKG)*1000) %>%
+  group_by(subject_sample_type, combine_species) %>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
+  pivot_wider(
+    names_from = combine_species,
+    values_from = sum_RPKG_per_1000,
+    values_fill = 0) %>%
+    column_to_rownames(., var = "subject_sample_type")
+```
 
-
+# comparing bilophila abundance in SI to stool
+```{r}
+#old version that was biased by number of capsule samples
+# bilophila_abun <- samples_unique_subunit_RPKG %>%
+#   # combine d. piger and bilophila species
+#   mutate(combine_species = case_when(
+#     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+#     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+#     TRUE ~ single_closest_ref)) %>%
+#   group_by(subject, sample_type, combine_species) %>%
+#   summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
+#   select(subject, sample_type, combine_species, sum_RPKG_per_1000) %>%
+#   filter(combine_species == "Bilophila_species") %>%
+#   pivot_wider(names_from = sample_type, values_from = sum_RPKG_per_1000) %>%
+#   group_by(subject) %>%
+#   summarize(ratio=Capsule/Stool)
+```

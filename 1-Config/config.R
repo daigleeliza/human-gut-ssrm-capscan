@@ -44,6 +44,9 @@ library(ComplexHeatmap)
 library(finalfit)
 library(ggrepel)
 library(ggtext)
+library(lme4)
+library(lmerTest)
+
 
 # fix conflicts between packages
 library(conflicted)

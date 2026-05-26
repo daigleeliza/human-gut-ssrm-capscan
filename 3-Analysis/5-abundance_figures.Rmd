@@ -258,27 +258,32 @@ ggsave(paste0(figureDir, "RPKG_across_capsules.png"),
 ```
 # any differences in RPKG across capsules?
 ```{r}
-library(lme4)
-library(lmerTest)
+# test this out with splitting by set rather than taking the median 
+plot_capsule_differences_set <- samples_unique_subunit_RPKG %>%
+  filter(!Type == "Stool") %>%
+  filter(!single_closest_ref %in% c("uncultured_bacterium__EF645667","Desulfitibacter_alkalitolerans__DfiAlka2")) %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger",
+                                            "Bilophila_species",
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  group_by(sample, subject, Type, combine_species, Set) %>%
+  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop")
 
-model_df <- plot_capsule_differences %>% 
-  mutate(log_abundance = log10(median_RPKG_per_1000))
+model_df <- plot_capsule_differences_set %>% 
+  mutate(log_abundance = log10(sum_RPKG_per_1000))
 
-model <- lmerTest::lmer(log_abundance ~ Type + combine_species + (1|subject), 
-              data = model_df)
-
-anova(model)
-
+# look at distribution of transformed abundances
 (ggplot(model_df, aes(x=log_abundance)) + geom_histogram() + facet_wrap(~combine_species))
 
-# test this out with splitting by set rather than taking the median 
+model <- lmerTest::lmer(log_abundance ~ Type + combine_species + (1|subject/Set), 
+              data = model_df)
+anova(model)
 
-
-
-# testing reg anova
-summary(aov(log_abundance ~ Type,
-  data = model_df
-))
 ```
 
 
@@ -338,25 +343,6 @@ ggsave(paste0(figureDir, "sample_variability.png"),
 # Heatmap for capsule vs stool 
 # in one plot
 ```{r}
-#extract species, subject, RPKG columns to make a matrix that has subjects as row names and species as column names
-RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
-  # combine d. piger and bilophila species
-  mutate(combine_species = case_when(
-    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
-    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
-  mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
-  # values are the same whether you get the rpkg per 1000 at a sample or subject level
-  #group_by(sample, subject_sample_type, combine_species) %>%
-  #summarize(sample_RPKG_per_1000=sum(RPKG)*1000) %>%
-  group_by(subject_sample_type, combine_species) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
-  pivot_wider(
-    names_from = combine_species,
-    values_from = sum_RPKG_per_1000,
-    values_fill = 0) %>%
-    column_to_rownames(., var = "subject_sample_type")
-
 # testing corrected version 
 RPKG_by_sample_type_MEDIAN <- samples_unique_subunit_RPKG %>%
   # combine d. piger and bilophila species
@@ -379,56 +365,57 @@ RPKG_by_sample_type_MEDIAN <- samples_unique_subunit_RPKG %>%
 
 # transform  
 # pseudocount because there are species with no hits for some samples. this also means that we can add zeroes for the 2 stool samples where there are no hits
-# just change the df to RPKG_by_sample_type to get original plot
 matrix_sample_type_log <- round(log10(RPKG_by_sample_type_MEDIAN+1),4) %>%
   as.matrix()
 ```
 # does d.piger or bilophila have a greater abundance across subjects in the stool? what about SI?
 ```{r}
-(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Bilophila_species) %>%
-  sum())
-(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Capsule", rownames(.))) %>%
-  select(Bilophila_species) %>%
-  sum())
+RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.)), Bilophila_species > 0) %>%
+  pull(Bilophila_species) %>%
+  mean()
 
-(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Desulfovibrio_piger) %>%
-  sum())
-(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Capsule", rownames(.))) %>%
-  select(Desulfovibrio_piger) %>%
-  sum())
+RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Capsule", rownames(.)), Bilophila_species > 0) %>%
+  pull(Bilophila_species) %>%
+  mean()
 
-# get number for results
-(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Desulfovibrio_piger) %>%
-  sum())/(RPKG_by_sample_type_MEDIAN %>%
-  filter(grepl("Stool", rownames(.))) %>%
-  select(Bilophila_species) %>%
-  sum())
+RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.)), Desulfovibrio_piger > 0) %>%
+  pull(Desulfovibrio_piger) %>%
+  mean()
+RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Capsule", rownames(.)), Desulfovibrio_piger > 0) %>%
+  pull(Desulfovibrio_piger) %>%
+  mean()
+
+# get number for results -> comparing average stool abundances for four subjects with either detected 
+RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.)), Desulfovibrio_piger > 0) %>%
+  pull(Desulfovibrio_piger) %>%
+  mean()/RPKG_by_sample_type_MEDIAN %>%
+  filter(grepl("Stool", rownames(.)), Bilophila_species > 0) %>%
+  pull(Bilophila_species) %>%
+  mean()
+
+# subject 12 and subject 14 have d. piger and b. wadsworthia in both their SI and stool samples
+#sub_12_bil_ratio 
+RPKG_by_sample_type_MEDIAN["12_Capsule", "Bilophila_species"] / 
+        RPKG_by_sample_type_MEDIAN["12_Stool", "Bilophila_species"]
+#sub_14_bil_ratio
+RPKG_by_sample_type_MEDIAN["14_Capsule", "Bilophila_species"] / 
+        RPKG_by_sample_type_MEDIAN["14_Stool", "Bilophila_species"]
+
+#sub_12_piger_ratio
+RPKG_by_sample_type_MEDIAN["12_Capsule", "Desulfovibrio_piger"] / 
+        RPKG_by_sample_type_MEDIAN["12_Stool", "Desulfovibrio_piger"]
+#sub_14_piger_ratio
+RPKG_by_sample_type_MEDIAN["14_Capsule", "Desulfovibrio_piger"] / 
+        RPKG_by_sample_type_MEDIAN["14_Stool", "Desulfovibrio_piger"]
+
 ```
 # comparison of bilophila abundance in the SI to the stool
 ```{r}
-#old version that was biased by number of capsule samples
-# bilophila_abun <- samples_unique_subunit_RPKG %>%
-#   # combine d. piger and bilophila species
-#   mutate(combine_species = case_when(
-#     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
-#     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-#     TRUE ~ single_closest_ref)) %>%
-#   group_by(subject, sample_type, combine_species) %>%
-#   summarize(sum_RPKG_per_1000=sum(RPKG)*1000) %>%
-#   select(subject, sample_type, combine_species, sum_RPKG_per_1000) %>%
-#   filter(combine_species == "Bilophila_species") %>%
-#   pivot_wider(names_from = sample_type, values_from = sum_RPKG_per_1000) %>%
-#   group_by(subject) %>%
-#   summarize(ratio=Capsule/Stool)
-
 bilophila_abun <- RPKG_by_sample_type_MEDIAN %>% 
   select("Bilophila_species") %>%
   rownames_to_column("subject_type") %>%
@@ -547,7 +534,6 @@ col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorel
 ```
 
 ```{r}
-## this was originally heatmap_split
 png(paste0(figureDir, "heatmap_split_median.png"), width = 8, height = 6, units = "in", res = 600)
 
 hm_split <- ComplexHeatmap::pheatmap(

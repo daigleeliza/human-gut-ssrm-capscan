@@ -111,6 +111,7 @@ all_genes <- bind_rows(
   .id = "gene_cluster")
 
 # plot a box for each cluster for each type, facet by subject
+set.seed(123)
 all_genes %>%
   #filter(subject==9) %>%
   ggplot(aes(x = sample_type, y = log10(sum_RPKG_per_1000), fill = gene_cluster)) +
@@ -174,6 +175,7 @@ plot_ratios <- all_genes_subset %>%
   pivot_wider(names_from = gene_cluster, values_from = sum_RPKG_per_1000) %>%
   mutate(ratio_dsr_asr = dsr/asr) 
 
+set.seed(123)
 plot_ratios %>%
   ggplot(aes(x = sample_type, y = log2(ratio_dsr_asr))) +
   geom_boxplot(color = "black",

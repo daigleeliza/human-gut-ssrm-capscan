@@ -38,6 +38,8 @@ jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```{r}
 unique_hits_summary_dsr <- dsr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+  # need to remove this partial gene because it was removed to make the other abundance figures and when it is removed, one sample is no longer in the df. This way, both the abundance figures and the asr/dsr figures will have 146 samples included in the analysis
+  filter(!geneNum == "Stool_14.k141_240693_1") %>%
   # find unique contigs in each coassembly
   # don't care about how we are selecting a subunit here since we just want overall count. RPKG will be in figure part b
   group_by(subject, contig, sample_type) %>%
@@ -112,7 +114,7 @@ all_genes <- bind_rows(
   .id = "gene_cluster")
 
 # plot a box for each cluster for each type, facet by subject
-set.seed(123)
+set.seed(125)
 all_genes %>%
   #filter(subject==9) %>%
   ggplot(aes(x = sample_type, y = log10(sum_RPKG_per_1000), fill = gene_cluster)) +

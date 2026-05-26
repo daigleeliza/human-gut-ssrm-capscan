@@ -474,7 +474,7 @@ rownames(matrix_capsule) <- subjects_capsule
 
 # cluster the species and the subjects like the jitter box plot
 species_order <- names(species_labels_combine_species_no_moorella)
-subject_order <- c("12", "9", "14", "2", "13", "7", "3", "6", "4", "11", "1")
+subject_order <- c("9", "14", "2", "3", "12", "13", "7", "6", "4", "11", "1")
 
 matrix_capsule <- matrix_capsule[subject_order, species_order]
 matrix_stool_complete <- matrix_stool_complete[subject_order, species_order]

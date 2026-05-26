@@ -43,7 +43,7 @@ samples_unique_subunit_manual <- samples_unique_gene_casette %>%
   filter(!geneNum %in% unknown_species) %>%
   mutate(single_closest_ref = ifelse(contig == "k141_113757", "Desulfovibrio_piger__DslPige3", single_closest_ref))
 
-## value of 339 comes from this
+## value of 331 comes from this
 samples_unique_subunit_RPKG <- samples_unique_subunit_manual %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   group_by(contig, sample) %>%
@@ -255,6 +255,30 @@ ggplot(plot_capsule_differences,
 ggsave(paste0(figureDir, "RPKG_across_capsules.png"),
        width = 12, height = 8, units = "in",   # increase for larger output
        dpi = 600)
+```
+# any differences in RPKG across capsules?
+```{r}
+library(lme4)
+library(lmerTest)
+
+model_df <- plot_capsule_differences %>% 
+  mutate(log_abundance = log10(median_RPKG_per_1000))
+
+model <- lmerTest::lmer(log_abundance ~ Type + combine_species + (1|subject), 
+              data = model_df)
+
+anova(model)
+
+(ggplot(model_df, aes(x=log_abundance)) + geom_histogram() + facet_wrap(~combine_species))
+
+# test this out with splitting by set rather than taking the median 
+
+
+
+# testing reg anova
+summary(aov(log_abundance ~ Type,
+  data = model_df
+))
 ```
 
 

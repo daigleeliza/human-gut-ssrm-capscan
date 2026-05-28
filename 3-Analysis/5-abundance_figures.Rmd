@@ -232,6 +232,8 @@ plot_capsule_differences <- samples_unique_subunit_RPKG %>%
   group_by(subject, Type, combine_species) %>%
   summarize(median_RPKG_per_1000=median(sum_RPKG_per_1000))
   
+# how many subjects included in this plot?
+n_distinct(plot_capsule_differences$subject)
 
 ggplot(plot_capsule_differences, 
        aes(x = Type, y = log10(median_RPKG_per_1000), group = subject)) +

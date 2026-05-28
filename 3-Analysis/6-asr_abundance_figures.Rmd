@@ -228,5 +228,5 @@ pp = median_ratios %>%
   dplyr::arrange(sample_type, subject) %>% 
   pivot_wider(id_cols = subject, names_from = sample_type, values_from = median_ratio)
 
-t.test(pp$Capsule, pp$Stool)
+t.test(pp$Capsule, pp$Stool, paired = TRUE)
 ```

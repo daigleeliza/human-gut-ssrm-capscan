@@ -204,7 +204,7 @@ ggsave(paste0(figureDir, "asr_dsr_scatter_facet.png"),
        width = 8, height = 6, units = "in",
        dpi = 600)
 
-scatter_asr_dsr %>%
+p <- scatter_asr_dsr %>%
   ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
   geom_point() + 
   scale_color_manual(values = sample_type_colors_2) +
@@ -225,9 +225,13 @@ scatter_asr_dsr %>%
     axis.title.y = element_text(size = 16),
     strip.background = element_blank(),
     strip.text.x = element_text(size = 14),
-    legend.position = "right",
+    legend.position = "none",
     legend.text  = element_text(size = 14),
     legend.title = element_text(size = 14))
+ggMarginal(p, type = "boxplot", 
+           groupColour = TRUE,
+           groupFill = TRUE,
+           size = 10)
 
 ggsave(paste0(figureDir, "asr_dsr_scatter_no_facet.png"),
        width = 9, height = 6, units = "in",

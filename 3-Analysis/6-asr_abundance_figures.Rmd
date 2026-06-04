@@ -30,6 +30,7 @@ viridis_palette
 boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 gene_colors <- c("#D98E21", "#6B8E23")
 sample_type_colors <- c("#AA3377", "#6F7042")
+sample_type_colors_2 <- c("#1E88E5", "#6F7042")
 
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 ```
@@ -166,6 +167,77 @@ ggsave(paste0(figureDir, "median_RPKG_asrABC_v_dsrAB.png"),
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
 ```
+## scatterplot of dsr to asr 
+```{r}
+scatter_asr_dsr <- all_genes %>%
+  pivot_wider(., names_from = gene_cluster, values_from = sum_RPKG_per_1000) %>%
+  mutate(dsr = replace_na(dsr, 0)) %>%
+  mutate(asr = replace_na(asr, 0))
+
+scatter_asr_dsr %>%
+  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
+  geom_point() + 
+  scale_color_manual(values = sample_type_colors_2) +
+  facet_wrap(~sample_type) +
+  labs(
+    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
+    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
+    color = "Sample type"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 14),
+    legend.position = "right",
+    legend.text  = element_text(size = 14),
+    legend.title = element_text(size = 14))
+
+ggsave(paste0(figureDir, "asr_dsr_scatter_facet.png"),
+       width = 8, height = 6, units = "in",
+       dpi = 600)
+
+scatter_asr_dsr %>%
+  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
+  geom_point() + 
+  scale_color_manual(values = sample_type_colors_2) +
+  labs(
+    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
+    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
+    color = "Sample type"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 14),
+    legend.position = "right",
+    legend.text  = element_text(size = 14),
+    legend.title = element_text(size = 14))
+
+ggsave(paste0(figureDir, "asr_dsr_scatter_no_facet.png"),
+       width = 9, height = 6, units = "in",
+       dpi = 600)
+```
+
+
+
+
+
 
 #ratio plot figure 6B
 ```{r}

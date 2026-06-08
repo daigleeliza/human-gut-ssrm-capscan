@@ -73,13 +73,13 @@ capsule_type_summary <- samples_unique_subunit_RPKG %>%
   # find the number of genes in each sample and the sum of their RPKGs
   group_by(sample, subject, Type) %>%
   summarise(n_genes = n(), 
-            total_RPKG_per_1000 = sum(RPKG)*1000) %>%
+            total_RPKG = sum(RPKG)) %>%
   ungroup() %>% 
   # find the median number of genes and median RPKG sum for all of the samples for a given subject and Type
   # need this center chunk because different subjects have different numbers of samples!
   group_by(subject, Type) %>%
   summarise(n_median = median(n_genes),
-            median_total_RPKG_per_1000 = median(total_RPKG_per_1000)) %>%
+            median_total_RPKG = median(total_RPKG)) %>%
   ungroup() %>%
   # find the median number of genes and median RPKG sum for each Type
   group_by(Type) %>% 
@@ -87,9 +87,9 @@ capsule_type_summary <- samples_unique_subunit_RPKG %>%
             n_median_all_subj = round(median(n_median),2),
             n_25pct = round(quantile(n_median, probs = 0.25),2),
             n_75pct = round(quantile(n_median, probs = 0.75),2),
-            median_RPKG_all_subj = round_tidy(median(median_total_RPKG_per_1000),2),
-            RPKG_25pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.25),2),
-            RPKG_75pct = round_tidy(quantile(median_total_RPKG_per_1000, probs = 0.75),2)) %>% 
+            median_RPKG_all_subj = round_tidy(median(median_total_RPKG),2),
+            RPKG_25pct = round_tidy(quantile(median_total_RPKG, probs = 0.25),2),
+            RPKG_75pct = round_tidy(quantile(median_total_RPKG, probs = 0.75),2)) %>% 
   mutate(n_genes_per_sample = paste0(n_median_all_subj, " [IQR ", n_25pct, "-", n_75pct, "]"),
          median_RPKG_sum_per_sample = paste0(median_RPKG_all_subj, " [IQR ", RPKG_25pct, "-", RPKG_75pct, "]")) %>%
   select(Type, n_subjects, n_genes_per_sample, median_RPKG_sum_per_sample)
@@ -107,6 +107,7 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 
 species_colors <- c("#A290F3", "#E1BE6A", "#40B0A6")
+species_colors_full <- c("#A290F3", "#E1BE6A", "#40B0A6", "#E86A33", "#C80DCB")
 
 
 # #set 3+5 are after dinner and 2+4 are afternoon
@@ -154,7 +155,7 @@ samples_unique_subunit_RPKG %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   # order subjects based on heatmap order
   mutate(subject = factor(subject, levels = c("12", "9", "14", "2", "13", "7", "3", "6", "4", "11", "1"))) %>%
-  ggplot(aes(x = Type, y = log10(RPKG)*1000)) +
+  ggplot(aes(x = Type, y = log10(RPKG))) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8), size = 0.8, outlier.shape = NA) +
   geom_jitter(aes(color = Type),
@@ -228,20 +229,20 @@ plot_capsule_differences <- samples_unique_subunit_RPKG %>%
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   group_by(sample, subject, Type, combine_species) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop") %>%
+  summarize(sum_RPKG=sum(RPKG), .groups = "drop") %>%
   group_by(subject, Type, combine_species) %>%
-  summarize(median_RPKG_per_1000=median(sum_RPKG_per_1000))
+  summarize(median_RPKG=median(sum_RPKG))
   
 # how many subjects included in this plot?
 n_distinct(plot_capsule_differences$subject)
 
 ggplot(plot_capsule_differences, 
-       aes(x = Type, y = log10(median_RPKG_per_1000), group = subject)) +
+       aes(x = Type, y = log10(median_RPKG), group = subject)) +
   geom_point(size = 2, alpha = 0.8, col = "gray60") +
   geom_line(alpha = 0.4, col = "gray60") +  # connects same subject across capsule types
   facet_wrap(~ combine_species, nrow = 1, labeller = label_parsed) +
   labs(x = "Capsule Type", 
-       y = expression(log[10]*"(RPKG per 10"^3~"cells)")) +
+       y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG"))) +
   theme_bw() + 
   theme(
     strip.background = element_blank(),
@@ -274,10 +275,10 @@ plot_capsule_differences_set <- samples_unique_subunit_RPKG %>%
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   group_by(sample, subject, Type, combine_species, Set) %>%
-  summarize(sum_RPKG_per_1000=sum(RPKG)*1000, .groups = "drop")
+  summarize(sum_RPKG=sum(RPKG), .groups = "drop")
 
 model_df <- plot_capsule_differences_set %>% 
-  mutate(log_abundance = log10(sum_RPKG_per_1000))
+  mutate(log_abundance = log10(sum_RPKG))
 
 # look at distribution of transformed abundances
 (ggplot(model_df, aes(x=log_abundance)) + geom_histogram() + facet_wrap(~combine_species))
@@ -307,14 +308,14 @@ plot_subj9 <- samples_unique_subunit_RPKG %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
 
 ggplot(plot_subj9,
-       aes(x = Set, y = log10(RPKG*1000), group = interaction(Type, contig), color = combine_species)) + 
+       aes(x = Set, y = log10(RPKG), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
   facet_wrap(~Type, nrow = 1, scale = "free_x") +
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(log[10]*"(RPKG per 10"^3~"cells)"),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG")),
     color = "Species"
   ) +
   theme_bw() +
@@ -338,6 +339,55 @@ ggsave(paste0(figureDir, "sample_variability.png"),
        width = 12, height = 6, units = "in",   # increase for larger output
        dpi = 600)
 
+```
+
+# sample variability for all subjects
+```{r}
+plot_subj_var <- samples_unique_subunit_RPKG %>%
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
+  mutate(combine_species = case_when(
+    single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
+    single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
+    TRUE ~ single_closest_ref)) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger", 
+                                            "uncultured_bacterium__EF645667",
+                                            "Bilophila_species",
+                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
+
+ggplot(plot_subj_var,
+       aes(x = Set, y = log10(RPKG), group = interaction(Type, contig), color = combine_species)) + 
+  geom_point() + 
+  geom_line() + 
+  facet_grid(subject~Type, scale = "free_x") +
+  scale_color_manual(values = species_colors_full, labels = function(x) parse(text = x)) +
+  labs(
+    title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG")),
+    color = "Species"
+  ) +
+  theme_bw() +
+  scale_x_discrete(labels = c("2" = "Afternoon", 
+                             "3" = "Evening",
+                             "4" = "Afternoon", 
+                             "5" = "Evening")) +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 16),
+    plot.title = element_blank()
+  )
+
+ggsave(paste0(figureDir, "sample_variability_all.png"),
+       width = 12, height = 8, units = "in",   # increase for larger output
+       dpi = 600)
 ```
 
 

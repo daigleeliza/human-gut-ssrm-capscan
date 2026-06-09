@@ -140,7 +140,7 @@ all_genes %>%
     #subtitle = "Each point represents a sample",
     x = "Sample type",
     #median was taken across a contig to account for subunits
-    y = expression(log[10]*"(RPKG)"),
+    y = expression("Gene abundance" ~ log[10]*"(RPKG)"),
     color = "Gene cluster"
   ) +
   theme_bw() +

@@ -75,23 +75,23 @@ figure_6a <- unique_hits_summary_dsr %>% left_join(., unique_hits_summary_asr, b
 # Using median to account for this
 ```{r}
 # Get median RPKG across contigs in each sample
-# then find the sum of RPKG per 1000 cells in a sample
+# then find the sum of RPKG in a sample
 plot_RPKG_dsr_median <- dsr_unique %>%
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
   # need to remove this partial gene because it was removed to make the other abundance figures and when it is removed, one sample is no longer in the df. This way, both the abundance figures and the asr/dsr figures will have 146 samples included in the analysis
   filter(!geneNum == "Stool_14.k141_240693_1") %>%
   group_by(sample, contig, sample_type, subject) %>%
-  summarize(n=n(), median_RPKG=median(RPKG)*1000) %>%
+  summarize(n=n(), median_RPKG=median(RPKG)) %>%
   ungroup() %>%
   group_by(sample, subject, sample_type) %>%
-  summarize(sum_RPKG_per_1000=sum(median_RPKG)) 
+  summarize(sum_RPKG=sum(median_RPKG)) 
 
 plot_RPKG_asr_median <- asr_unique %>%
   group_by(sample, contig, sample_type, subject) %>%
-  summarize(n=n(), median_RPKG=median(RPKG)*1000) %>%
+  summarize(n=n(), median_RPKG=median(RPKG)) %>%
   ungroup() %>%
   group_by(sample, subject, sample_type) %>%
-  summarize(sum_RPKG_per_1000=sum(median_RPKG))
+  summarize(sum_RPKG=sum(median_RPKG))
 
 ##this is what i was doing previously 
 #plot_RPKG_asr_median <- asr_unique %>%
@@ -118,7 +118,7 @@ all_genes <- bind_rows(
 set.seed(125)
 all_genes %>%
   #filter(subject==9) %>%
-  ggplot(aes(x = sample_type, y = log10(sum_RPKG_per_1000), fill = gene_cluster)) +
+  ggplot(aes(x = sample_type, y = log10(sum_RPKG), fill = gene_cluster)) +
   geom_boxplot(color = "black",
                position = position_dodge(width = 0.8),
                width = 0.6,
@@ -140,7 +140,7 @@ all_genes %>%
     #subtitle = "Each point represents a sample",
     x = "Sample type",
     #median was taken across a contig to account for subunits
-    y = expression(log[10]*"(RPKG per 10"^3~"cells)"),
+    y = expression(log[10]*"(RPKG)"),
     color = "Gene cluster"
   ) +
   theme_bw() +
@@ -170,7 +170,7 @@ ggsave(paste0(figureDir, "median_RPKG_asrABC_v_dsrAB.png"),
 ## scatterplot of dsr to asr 
 ```{r}
 scatter_asr_dsr <- all_genes %>%
-  pivot_wider(., names_from = gene_cluster, values_from = sum_RPKG_per_1000) %>%
+  pivot_wider(., names_from = gene_cluster, values_from = sum_RPKG) %>%
   mutate(dsr = replace_na(dsr, 0)) %>%
   mutate(asr = replace_na(asr, 0))
 
@@ -251,7 +251,7 @@ all_genes_subset <- all_genes %>%
   ungroup()
 
 plot_ratios <- all_genes_subset %>%
-  pivot_wider(names_from = gene_cluster, values_from = sum_RPKG_per_1000) %>%
+  pivot_wider(names_from = gene_cluster, values_from = sum_RPKG) %>%
   mutate(ratio_dsr_asr = dsr/asr) 
 
 set.seed(123)

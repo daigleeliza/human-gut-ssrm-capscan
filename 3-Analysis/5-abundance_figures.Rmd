@@ -394,6 +394,7 @@ ggsave(paste0(figureDir, "sample_variability_all.png"),
 # HEATMAP FIGURE 4B
 # Heatmap for capsule vs stool 
 # in one plot
+# Claude AI used for help in generating code to split heatmap cells
 ```{r}
 # testing corrected version 
 RPKG_by_sample_type_MEDIAN <- samples_unique_subunit_RPKG %>%
@@ -404,20 +405,20 @@ RPKG_by_sample_type_MEDIAN <- samples_unique_subunit_RPKG %>%
     TRUE ~ single_closest_ref)) %>%
   mutate(subject_sample_type=paste(subject,sample_type, sep = "_")) %>%
   group_by(sample, subject_sample_type, combine_species) %>%
-  summarize(sum_RPKG_per_1000 = sum(RPKG)*1000) %>%
+  summarize(sum_RPKG = sum(RPKG)) %>%
   ungroup() %>%
   group_by(subject_sample_type, combine_species) %>%
-  summarize(median_RPKG_per_1000=median(sum_RPKG_per_1000))%>%
+  summarize(median_RPKG=median(sum_RPKG))%>%
   pivot_wider(
     names_from = combine_species,
-    values_from = median_RPKG_per_1000,
+    values_from = median_RPKG,
     values_fill = 0) %>%
     column_to_rownames(., var = "subject_sample_type")
 
 
 # transform  
 # pseudocount because there are species with no hits for some samples. this also means that we can add zeroes for the 2 stool samples where there are no hits
-matrix_sample_type_log <- round(log10(RPKG_by_sample_type_MEDIAN+1),4) %>%
+matrix_sample_type_log <- round(log10(RPKG_by_sample_type_MEDIAN+1),6) %>%
   as.matrix()
 ```
 # does d.piger or bilophila have a greater abundance across subjects in the stool? what about SI?
@@ -531,14 +532,13 @@ subject_order <- c("9", "14", "2", "3", "12", "13", "7", "6", "4", "11", "1")
 matrix_capsule <- matrix_capsule[subject_order, species_order]
 matrix_stool_complete <- matrix_stool_complete[subject_order, species_order]
 
-# Color functions for each group (using same scale for comparability)
+# Color functions for each group (using same scale for stool and capsule)
 all_values <- c(as.vector(matrix_capsule), as.vector(matrix_stool_complete))
-min_val <- min(all_values, na.rm = TRUE)
-max_val <- max(all_values, na.rm = TRUE)
+min_val <- min(all_values[all_values > 0], na.rm = TRUE)
+max_val <- 0.07   #max(all_values, na.rm = TRUE)
 
-col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 50), 
-                       viridis(50, begin = 0.9, end = 0.1))
-
+col_fun <- colorRamp2::colorRamp2(seq(min_val, max_val, length.out = 10), 
+                        viridis(10, begin = 0.9, end = 0.2))
 
 # Create custom cell function to draw split cells
 cell_func_hm <- function(j, i, x, y, width, height, fill) {
@@ -550,7 +550,10 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
 
   fill1 <- if (val1 == 0) {
       "white"
-    } else {
+  } else if (val1 > 0.1) {
+      "#440154"
+    } 
+    else {
      col_fun(val1)
    }
   grid.rect(x = x - width/4, y = y, 
@@ -561,7 +564,10 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
   # Draw right half (stool)  
   fill2 <- if (val2 == 0) {
       "white"
-    } else {
+  } else if (val2 > 0.1) {
+      "#440154"
+    } 
+    else {
       col_fun(val2)
     }
   grid.rect(x = x + width/4, y = y,
@@ -576,7 +582,6 @@ cell_func_hm <- function(j, i, x, y, width, height, fill) {
 
 # Prepare column labels
 col_labels_parsed_split <- parse(text = species_labels_combine_species_no_moorella[colnames(matrix_capsule)])
-
 ```
 
 ```{r}
@@ -585,11 +590,9 @@ png(paste0(figureDir, "heatmap_split_median.png"), width = 8, height = 6, units 
 hm_split <- ComplexHeatmap::pheatmap(
   matrix_capsule,  # Use capsule as base since it has the right # of subjects (colors handled by cell_fun)
   cell_fun = cell_func_hm,
-  col = viridis(50, begin = 0.9, end = 0.1),  # For legend
+  #col = viridis(10, begin = 0.9, end = 0.2),  # For legend
   cluster_rows = FALSE,
   cluster_cols = FALSE,
-  #clustering_distance_rows = "euclidean",
-  #clustering_method = 'ward.D',
 
   show_rownames = TRUE,
   show_colnames = TRUE,
@@ -599,23 +602,42 @@ hm_split <- ComplexHeatmap::pheatmap(
   
   show_row_dend = FALSE,
   show_column_dend = FALSE,
+  legend = FALSE,
   
-  column_title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample type")),
+  #column_title = expression(paste(italic("dsrAB"), " gene cluster abundance across species by sample type")),
   row_names_side = "left",
   row_title = "Subject",
   row_title_side = "left",
   
-  heatmap_legend_param = list(
-    title = expression(log[10]*"(RPKG per 10"^3~"cells)"),
-    legend_height = unit(4, "cm"),
-    at = seq(min_val, max_val, length.out = 5),
-    labels = sprintf("%.2f", seq(min_val, max_val, length.out = 5)),
-    col_fun = col_fun),
-  
   border_color = "white"
 )
 
-draw(hm_split, heatmap_legend_side = "right", padding = unit(c(5, 15, 5, 20), "mm"))
+legend_outlier <- Legend(labels = "0.2886", title = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG")), 
+                      legend_gp = gpar(fill = "#440154"),
+                      grid_width = unit(0.4, "cm"))
+
+legend_zeroes <- Legend(labels = "0.0000", title = "",
+                   type = "points",
+                   pch = 22,  # filled square
+                   size = unit(5, "mm"),
+                   legend_gp = gpar(fill = "white", col = "black"),
+                   grid_width = unit(0.4, "cm"))
+
+legend_main <- Legend(
+  col_fun = col_fun,
+  at = seq(min_val, max_val, length.out = 5),
+  labels = sprintf("%.4f", seq(min_val, max_val, length.out = 5)),
+  legend_height = unit(4, "cm"),
+  grid_width = unit(0.4, "cm"))
+
+legend_all <- packLegend(legend_outlier, legend_main, legend_zeroes, 
+                          direction = "vertical",
+                          gap = unit(2, "mm"))
+
+draw(hm_split, heatmap_legend_side = "right", 
+     annotation_legend_list = list(legend_all),
+     merge_legends = TRUE,
+     padding = unit(c(5, 15, 5, 20), "mm"))
 
 dev.off()
 ```

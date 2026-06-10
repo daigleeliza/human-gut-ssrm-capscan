@@ -471,6 +471,35 @@ bilophila_abun <- RPKG_by_sample_type_MEDIAN %>%
   select(-subject_type) %>%
   pivot_wider(names_from = type, values_from = Bilophila_species, values_fill = 0) %>%
   mutate(ratio = Capsule / Stool)
+
+
+piger_abun <- RPKG_by_sample_type_MEDIAN %>% 
+  select("Desulfovibrio_piger") %>%
+  rownames_to_column("subject_type") %>%
+  mutate(subject = str_extract(subject_type, "\\d+"),
+         type = str_extract(subject_type, "Capsule|Stool")) %>%
+  select(-subject_type) %>%
+  pivot_wider(names_from = type, values_from = Desulfovibrio_piger, values_fill = 0) %>%
+  mutate(ratio = Capsule / Stool)
+
+pamelaeae_abun <- RPKG_by_sample_type_MEDIAN %>% 
+  select("Gordonibacter_pamelaeae__GrdPame5") %>%
+  rownames_to_column("subject_type") %>%
+  mutate(subject = str_extract(subject_type, "\\d+"),
+         type = str_extract(subject_type, "Capsule|Stool")) %>%
+  select(-subject_type) %>%
+  pivot_wider(names_from = type, values_from = Gordonibacter_pamelaeae__GrdPame5, values_fill = 0) %>%
+  mutate(ratio = Capsule / Stool)
+
+alkalitolerans_abun <- RPKG_by_sample_type_MEDIAN %>% 
+  select("Desulfitibacter_alkalitolerans__DfiAlka2") %>%
+  rownames_to_column("subject_type") %>%
+  mutate(subject = str_extract(subject_type, "\\d+"),
+         type = str_extract(subject_type, "Capsule|Stool")) %>%
+  select(-subject_type) %>%
+  pivot_wider(names_from = type, values_from = Desulfitibacter_alkalitolerans__DfiAlka2, values_fill = 0) %>%
+  mutate(ratio = Capsule / Stool)
+  
 ```
 
 

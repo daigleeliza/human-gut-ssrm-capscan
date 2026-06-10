@@ -346,6 +346,7 @@ ggsave(paste0(figureDir, "sample_variability.png"),
 plot_subj_var <- samples_unique_subunit_RPKG %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
   filter(subject %in% c(2,4,7,12,14)) %>%
+  filter(!sample_type == "Stool") %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",

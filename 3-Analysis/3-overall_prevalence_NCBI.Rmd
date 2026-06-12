@@ -29,28 +29,6 @@ hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds")) %>%
 ## 3781 is the number of "putative dsrAB hits" -> filtered for no closest reference, distance >2.5 but still contains dups (sdups and edups for the sequence itself)
 ```
 
-# what are the bit scores for the 3,781 hits used in the prevalence calculation?
-```{r}
-scores <- read_csv(paste0(cleanHitsDir, "compiled_dsrAB_hits_scoreThreshold_assemblies.csv"),
-                   col_names = FALSE,
-                   col_select = c(1, 8)) %>%
-  mutate(hit_id = X1, score = X8) %>%
-  select(hit_id, score)
-
-bit_score <- hits_final_ages %>%
-  left_join(scores, by = "hit_id") %>%
-  filter(score <200)
-#1116
-
-#again there are those three exact duplicates which is why this df has 3784 rows
-#one of them is below 200 and one above 200 for their bit score
-setdiff(hits_final_ages$hit_id, bit_score2$hit_id)
-setdiff(bit_score2$hit_id, hits_final_ages$hit_id)
-
-#so, excluding those three duplicates, 1113/3781 hits are below a bit score of 200
-```
-
-
 # calculate SSRM sample prevalence
 # grouping by biosample avoids the need to remove the excess query IDs (some samples have multiple)
 ```{r}
@@ -134,4 +112,17 @@ hits_desulfo <- hits_final_ages %>%
 (prev_firmicute + prev_desulfo)
 
 ```
+
+# looking at age spread under 3 years
+```{r}
+diabimmune <- metadata_final %>% 
+  filter(str_detect(notes, "DIABIMMUNE")) %>%
+  mutate(age_group = case_when(
+    as.numeric(`host age`) <= 364 ~ "0-1",
+    as.numeric(`host age`) <= 729 ~ "1-2",
+    as.numeric(`host age`) >= 730 ~ "2+")) %>%
+  count(age_group)
+
+```
+
 

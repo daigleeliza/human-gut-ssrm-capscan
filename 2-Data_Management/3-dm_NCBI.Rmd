@@ -107,15 +107,20 @@ metadata_final_two <- metadata_final %>%
   #853 samples to remove
   filter(!(sample_id %in% samples_remove_metaHIT$sample_id)) %>%
   # Remove extra samples from the athlete study because there was not longitudinal sampling. Keep the sample with more hits for the subject (see name in `unique ID`). For one subject, SAMN04329868 was selected since it had the same number of hits as the other sample but longer hits.
-  filter(!(str_detect(sample_id, "SAMN04329816|SAMN04329819|SAMN04329764|SAMN04329873|SAMN04329767|SAMN04329773|SAMN04329774|SAMN04329778|SAMN04329779")))
+  filter(!(str_detect(sample_id, "SAMN04329816|SAMN04329819|SAMN04329764|SAMN04329873|SAMN04329767|SAMN04329773|SAMN04329774|SAMN04329778|SAMN04329779"))) %>%
+  # add fixed ages for the InfantGut project since some are maternal samples (none have hits so this does not affect prevalence calculations), this is based on info found in their published article
+  mutate(under_over_3 = case_when(str_detect(sample_id, "SAMEA257|SAMEA258") & str_ends(Alias, "_M") ~ "over 3", TRUE ~ under_over_3))
 ##6332 samples left! THIS IS THE FINAL COUNT FOR PREVALENCE CALCULATIONS
+  
 
 metadata_removed <- setdiff(metadata, metadata_final_two)
 metadata_removed_one_two <- setdiff(metadata_final, metadata_final_two)
 
 saveRDS(metadata_final_two, file = paste0(dataDir, "/metadata_final.rds"))
 #0420 was the csv written before removal of duplicate metaHIT samples
-write.csv(metadata_final_two, file = paste0(configDir, "/metadata_final_0504.csv"), row.names = FALSE)
+#0504 was for final analysis
+#0612 adds correct age bins for InfantGut study but there are no hits for any of these samples
+write.csv(metadata_final_two, file = paste0(configDir, "/metadata_final_0612.csv"), row.names = FALSE)
 
 ```
 

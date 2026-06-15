@@ -65,6 +65,17 @@ prevalence <- bind_rows(overall, under_3, over_3) %>%
   relocate(group, .before = n_biosamples_hits)
 ```
 
+# what study are the infant hits from 
+```{r}
+under_3_study <- hits_final_ages %>%
+  filter(under_over_3 == "under 3") %>%
+  group_by(biosample_id) %>%
+  summarize(n_biosamples_hits = n()) %>%
+  left_join(metadata_final, by = c("biosample_id"="sample_id"))
+```
+
+
+
 # number of countries 
 ```{r}
 countries <- metadata_final %>% 

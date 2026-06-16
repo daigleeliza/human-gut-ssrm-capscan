@@ -92,17 +92,6 @@ plot_RPKG_asr_median <- asr_unique %>%
   ungroup() %>%
   group_by(sample, subject, sample_type) %>%
   summarize(sum_RPKG=sum(median_RPKG))
-
-##this is what i was doing previously 
-#plot_RPKG_asr_median <- asr_unique %>%
- # group_by(subject, sample, Type, contig) %>%
-  #summarize(n=n(), median_RPKG=median(RPKG), q_25=quantile(RPKG, probs=0.25), q_75=quantile(RPKG, probs=0.75)) %>%
-  #group_by(sample) %>%
-  #summarize(sum=sum(median_RPKG)) %>%
-  #left_join(asr_unique %>%
-   #           select(sample, subject, Type, sample_type) %>%
-    #          distinct(), by = "sample")
-  
 ```
 
 
@@ -167,81 +156,6 @@ ggsave(paste0(figureDir, "median_RPKG_asrABC_v_dsrAB.png"),
        width = 11, height = 8, units = "in",   # increase for larger output
        dpi = 600)
 ```
-## scatterplot of dsr to asr 
-```{r}
-scatter_asr_dsr <- all_genes %>%
-  pivot_wider(., names_from = gene_cluster, values_from = sum_RPKG) %>%
-  mutate(dsr = replace_na(dsr, 0)) %>%
-  mutate(asr = replace_na(asr, 0))
-
-scatter_asr_dsr %>%
-  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
-  geom_point() + 
-  scale_color_manual(values = sample_type_colors_2) +
-  facet_wrap(~sample_type) +
-  labs(
-    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
-    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
-    color = "Sample type"
-  ) +
-  guides(
-    color = guide_legend(
-      override.aes = list(size = 3)
-    )) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title.x = element_text(size = 16),
-    axis.title.y = element_text(size = 16),
-    strip.background = element_blank(),
-    strip.text.x = element_text(size = 14),
-    legend.position = "right",
-    legend.text  = element_text(size = 14),
-    legend.title = element_text(size = 14))
-
-ggsave(paste0(figureDir, "asr_dsr_scatter_facet.png"),
-       width = 8, height = 6, units = "in",
-       dpi = 600)
-
-p <- scatter_asr_dsr %>%
-  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
-  geom_point() + 
-  scale_color_manual(values = sample_type_colors_2) +
-  labs(
-    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
-    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
-    color = "Sample type"
-  ) +
-  guides(
-    color = guide_legend(
-      override.aes = list(size = 3)
-    )) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title.x = element_text(size = 16),
-    axis.title.y = element_text(size = 16),
-    strip.background = element_blank(),
-    strip.text.x = element_text(size = 14),
-    legend.position = "none",
-    legend.text  = element_text(size = 14),
-    legend.title = element_text(size = 14))
-ggMarginal(p, type = "boxplot", 
-           groupColour = TRUE,
-           groupFill = TRUE,
-           size = 10)
-
-ggsave(paste0(figureDir, "asr_dsr_scatter_no_facet.png"),
-       width = 9, height = 6, units = "in",
-       dpi = 600)
-```
-
-
-
-
-
 
 #ratio plot figure 6B
 ```{r}
@@ -253,6 +167,19 @@ all_genes_subset <- all_genes %>%
 plot_ratios <- all_genes_subset %>%
   pivot_wider(names_from = gene_cluster, values_from = sum_RPKG) %>%
   mutate(ratio_dsr_asr = dsr/asr) 
+
+summary_stats <- plot_ratios %>%
+  group_by(sample_type) %>%
+  summarise(median = round(median(ratio_dsr_asr),2),
+            n_25pct = round(quantile(ratio_dsr_asr, probs = 0.25),2),
+            n_75pct = round(quantile(ratio_dsr_asr, probs = 0.75),2))
+
+log_change <- plot_ratios %>%
+  mutate(log_ratio = log2(ratio_dsr_asr)) %>%
+  group_by(sample_type) %>%
+  summarize(min = min(log_ratio),
+            max = max(log_ratio))
+  
 
 set.seed(123)
 plot_ratios %>%

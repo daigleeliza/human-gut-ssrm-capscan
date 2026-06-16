@@ -1031,3 +1031,74 @@ RPKG_by_sample_type <- samples_unique_subunit_RPKG %>%
 #   group_by(subject) %>%
 #   summarize(ratio=Capsule/Stool)
 ```
+
+## scatterplot of dsr to asr 
+```{r}
+scatter_asr_dsr <- all_genes %>%
+  pivot_wider(., names_from = gene_cluster, values_from = sum_RPKG) %>%
+  mutate(dsr = replace_na(dsr, 0)) %>%
+  mutate(asr = replace_na(asr, 0))
+
+scatter_asr_dsr %>%
+  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
+  geom_point() + 
+  scale_color_manual(values = sample_type_colors_2) +
+  facet_wrap(~sample_type) +
+  labs(
+    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
+    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
+    color = "Sample type"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 14),
+    legend.position = "right",
+    legend.text  = element_text(size = 14),
+    legend.title = element_text(size = 14))
+
+ggsave(paste0(figureDir, "asr_dsr_scatter_facet.png"),
+       width = 8, height = 6, units = "in",
+       dpi = 600)
+
+p <- scatter_asr_dsr %>%
+  ggplot(aes(x = log10(dsr+1), y = log10(asr+1), color = sample_type)) +
+  geom_point() + 
+  scale_color_manual(values = sample_type_colors_2) +
+  labs(
+    x = expression(paste(italic(dsrAB), " log10(RPKG + 1)")),
+    y = expression(paste(italic(asrABC), " log10(RPKG + 1)")),
+    color = "Sample type"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3)
+    )) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.x = element_text(size = 16),
+    axis.title.y = element_text(size = 16),
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 14),
+    legend.position = "none",
+    legend.text  = element_text(size = 14),
+    legend.title = element_text(size = 14))
+ggMarginal(p, type = "boxplot", 
+           groupColour = TRUE,
+           groupFill = TRUE,
+           size = 10)
+
+ggsave(paste0(figureDir, "asr_dsr_scatter_no_facet.png"),
+       width = 9, height = 6, units = "in",
+       dpi = 600)
+```

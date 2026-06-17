@@ -106,7 +106,7 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 
-species_colors <- c("#A290F3", "#E1BE6A", "#40B0A6")
+species_colors <- c("#40B0A6", "#E1BE6A")
 species_colors_full <- c("#A290F3", "#E1BE6A", "#40B0A6", "#E86A33", "#C80DCB")
 
 
@@ -114,7 +114,7 @@ species_colors_full <- c("#A290F3", "#E1BE6A", "#40B0A6", "#E86A33", "#C80DCB")
 # set_colors <- c("#fd8d3c", "light sky blue", "#d94701", "navy", "#6F7042")
 ```
 
-# Change species labels
+# Change closest ref labels
 ```{r}
 species <- unique(samples_unique_subunit_RPKG$single_closest_ref)
 
@@ -298,24 +298,34 @@ plot_subj9 <- samples_unique_subunit_RPKG %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
-  mutate(combine_species = factor(combine_species, 
-                                  levels = c("Desulfovibrio_piger", 
-                                            "uncultured_bacterium__EF645667",
-                                            "Bilophila_species",
-                                            "Desulfitibacter_alkalitolerans__DfiAlka2",
-                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
+    TRUE ~ single_closest_ref))
 
-ggplot(plot_subj9,
-       aes(x = Set, y = log10(RPKG), group = interaction(Type, contig), color = combine_species)) + 
+plot_subj9_complete <- plot_subj9 %>%
+  filter(Type != "Stool") %>%
+  select(contig, Set, Type, RPKG) %>%
+  pivot_wider(names_from = contig, values_from = RPKG) %>%
+  pivot_longer(cols = -c(Set, Type), 
+               names_to = "contig", values_to = "RPKG") %>%
+  left_join(plot_subj9 %>% filter(Type != "Stool") %>% select(contig, Set, Type, combine_species), 
+            by = c("contig", "Set", "Type")) %>%
+  # add species to the two NAs
+  mutate(combine_species = ifelse(contig == "k141_198101", "Bilophila_species", combine_species)) %>%
+  #bind_rows(plot_subj9 %>% select(contig, Set, Type, combine_species, RPKG) %>% filter(Type=="Stool")) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger",
+                                            "Bilophila_species"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  mutate(RPKG = replace_na(RPKG, 0))
+  
+ggplot(plot_subj9_complete,
+       aes(x = Set, y = log10(RPKG+1), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
   facet_wrap(~Type, nrow = 1, scale = "free_x") +
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + 1")),
     color = "Species"
   ) +
   theme_bw() +

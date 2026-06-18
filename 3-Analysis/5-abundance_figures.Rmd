@@ -300,6 +300,7 @@ plot_subj9 <- samples_unique_subunit_RPKG %>%
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
     TRUE ~ single_closest_ref))
 
+# this adds manual zeros for the contigs present in the coassembly but not found in a certain set/capsule type
 plot_subj9_complete <- plot_subj9 %>%
   filter(Type != "Stool") %>%
   select(contig, Set, Type, RPKG) %>%
@@ -318,14 +319,14 @@ plot_subj9_complete <- plot_subj9 %>%
   mutate(RPKG = replace_na(RPKG, 0))
   
 ggplot(plot_subj9_complete,
-       aes(x = Set, y = log10(RPKG+1), group = interaction(Type, contig), color = combine_species)) + 
+       aes(x = Set, y = log10(RPKG+.0001), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
   facet_wrap(~Type, nrow = 1, scale = "free_x") +
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + 1")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + .0001")),
     color = "Species"
   ) +
   theme_bw() +
@@ -360,24 +361,41 @@ plot_subj_var <- samples_unique_subunit_RPKG %>%
   mutate(combine_species = case_when(
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
-    TRUE ~ single_closest_ref)) %>%
+    TRUE ~ single_closest_ref)) 
+
+contig_species_subject <- plot_subj_var %>%
+  distinct(contig, combine_species, subject)
+
+# this adds manual zeros for the contigs present in a coassembly but not found in a certain set/capsule type
+plot_subj_var_complete <- plot_subj_var %>%
+  select(contig, Set, Type, RPKG) %>%
+  pivot_wider(names_from = contig, values_from = RPKG) %>%
+  pivot_longer(cols = -c(Set, Type), 
+               names_to = "contig", values_to = "RPKG") %>%
+  left_join(plot_subj_var %>% filter(Type != "Stool") %>% select(contig, Set, Type, combine_species), 
+            by = c("contig", "Set", "Type")) %>%
+  # add species for the points with RPKG=NA
+  left_join(contig_species_subject, by = "contig") %>%
+  select(-combine_species.x) %>%
+  rename(combine_species = combine_species.y) %>%
   mutate(combine_species = factor(combine_species, 
                                   levels = c("Desulfovibrio_piger", 
                                             "uncultured_bacterium__EF645667",
                                             "Bilophila_species",
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
+  mutate(RPKG = replace_na(RPKG, 0))
 
-ggplot(plot_subj_var,
-       aes(x = Set, y = log10(RPKG), group = interaction(Type, contig), color = combine_species)) + 
+ggplot(plot_subj_var_complete,
+       aes(x = Set, y = log10(RPKG+.0001), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
   facet_grid(subject~Type, scale = "free_x") +
   scale_color_manual(values = species_colors_full, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + .0001")),
     color = "Species"
   ) +
   theme_bw() +

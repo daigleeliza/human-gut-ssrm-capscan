@@ -223,26 +223,38 @@ plot_capsule_differences <- samples_unique_subunit_RPKG %>%
     single_closest_ref %in% c("Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4") ~ "Desulfovibrio_piger",
     single_closest_ref %in% c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3") ~ "Bilophila_species",
     TRUE ~ single_closest_ref)) %>%
-  mutate(combine_species = factor(combine_species, 
-                                  levels = c("Desulfovibrio_piger",
-                                            "Bilophila_species",
-                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
-  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
   group_by(sample, subject, Type, combine_species) %>%
   summarize(sum_RPKG=sum(RPKG), .groups = "drop") %>%
   group_by(subject, Type, combine_species) %>%
-  summarize(median_RPKG=median(sum_RPKG))
+  summarize(median_RPKG=median(sum_RPKG), .groups = "drop")
   
 # how many subjects included in this plot?
 n_distinct(plot_capsule_differences$subject)
 
-ggplot(plot_capsule_differences, 
-       aes(x = Type, y = log10(median_RPKG), group = subject)) +
+# which species are present in each subject
+subject_species <- plot_capsule_differences %>%
+  select(-Type) %>%
+  distinct(subject, combine_species)
+
+# adding manual zeroes for the capsules where a subject's species was not detected
+plot_capsule_differences_complete <- plot_capsule_differences %>% 
+  complete(subject, Type, combine_species, fill = list(median_RPKG = 0)) %>%
+  semi_join(subject_species, by = c("subject", "combine_species")) %>%
+  mutate(combine_species = factor(combine_species, 
+                                  levels = c("Desulfovibrio_piger",
+                                            "Bilophila_species",
+                                            "Gordonibacter_pamelaeae__GrdPame5"))) %>%
+  mutate(combine_species = recode(combine_species, !!!species_labels_combine_species))
+  
+  
+
+ggplot(plot_capsule_differences_complete, 
+       aes(x = Type, y = log10(median_RPKG + 0.0001), group = subject)) +
   geom_point(size = 2, alpha = 0.8, col = "gray60") +
   geom_line(alpha = 0.4, col = "gray60") +  # connects same subject across capsule types
   facet_wrap(~ combine_species, nrow = 1, labeller = label_parsed) +
   labs(x = "Capsule Type", 
-       y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG"))) +
+       y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + 0.0001"))) +
   theme_bw() + 
   theme(
     strip.background = element_blank(),

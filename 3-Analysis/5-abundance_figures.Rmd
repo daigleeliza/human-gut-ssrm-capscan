@@ -254,7 +254,7 @@ ggplot(plot_capsule_differences_complete,
   geom_line(alpha = 0.4, col = "gray60") +  # connects same subject across capsule types
   facet_wrap(~ combine_species, nrow = 1, labeller = label_parsed) +
   labs(x = "Capsule Type", 
-       y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + 0.0001"))) +
+       y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"(RPKG + 0.0001)"))) +
   theme_bw() + 
   theme(
     strip.background = element_blank(),
@@ -338,7 +338,7 @@ ggplot(plot_subj9_complete,
   scale_color_manual(values = species_colors, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + .0001")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"(RPKG + .0001)")),
     color = "Species"
   ) +
   theme_bw() +
@@ -407,7 +407,7 @@ ggplot(plot_subj_var_complete,
   scale_color_manual(values = species_colors_full, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
-    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"RPKG + .0001")),
+    y = expression(italic(dsrAB) ~ "abundance" ~ (log[10]*"(RPKG + .0001)")),
     color = "Species"
   ) +
   theme_bw() +

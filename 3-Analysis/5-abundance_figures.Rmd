@@ -107,7 +107,7 @@ boxplot_colors <- c(viridis_palette[6], viridis_palette[16])
 jitter_colors <- c("#4477AA", "#59A075", "#AA3377", "#DDAA33", "#6F7042")
 
 species_colors <- c("#40B0A6", "#E1BE6A")
-species_colors_full <- c("#A290F3", "#E1BE6A", "#40B0A6", "#E86A33", "#C80DCB")
+species_colors_full <- c("#40B0A6", "#E1BE6A", "#A290F3", "#E86A33", "#C80DCB")
 
 
 # #set 3+5 are after dinner and 2+4 are afternoon
@@ -302,7 +302,7 @@ anova(model)
 ```
 
 
-## sampling variability for subject 9 FIGURE 5
+## sampling variability for subject 9 FIGURE 4
 ```{r}
 plot_subj9 <- samples_unique_subunit_RPKG %>%
   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
@@ -392,8 +392,8 @@ plot_subj_var_complete <- plot_subj_var %>%
   rename(combine_species = combine_species.y) %>%
   mutate(combine_species = factor(combine_species, 
                                   levels = c("Desulfovibrio_piger", 
-                                            "uncultured_bacterium__EF645667",
                                             "Bilophila_species",
+                                            "uncultured_bacterium__EF645667",
                                             "Desulfitibacter_alkalitolerans__DfiAlka2",
                                             "Gordonibacter_pamelaeae__GrdPame5"))) %>%
   mutate(combine_species = recode(combine_species, !!!species_labels_combine_species)) %>%
@@ -403,7 +403,8 @@ ggplot(plot_subj_var_complete,
        aes(x = Set, y = log10(RPKG+.0001), group = interaction(Type, contig), color = combine_species)) + 
   geom_point() + 
   geom_line() + 
-  facet_grid(subject~Type, scale = "free_x") +
+  facet_grid(subject~Type, scale = "free_x",
+             labeller = labeller(subject = function(x) paste("Subject", x))) +
   scale_color_manual(values = species_colors_full, labels = function(x) parse(text = x)) +
   labs(
     title = expression(paste(italic("dsrAB"), " gene cluster abundance across sampling events")),
@@ -417,6 +418,7 @@ ggplot(plot_subj_var_complete,
                              "5" = "Evening")) +
   theme(
     strip.background = element_blank(),
+    strip.background.y = element_rect(fill = "grey85", color = NA),
     strip.text = element_text(size = 14),
     legend.text = element_text(size = 12),
     legend.title = element_text(size = 14),

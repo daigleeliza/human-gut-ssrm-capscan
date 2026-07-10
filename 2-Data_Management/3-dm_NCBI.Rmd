@@ -287,8 +287,16 @@ metadata_final_subjects <- metadata_final_two %>%
 # to double check we don't have any duplicate subject names between unrelated projects. everything looks how i expect it to 
 checking <- metadata_final_subjects %>% filter(!(str_detect(`host subject id`, "SAMN|SAMD|SAMEA")))
 
+#realized that there are a few subjects with only moorella hits. dont want them to be included when calculating percentages of SSRM-positive individuals with certain taxa
+hits_final_ages_no_MA <- hits_final_ages %>% filter(!is.na(single_closest_ref)) %>% 
+  filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5")
+# now 4097 hits
 
-saveRDS(metadata_final_subjects, file = paste0(dataDir, "/metadata_final_subjects.rds"))
+metadata_final_subjects_0710 <- metadata_final_subjects %>% 
+  filter(sample_id %in% hits_final_ages_no_MA$biosample_id)
+  
+
+saveRDS(metadata_final_subjects_0710, file = paste0(dataDir, "/metadata_final_subjects.rds"))
 
 
 # In this df, there are several biosamples that say "FALSE" under SRM_present but they have hits. The portions of the metadata table associated with species/hits/etc. are outdated. The only columns used in the most recent analysis of the data are the ones downloaded from NCBI.
@@ -298,8 +306,8 @@ saveRDS(metadata_final_subjects, file = paste0(dataDir, "/metadata_final_subject
 # i.e., if there is one contig with a hit to bilohila and a hit to d. piger it will seem like the two species are cooccurring when it is just a consequence of fragment insertion
 ```{r}
 # which samples have hits to different species on the same contig?
-contig_check <- hits_final_ages %>%
-  filter(biosample_id %in% metadata_final_subjects$sample_id) %>%
+contig_check <- hits_final_ages_no_MA %>%
+  filter(biosample_id %in% metadata_final_subjects_0710$sample_id) %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
   group_by(biosample_id, contig, query_id) %>%
   # is there a hit to more than one species on one contig and are these part of the same cluster?
@@ -321,7 +329,7 @@ contig_check <- hits_final_ages %>%
 
 
 # for the contigs in contig_check, we want to select one subunit
-species_to_keep_by_subject <- hits_final_ages %>%
+species_to_keep_by_subject <- hits_final_ages_no_MA %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
   #contig needs to be specific to the biosample_id
   filter(contig %in% contig_check$contig & biosample_id %in% contig_check$biosample_id) %>%
@@ -346,14 +354,15 @@ species_to_remove_by_subject <- hits_final %>%
   filter(!hit_id %in% species_to_keep_by_subject$hit_id)
 
 
-hits_final_cooccur <- hits_final_ages %>%
+hits_final_cooccur <- hits_final_ages_no_MA %>%
   filter(!hit_id %in% species_to_remove_by_subject$hit_id)
-#3957 hits
+#3957 hits #now 3811 after removing NA and thermoacetica
 
 saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```
 
 # also need to do this for the sample prevalence analysis 
+# leaving this as it was on 7/10 because I remove thermoacetica later
 ```{r}
 contig_check_for_samples <- hits_final_ages %>%
   #already did these
@@ -404,7 +413,7 @@ nas <- hits_final_cooccur %>% filter(is.na(single_closest_ref))
 all_refs <- all_refs[!is.na(all_refs)]
 
 # collapse by `host subject id`, make a sample ids variable
-matrix <- metadata_final_subjects %>%
+matrix <- metadata_final_subjects_0710 %>%
   group_by(`host subject id`) %>%
   summarise(sample_ids = paste(sample_id, collapse = ", ")) %>%
   mutate(across(all_of(all_refs), ~ 0)) # initialize all ref columns to 0
@@ -430,12 +439,10 @@ check <- matrix %>%
 
 subject_OTU_matrix <- matrix %>% select(-"sample_ids")
 
-saveRDS(subject_OTU_matrix, file = paste0(dataDir, "/subject_OTU_matrix_0504.rds"))
+saveRDS(subject_OTU_matrix, file = paste0(dataDir, "/subject_OTU_matrix_0710.rds"))
 
 
 ```
-
-
 
 
 ## make a matrix that has a 1 for a species*sample combo when there is a hit present for that combo

@@ -65,7 +65,7 @@ prevalence <- bind_rows(overall, under_3, over_3) %>%
   relocate(group, .before = n_biosamples_hits)
 ```
 
-# what study are the infant hits from 
+# what studies are the infant hits from 
 ```{r}
 under_3_study <- hits_final_ages %>%
   filter(under_over_3 == "under 3") %>%
@@ -142,7 +142,6 @@ infantgut <- as.numeric(c(380,363,363,369,366,409,359,369,369,376,364,364,374,36
                358,369,351,380,362,376,367,368,366,364,361,368,360,365,367,398,371,359))
 sum(infantgut>=365)
 
-# and two of the subjects from the 13 healthy gut microbiomes
 ```
 
 

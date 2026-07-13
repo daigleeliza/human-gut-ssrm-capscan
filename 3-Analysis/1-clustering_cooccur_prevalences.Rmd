@@ -15,7 +15,7 @@ source(paste0(here::here(), "/1-Config/config.R"))
 ```{r}
 taxa_table <- read_csv(paste0(taxaDir, "/taxa_table_0420.csv"))
 
-otu_subject_matrix <- readRDS(paste0(dataDir, "/subject_OTU_matrix_0504.rds")) %>% 
+otu_subject_matrix <- readRDS(paste0(dataDir, "/subject_OTU_matrix_0710.rds")) %>% 
   column_to_rownames(., var = "host subject id") %>%
   t() %>%
   as.matrix()
@@ -173,6 +173,20 @@ rowSums(species_subject_matrix_by_cluster[1:23, ])
 # 610 subjects with either bilophila species, as expected
 bil_cluster_check <- otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
 ```
+
+```{r}
+# find number of cooccurrences for bilophila
+cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
+edgeList <- cooccur.subjectCluster$results[, c("sp1_name", "sp2_name", "obs_cooccur")]
+
+
+bil_obs <- edgeList %>% filter(sp1_name=="Bilophila_wadsworthia__BilWads6" | sp2_name=="Bilophila_wadsworthia__BilWads6")
+sum(bil_obs$obs_cooccur)
+sum(bil_obs$obs_cooccur)/sum(edgeList$obs_cooccur)
+
+```
+
+
 # cooccur with cutoff of 20 subjects
 ```{r}
 cooccur.subjectCluster <- cooccur(mat=species_subject_matrix_by_cluster, spp_names = T)
@@ -433,6 +447,8 @@ rowSums(species_sample_matrix[grep("uncultured_bacterium__EF645667", rownames(sp
 ```
 ## collapse the rows by cluster
 ```{r}
+species_sample_matrix <- species_sample_matrix %>% .[,colSums(.) > 0]
+
 groups_sample <- gsub("\\.[1-6]$", "", rownames(species_sample_matrix))
 species_sample_matrix_by_cluster <- apply(species_sample_matrix, 2, function(col) {
   tapply(col, groups_sample, max)
@@ -455,7 +471,7 @@ n_subj = rowSums(species_subject_matrix_by_cluster[1:23, ])
 n_samples = rowSums(species_sample_matrix_by_cluster[1:23, ])
 cluster_prevalence <- data.frame(
   n_subj = n_subj,
-  # 960 is the number of subjects in the matrix
+  # 932 is the number of subjects in the matrix
   subj_prev = (n_subj/total_subjects),
   n_samples = n_samples,
   sample_prev = (n_samples/total_samples)) %>%
@@ -538,11 +554,11 @@ ggsave(plot = plot, width = 8, height = 5, file = paste0(figureDir, "percentages
 ```{r}
 # find the number of columns (subjects) in the matrix where there is at least one hit to a firmicutes cluster
 subj_num_firm <- sum(colSums(species_subject_matrix_by_cluster[rownames(species_subject_matrix_by_cluster) %in% firmicutes$OTU, ]) >= 1)
-subj_num_firm/960
+subj_num_firm/(ncol(species_subject_matrix_by_cluster))
 
 # find the number of columns (subjects) in the matrix where there is at least one hit to a desulfovibrionaceae cluster
 subj_num_des <- sum(colSums(species_subject_matrix_by_cluster[rownames(species_subject_matrix_by_cluster) %in% desulfo_family$OTU, ]) >= 1)
-subj_num_des/960
+subj_num_des/(ncol(species_subject_matrix_by_cluster))
 
 
 desulfo_family_no_bil <- cluster_groups_fig %>% filter(supercluster == "Deltaproteobacteria supercluster") %>%

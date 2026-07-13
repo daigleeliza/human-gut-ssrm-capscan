@@ -362,7 +362,6 @@ saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```
 
 # also need to do this for the sample prevalence analysis 
-# leaving this as it was on 7/10 because I remove thermoacetica later
 ```{r}
 contig_check_for_samples <- hits_final_ages %>%
   #already did these
@@ -398,7 +397,7 @@ hits_final_sample_prev <- hits_final_cooccur %>%
   # the others with dist. > 2.5 (moorella thermoacetica get removed later)
   filter(!hit_id == "OOYY01.37298.1_1/16-276")
 
-#3930 hits
+#3784 hits
 
 saveRDS(hits_final_sample_prev, file = paste0(dataDir, "/hits_final_sample_prev.rds"))
 ```

@@ -318,7 +318,7 @@ contig_check <- hits_final_ages_no_MA %>%
   filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Bilophila")))) %>%
   filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Desulfovibrio_piger")))) %>%
   filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "DsvSp")))) %>%
-  # gordonibacter not involved in cooccurrence
+  # gordonibacter not an issue 
   filter(!sapply(str_split(closest_refs, ", "), function(refs) all(str_detect(refs, "Gordonibacter")))) %>%
   # these are paired with species from the same cluster
   filter(!str_detect(closest_refs, "DslDes17")) %>%
@@ -361,7 +361,7 @@ hits_final_cooccur <- hits_final_ages_no_MA %>%
 saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```
 
-# also need to do this for the sample prevalence analysis 
+# also need to do this for the sample prevalence analysis; start with the dataset hits_final_cooccur and remove any other hits from one contig that are mapping to different species that show up when you include all samples
 ```{r}
 contig_check_for_samples <- hits_final_ages %>%
   #already did these

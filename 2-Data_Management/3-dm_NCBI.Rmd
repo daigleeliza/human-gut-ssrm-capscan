@@ -292,6 +292,9 @@ hits_final_ages_no_MA <- hits_final_ages %>% filter(!is.na(single_closest_ref)) 
   filter(single_closest_ref != "Moorella_thermoacetica_Y72_copy_2__MooTher5")
 # now 4097 hits
 
+saveRDS(hits_final_ages_no_MA, file = paste0(dataDir, "/hits_final_ages_no_MA.rds"))
+
+
 metadata_final_subjects_0710 <- metadata_final_subjects %>% 
   filter(sample_id %in% hits_final_ages_no_MA$biosample_id)
   
@@ -348,7 +351,8 @@ species_to_keep_by_subject <- hits_final_ages_no_MA %>%
                         "UXIV01.20473.1_2/1-126",
                         "UZHO01.27007.1_1/11-102"))
 
-species_to_remove_by_subject <- hits_final %>%
+# want to remove the ones that are in the contig check df but that are not the hits we want
+species_to_remove_by_subject <- hits_final_ages_no_MA %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
   filter(contig %in% contig_check$contig & biosample_id %in% contig_check$biosample_id) %>%
   filter(!hit_id %in% species_to_keep_by_subject$hit_id)
@@ -356,14 +360,14 @@ species_to_remove_by_subject <- hits_final %>%
 
 hits_final_cooccur <- hits_final_ages_no_MA %>%
   filter(!hit_id %in% species_to_remove_by_subject$hit_id)
-#3957 hits #now 3811 after removing NA and thermoacetica
+#3811 hits after removing NA and thermoacetica
 
 saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```
 
 # also need to do this for the sample prevalence analysis; start with the dataset hits_final_cooccur and remove any other hits from one contig that are mapping to different species that show up when you include all samples
 ```{r}
-contig_check_for_samples <- hits_final_ages %>%
+contig_check_for_samples <- hits_final_ages_no_MA %>%
   #already did these
   filter(!biosample_id %in% metadata_final_subjects$sample_id) %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
@@ -379,7 +383,7 @@ contig_check_for_samples <- hits_final_ages %>%
   # the NAs are not an issue because they are not in the matrix
   filter(!str_detect(closest_refs, "\\bNA\\b"))
 
-species_to_keep_by_sample <- hits_final %>%
+species_to_keep_by_sample <- hits_final_ages_no_MA %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
   filter(contig %in% contig_check_for_samples$contig & biosample_id %in% contig_check_for_samples$biosample_id) %>%
   group_by(biosample_id, contig) %>%

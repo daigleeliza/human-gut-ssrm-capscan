@@ -495,7 +495,7 @@ cluster_prevalence_long <- cluster_prevalence %>%
     cluster %in% desulfo_family$OTU | str_detect(cluster, "Candidatus_Desulfovibrio_trichonymphae|DslDes16") ~ "Desulfovibrionaceae family",
     cluster %in% firmicutes$OTU ~ "Firmicutes group *sensu lato*",
     cluster %in% environ$OTU ~ "Environmental supercluster 1",
-    cluster %in% archaeoglobus$OTU ~ "Archaeoglobus supercluster")) %>%
+    cluster %in% archaeoglobus$OTU ~ "Archaeoglobus cluster")) %>%
   mutate(cluster_label = case_when(
     cluster == "Anaerobic_bacterium_EtOH8__Bv2EtOH2" ~ "uncultured Firmicute from industrial environment AY751284",
     cluster == "Anaerobic_bacterium_sk.prop8__Bv2Prop2" ~ "uncultured Firmicute from industrial environment AY751286",
@@ -527,7 +527,7 @@ cluster_prevalence_long$group <- factor(cluster_prevalence_long$group,
                                          levels = c("Desulfovibrionaceae family",
                                                     "Firmicutes group *sensu lato*",
                                                     "Environmental supercluster 1",
-                                                    "Archaeoglobus supercluster"))
+                                                    "Archaeoglobus cluster"))
 cluster_prevalence_long$name <- factor(cluster_prevalence_long$name, 
                                          levels = c("subj_prev", "sample_prev"))
 
@@ -545,7 +545,7 @@ breaks = c(0, 0.1, 1, 10, 100)
   theme(axis.title = element_blank(), strip.background = element_blank(), strip.text.x = element_blank(), strip.text.y.right = element_markdown(angle = 0, size = 8), axis.text.y= element_markdown(size = 8), axis.text.x= element_text(size = 8)) +
     scale_x_log10(breaks = breaks, limits = c(NA,100)))
 
-ggsave(plot = plot, width = 8, height = 5, file = paste0(figureDir, "percentages_barchart_0506.jpeg"))
+ggsave(plot = plot, width = 8, height = 5, file = paste0(figureDir, "percentages_barchart_0724.jpeg"))
 
 
 ```

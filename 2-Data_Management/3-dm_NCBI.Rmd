@@ -369,7 +369,7 @@ saveRDS(hits_final_cooccur, file = paste0(dataDir, "/hits_final_cooccur.rds"))
 ```{r}
 contig_check_for_samples <- hits_final_ages_no_MA %>%
   #already did these
-  filter(!biosample_id %in% metadata_final_subjects$sample_id) %>%
+  filter(!biosample_id %in% metadata_final_subjects_0710$sample_id) %>%
   mutate(contig = str_extract(hit_id, "(?<=\\.).*(?=_)")) %>%
   group_by(biosample_id, contig) %>%
   # is there a hit to more than one species on one contig and are these part of the same cluster?

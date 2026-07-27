@@ -172,6 +172,9 @@ rowSums(species_subject_matrix_by_cluster[1:23, ])
 
 # 610 subjects with either bilophila species, as expected
 bil_cluster_check <- otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_subject_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
+#257 as expected for d. piger
+piger_cluster_check <- otu_subject_matrix[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), colSums(otu_subject_matrix[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), ]) >= 1]
+
 ```
 
 ```{r}
@@ -416,11 +419,12 @@ dev.off()
 # read in the sample_OTU_matrix 
 # rename the OTUs in the matrix to species-level based on the clustering 
 ```{r}
-otu_sample_matrix <- readRDS(file = paste0(dataDir, "/sample_OTU_matrix_0506.rds")) %>%
+otu_sample_matrix <- readRDS(file = paste0(dataDir, "/sample_OTU_matrix_0727.rds")) %>%
   column_to_rownames(., var = "sample_id") %>%
   t() %>%
   as.matrix()
 
+# don't really need this anymore now that I removed these in dm.rmd
 species_sample_matrix <- otu_sample_matrix[rownames(otu_sample_matrix) 
                                                  != "Moorella_thermoacetica_Y72_copy_2__MooTher5", ]
 
@@ -460,6 +464,8 @@ rowSums(species_sample_matrix_by_cluster[1:23, ])
 #this looks right! 757 samples where either of the bilophila are present
 bil_cluster_check <- otu_sample_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), colSums(otu_sample_matrix[c("Bilophila_wadsworthia__BilWads6", "Bilophila_sp._4_1_30__BilSpec3"), ]) >= 1]
 
+#321 samples where any of the 3 d. piger are present
+piger_cluster_check <- otu_sample_matrix[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), colSums(otu_sample_matrix[c("Desulfovibrio_piger__DslPige2","Desulfovibrio_piger__DslPige3", "Desulfovibrio_piger__DslPige4"), ]) >= 1]
 ```
 
 # prevalence of clusters across SSRM-positive subjects and samples

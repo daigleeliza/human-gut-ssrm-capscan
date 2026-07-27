@@ -17,16 +17,13 @@ source(paste0(here::here(), "/1-Config/config.R"))
 metadata_final <- readRDS(paste0(dataDir, "/metadata_final.rds"))
 
 # remove hits that were not inserted properly or are too far (Moorella thermoacetica)
-hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_sample_prev.rds")) %>%
-  # SRM_present = FALSE is aka NA for single closest reference
-  filter(!SRM_present == FALSE) %>%
-  filter(!single_closest_ref == "Moorella_thermoacetica_Y72_copy_2__MooTher5") %>%
+hits_final_ages <- readRDS(paste0(dataDir, "/hits_final_ages_no_MA.rds")) %>%
   # removes one of archaeoglobus hits that wasn't removed in other spots but had no bearing on results
   filter(is.na(distance) | distance <= 2.50) %>%
   #remove one of the hits from the three exact duplicates ("ORJZ01.17253.1_1/2-182", "OWUN01.41726.1_1/1-246", "OWAH01.53685.1_1/1-179")
   distinct()
 
-## 3781 is the number of "putative dsrAB hits" -> filtered for no closest reference, distance >2.5 but still contains dups (sdups and edups for the sequence itself)
+## 4093 is the number of "putative dsrAB hits" -> filtered for no closest reference, distance >2.5 but still contains dups (sdups and edups for the sequence itself)
 ```
 
 # calculate SSRM sample prevalence

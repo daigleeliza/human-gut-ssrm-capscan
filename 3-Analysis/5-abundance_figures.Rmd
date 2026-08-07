@@ -67,7 +67,7 @@ unique_hits_summary <- samples_unique_gene_casette %>%
   summarize(n_hits_total=sum(number_hits), median_hits=median(number_hits), q_25=quantile(number_hits, probs=0.25), q_75=quantile(number_hits, probs=0.75))
 ```
 
-## get summary statistics for figure 4A 
+## get summary statistics for Table 1
 ```{r}
 capsule_type_summary <- samples_unique_subunit_RPKG %>%
   # find the number of genes in each sample and the sum of their RPKGs
@@ -94,6 +94,14 @@ capsule_type_summary <- samples_unique_subunit_RPKG %>%
          median_RPKG_sum_per_sample = paste0(median_RPKG_all_subj, " [IQR ", RPKG_25pct, "-", RPKG_75pct, "]")) %>%
   select(Type, n_subjects, n_genes_per_sample, median_RPKG_sum_per_sample)
 ```
+# find number of samples of each type for Table 1 caption
+```{r}
+n_samples <- samples_unique_subunit_RPKG %>%
+  # find the number of genes in each sample and the sum of their RPKGs
+  group_by(sample_type) %>%
+  summarize(n_samples=n_distinct(sample))
+```
+
 
 
 # color palettes for plots

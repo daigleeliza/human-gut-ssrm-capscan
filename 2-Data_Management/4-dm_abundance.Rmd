@@ -14,6 +14,27 @@ source(paste0(here::here(), "/1-Config/config.R"))
 meta <- read_tsv(paste0(configDir, "/sampleReadList.txt"))
 ```
 
+# total samples
+```{r}
+samples_drop=c('D17_2', 'P17_1', 'O5_1', 'O15_1', 'N17_1', 'M4_2', 'M20_2', 'M19_1', 'M16_2', 'K1_1', 'K21_2', 'K19_2', 'K17_2', 'K11_1', 'J7_2', 'J1_2', 'J17_1', 'I13_1', 'H5_2', 'H13_2', 'F5_2', 'F23_2', 'F21_2', 'F1_2', 'E7_1', 'E21_1', 'E18_2', 'E16_2', 'E12_2', 'E10_2', 'D5_2', 'D19_1', 'D11_2', 'C3_1', 'C1_1', 'B15_1', 'A23_1', 'A21_1', 'A13_2', 'A14_2', 'K23_2')
+
+samples_used <- meta %>%
+  filter(!samplename %in% samples_drop) %>%
+  filter(!Type=="Saliva") %>%
+  filter(!Subject %in% c("Control_1", "Control_2")) %>%
+  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
+  # remove 7 samples that were resequenced (subject 4,    subject 3)
+  #keep sample with more mapped reads
+  filter(!samplename %in% c("O17_1", "O19_1", "O21_1", "L23_1",     "K23_1", "M15_1", "M23_1"))
+
+n_samples_total <- samples_used %>%
+  # find the number of genes in each sample and the sum of their RPKGs
+  group_by(Type) %>%
+  summarize(n_samples=n_distinct(samplename))
+
+```
+
+
 # Read in dsrAB gene counts
 ```{r}
 # capsule data
@@ -38,39 +59,40 @@ dups <- closest_ref_no_2018 %>%
 samples_no_dups <- samples %>%
   filter(!geneLoc %in% dups$hit_id)
 ```
-```{r}
-# how many total stool samples and capsule samples?
-sample_numbers <- samples_no_dups %>%
-# keep all samples, even those that had an RPKG of 0
-# make subject a factor
-  mutate(subject = factor(subject)) %>%
-# add capsule type (1,2,3,4, most proximal to most distal)
-  left_join(meta %>% select(samplename, Type, Set, Main), 
-            by = c("sample" = "samplename")) %>%
-  # selects only sets 2,3,4,5
-  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
-  # remove 7 samples that were resequenced (subject 4,    subject 3)
-  #keep sample with more mapped reads
-  filter(!sample %in% c("O17_1", "O19_1", "O21_1", "L23_1",     "K23_1", "M15_1", "M23_1")) %>%
-  group_by(Type) %>%
-  summarize(n=n_distinct(sample))
-##136 capsule samples, 40 stool samples
 
-# number of samples for each subject
-samples_by_subject <- samples_no_dups %>%
-# keep all samples, even those that had an RPKG of 0
-# make subject a factor
-  mutate(subject = factor(subject)) %>%
-# add capsule type (1,2,3,4, most proximal to most distal)
-  left_join(meta %>% select(samplename, Type, Set, Main), 
-            by = c("sample" = "samplename")) %>%
-  # selects only sets 2,3,4,5
-  filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
-  # remove 7 samples that were resequenced (subject 4,    subject 3)
-  #keep sample with more mapped reads
-  filter(!sample %in% c("O17_1", "O19_1", "O21_1", "L23_1",     "K23_1", "M15_1", "M23_1")) %>%
-  group_by(subject, Type) %>%
-  summarize(n=n_distinct(sample))
+```{r}
+# # how many total stool samples and capsule samples?
+# sample_numbers <- samples_no_dups %>%
+# # keep all samples, even those that had an RPKG of 0
+# # make subject a factor
+#   mutate(subject = factor(subject)) %>%
+# # add capsule type (1,2,3,4, most proximal to most distal)
+#   left_join(meta %>% select(samplename, Type, Set, Main), 
+#             by = c("sample" = "samplename")) %>%
+#   # selects only sets 2,3,4,5
+#   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
+#   # remove 7 samples that were resequenced (subject 4,    subject 3)
+#   #keep sample with more mapped reads
+#   filter(!sample %in% c("O17_1", "O19_1", "O21_1", "L23_1",     "K23_1", "M15_1", "M23_1")) %>%
+#   group_by(Type) %>%
+#   summarize(n=n_distinct(sample))
+# ##136 capsule samples, 40 stool samples
+# 
+# # number of samples for each subject
+# samples_by_subject <- samples_no_dups %>%
+# # keep all samples, even those that had an RPKG of 0
+# # make subject a factor
+#   mutate(subject = factor(subject)) %>%
+# # add capsule type (1,2,3,4, most proximal to most distal)
+#   left_join(meta %>% select(samplename, Type, Set, Main), 
+#             by = c("sample" = "samplename")) %>%
+#   # selects only sets 2,3,4,5
+#   filter(!Set %in% c(1,6,7,8,9,10,11,12,13)) %>%
+#   # remove 7 samples that were resequenced (subject 4,    subject 3)
+#   #keep sample with more mapped reads
+#   filter(!sample %in% c("O17_1", "O19_1", "O21_1", "L23_1",     "K23_1", "M15_1", "M23_1")) %>%
+#   group_by(subject, Type) %>%
+#   summarize(n=n_distinct(sample))
 ```
 
 ```{r}

@@ -80,6 +80,8 @@ abundanceDir = paste0(here::here(), "/0-Cluster/workflow/out/dsrAB_CapsuleStool_
 abundanceDirASR = paste0(here::here(), "/0-Cluster/workflow/out/asrABC_CapsuleStool_Abundances/")
 clusterDir = paste0(here::here(), "/0-Cluster/workflow/out/clustering_otus/ids")
 taxaDir = paste0(here::here(), "/0-Cluster/workflow/out/clustering_test")
+geneReadsDir = paste0(here::here(), "/0-Cluster/workflow/out/mapping/bam/CoAssembly_gene_reads/")
+microbeCensusDir = paste0(here::here(), "/0-Cluster/workflow/out/microbeCensus/")
 
 dataDir = paste0(here::here(), "/data/")
 figureDir = paste0(here::here(), "/4-Figures/")
